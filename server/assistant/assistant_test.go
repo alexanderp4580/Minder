@@ -6,15 +6,18 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/store"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 type fakeModel struct {
-	r     Response
-	calls int
+	r        Response
+	calls    int
+	messages []Message
 }
 
-func (f *fakeModel) Complete(context.Context, []Message) (Response, error) {
+func (f *fakeModel) Complete(_ context.Context, messages []Message) (Response, error) {
+	f.messages = append([]Message(nil), messages...)
 	f.calls++
 	return f.r, nil
 }
@@ -94,5 +97,46 @@ func TestMissingKeyDoesNotSpendBudget(t *testing.T) {
 	cost, _ := s.MonthCost()
 	if cost != 0 {
 		t.Fatalf("no provider call spent %v", cost)
+	}
+}
+
+// Dropping previews/results leaves an earlier create request unanswered at the model boundary.
+func TestModelReceivesConfirmedProposalBeforeNextQuestion(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	c := command.New(s)
+	f := &fakeModel{r: Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"M0 live check"}`}}, CostUSD: 0.001}}
+	a := New(s, c, f, 5, 1)
+	if _, e = s.AddEntry(domain.Entry{Kind: "user", Text: "Create M0 live check."}); e != nil {
+		t.Fatal(e)
+	}
+	entries, e := a.Reply(context.Background(), "Create M0 live check.")
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = c.Confirm(entries[0].Change.ID); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = s.AddEntry(domain.Entry{Kind: "user", Text: "What is open?"}); e != nil {
+		t.Fatal(e)
+	}
+	f.r = Response{Calls: []Call{{Name: "list_items", Arguments: `{}`}}, CostUSD: 0.001}
+	if _, e = a.Reply(context.Background(), "What is open?"); e != nil {
+		t.Fatal(e)
+	}
+	if len(f.messages) != 5 {
+		t.Fatalf("Model received %d messages; expected system, user, preview, result, user", len(f.messages))
+	}
+	if f.messages[2].Role != "assistant" || !strings.Contains(f.messages[2].Content, `"state":"confirmed"`) {
+		t.Fatal("confirmed preview missing from model context")
+	}
+	if f.messages[3].Role != "assistant" || !strings.Contains(f.messages[3].Content, "Saved: M0 live check.") {
+		t.Fatal("saved result missing from model context")
+	}
+	if f.messages[4].Role != "user" || f.messages[4].Content != "What is open?" {
+		t.Fatal("latest request was not last")
 	}
 }

@@ -10,3 +10,6 @@ Use test-first changes and real SQLite files for transaction tests.
 `store/schema.sql` defines schema version 1. JSON item rows enforce status, version and title constraints.
 A durable event cursor records changes to existing entries. Reconnects replay from that cursor.
 Reserve model costs before a request; settle them from provider usage. Unknown costs keep the reservation.
+
+Model context includes preview, result and error entries as structured assistant messages.
+The latest user message stays last. Confirmed changes must not become new proposals on the next request.

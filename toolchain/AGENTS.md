@@ -11,3 +11,8 @@ The Flutter cache holds NDK 28.2.13676358. Android builds use Java 17 and at mos
 
 The debug signing key lives in the named cache at `/cache/android/debug.keystore`.
 Keep that cache for APK updates. Do not add the key to Git.
+
+`real-model-check.py` starts a temporary local server with a real OpenRouter key from the environment.
+`real-model-browser.cjs` checks preview, Confirm, query and Undo through compiled Flutter web.
+The check requires real provider costs for each call and leaves no item in its temporary database.
+The browser process receives no model key.
