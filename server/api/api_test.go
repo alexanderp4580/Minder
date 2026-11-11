@@ -103,3 +103,27 @@ func TestDevProductionGuard(t *testing.T) {
 		t.Fatal("local dev refused")
 	}
 }
+
+type blockedReplier struct{}
+
+func (blockedReplier) Preflight() error { return domain.ErrLimit }
+func (blockedReplier) Reply(context.Context, string) ([]domain.Entry, error) {
+	panic("budget block called model")
+}
+func TestBudgetErrorIsReturnedBeforeAcceptingMessage(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	h := New(s, command.New(s), blockedReplier{}, nil, "")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/chat/messages", strings.NewReader(`{"text":"Call plumber"}`)))
+	if w.Code != 429 || !strings.Contains(w.Body.String(), "limit_reached") {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+	entries, _ := s.History(0, 50)
+	if len(entries) != 0 {
+		t.Fatal("blocked request entered chat")
+	}
+}

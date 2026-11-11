@@ -1,6 +1,6 @@
-# M0: working chat, server and app (spec, draft)
+# M0: working chat, server and app
 
-Status 2026-11-11. Architectural work. The owner answered the open items: no agents, OpenRouter for the model, Cloudflare later, Edit left out. Design rules: [foundation.md](foundation.md). Architecture and checks: [architecture.md](architecture.md). Screen: [screens.md](screens.md) and `mockups/chat.html`.
+Status 2026-11-11. The owner approved implementation and APK delivery. Evidence is in [evidence/m0.md](evidence/m0.md). Architectural work. The owner answered the open items: no agents, OpenRouter for the model, Cloudflare later, Edit left out. Design rules: [foundation.md](foundation.md). Architecture and checks: [architecture.md](architecture.md). Screen: [screens.md](screens.md) and `mockups/chat.html`.
 
 ## Goal
 

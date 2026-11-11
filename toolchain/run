@@ -3,6 +3,6 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 case "${1:-}" in
   go) shift; exec podman run --rm --network host -e GOTOOLCHAIN=local -e GOCACHE=/cache/build -e GOPATH=/cache/mod -v minder-go-cache:/cache -v "$root:/workspace" -w /workspace/server ee4851781507a617e5a5e527b3edeebc0f803385e9a47b380c1ed58fe88e60e6 "$@";;
-  flutter) shift; exec podman run --rm --network host -e TAR_OPTIONS=--no-same-owner -e PUB_CACHE=/cache/pub -e GRADLE_USER_HOME=/cache/gradle -v minder-flutter-sdk-cache:/opt/flutter/bin/cache -v minder-flutter-cache:/cache -v "$root:/workspace" -w /workspace/app ce706f0c746018b89b40af41be9abce1e421e32b2afa96d87124938eec148454 "$@";;
+  flutter) shift; exec podman run --rm --network host -e TAR_OPTIONS=--no-same-owner -e PUB_CACHE=/cache/pub -e GRADLE_USER_HOME=/cache/gradle -v minder-android-platforms:/opt/android-sdk/platforms -v minder-android-build-tools:/opt/android-sdk/build-tools -v minder-flutter-sdk-cache:/opt/flutter/bin/cache -v minder-flutter-cache:/cache -v "$root:/workspace" -w /workspace/app ce706f0c746018b89b40af41be9abce1e421e32b2afa96d87124938eec148454 bash -c 'if [ -d /cache/ndk/28.2.13676358 ]; then ln -sfn /cache/ndk/28.2.13676358 /opt/android-sdk/ndk/28.2.13676358; fi; exec "$@"' -- "$@";;
   *) echo 'Usage: toolchain/run go|flutter COMMAND ...' >&2; exit 2;;
 esac

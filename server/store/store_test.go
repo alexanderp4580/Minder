@@ -30,3 +30,42 @@ func TestMigrationAndDurableHistory(t *testing.T) {
 		t.Fatalf("history: %v %v", entries, err)
 	}
 }
+
+// Invalid status or negative versions must fail even outside the command layer.
+func TestSchemaRejectsInvalidItemState(t *testing.T) {
+	s, e := Open(filepath.Join(t.TempDir(), "schema.db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	for _, b := range []string{`{"title":"Bad","status":"typo","version":1}`, `{"title":"Bad","status":"open","version":0}`, `{"title":"","status":"open","version":1}`} {
+		if _, e = s.db.Exec("INSERT INTO item(id,body) VALUES(?,?)", ID(), b); e == nil {
+			t.Fatalf("invalid item accepted: %s", b)
+		}
+	}
+}
+
+func TestUsageReservationBlocksAndSettles(t *testing.T) {
+	s, e := Open(filepath.Join(t.TempDir(), "usage.db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	id, e := s.ReserveUsage(0.03, 0.02)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = s.ReserveUsage(0.03, 0.02); e != domain.ErrLimit {
+		t.Fatalf("budget allowed overlapping request: %v", e)
+	}
+	if e = s.SettleUsage(id, 0.001, map[string]any{"cost_usd": 0.001}); e != nil {
+		t.Fatal(e)
+	}
+	cost, _ := s.MonthCost()
+	if cost != 0.001 {
+		t.Fatalf("cost %v", cost)
+	}
+	if _, e = s.ReserveUsage(0.03, 0.02); e != nil {
+		t.Fatal(e)
+	}
+}

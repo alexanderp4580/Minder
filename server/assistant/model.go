@@ -34,6 +34,12 @@ type OpenRouter struct {
 	Client          *http.Client
 }
 
+func (m *OpenRouter) Ready() error {
+	if m.Key == "" {
+		return errors.New("The model key is not configured.")
+	}
+	return nil
+}
 func (m *OpenRouter) Complete(ctx context.Context, messages []Message) (Response, error) {
 	if m.Key == "" {
 		return Response{}, errors.New("The model key is not configured.")

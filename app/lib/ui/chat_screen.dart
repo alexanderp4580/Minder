@@ -27,6 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _send() {
     final text = _text.text.trim();
     if (text.isEmpty || widget.controller.waiting) return;
+    FocusScope.of(context).unfocus();
     _text.clear();
     widget.controller.send(text);
   }

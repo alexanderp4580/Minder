@@ -64,3 +64,35 @@ func TestClarificationChangesNothing(t *testing.T) {
 		t.Fatal("clarification changed items")
 	}
 }
+
+func TestListToolReturnsRealOpenItems(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	c := command.New(s)
+	p, _ := c.Preview(domain.Proposal{Action: "create_item", Title: "Dentist"})
+	c.Confirm(p.Change.ID)
+	f := &fakeModel{r: Response{Calls: []Call{{Name: "list_items", Arguments: `{}`}}, CostUSD: 0.001}}
+	entries, e := New(s, c, f, 5, 1).Reply(context.Background(), "What is open?")
+	if e != nil || len(entries) != 1 || entries[0].Text != "Open items:\nDentist" {
+		t.Fatalf("%+v %v", entries, e)
+	}
+}
+
+func TestMissingKeyDoesNotSpendBudget(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	a := New(s, command.New(s), &OpenRouter{}, 5, 1)
+	if _, e = a.Reply(context.Background(), "Hello"); e == nil {
+		t.Fatal("missing key accepted")
+	}
+	cost, _ := s.MonthCost()
+	if cost != 0 {
+		t.Fatalf("no provider call spent %v", cost)
+	}
+}

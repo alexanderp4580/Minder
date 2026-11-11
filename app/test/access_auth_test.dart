@@ -10,7 +10,7 @@ void main() {
     final storage = <String, String>{};
     bool tokenCalled = false;
     final client = MockClient((r) async {
-      if (r.url.path == '/.well-known/oauth-authorization-server')
+      if (r.url.path == '/.well-known/oauth-authorization-server') {
         return http.Response(
           jsonEncode({
             'authorization_endpoint':
@@ -21,6 +21,7 @@ void main() {
           }),
           200,
         );
+      }
       if (r.url.path == '/register') {
         final j = jsonDecode(r.body);
         expect(j['token_endpoint_auth_method'], 'none');
@@ -60,13 +61,15 @@ void main() {
   });
   test('wrong OAuth state never exchanges a code', () async {
     final client = MockClient((r) async {
-      if (r.url.path == '/.well-known/oauth-authorization-server')
+      if (r.url.path == '/.well-known/oauth-authorization-server') {
         return http.Response(
           '{"authorization_endpoint":"https://liveleds.cloudflareaccess.com/auth","token_endpoint":"https://liveleds.cloudflareaccess.com/token","registration_endpoint":"https://liveleds.cloudflareaccess.com/register"}',
           200,
         );
-      if (r.url.path == '/register')
+      }
+      if (r.url.path == '/register') {
         return http.Response('{"client_id":"client"}', 201);
+      }
       fail('Invalid callback reached token endpoint');
     });
     final auth = AccessAuth(

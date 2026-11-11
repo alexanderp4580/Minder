@@ -6,3 +6,7 @@ Go HTTP service for M0. `domain` owns values. `store` alone writes SQL.
 All timestamps use UTC. The default display zone is Europe/Amsterdam.
 Run `../toolchain/run go go test ./...` and `../toolchain/run go go vet ./...` from this folder.
 Use test-first changes and real SQLite files for transaction tests.
+
+`store/schema.sql` defines schema version 1. JSON item rows enforce status, version and title constraints.
+A durable event cursor records changes to existing entries. Reconnects replay from that cursor.
+Reserve model costs before a request; settle them from provider usage. Unknown costs keep the reservation.

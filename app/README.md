@@ -1,17 +1,12 @@
-# minder
+# Minder app
 
-A new Flutter project.
+One Flutter chat screen for Android and web. The server owns item validation and changes.
 
-## Getting Started
+Run Flutter commands through `../toolchain/run flutter` from this folder.
+`flutter test` checks the controller, widgets, bundled-font golden and OAuth protocol boundaries.
+`flutter analyze` checks Dart source.
 
-This project is a starting point for a Flutter application.
+Web uses the same origin and Cloudflare cookie. Android uses managed OAuth with PKCE and secure token storage.
+The default Android API is `https://minder.liveleds.io`. A local build can set `API_BASE` and `LOCAL_AUTH` with Dart defines.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+M0 includes text messages, previews, Confirm, Discard, Undo, Working and Retry. Voice and reminders come later.

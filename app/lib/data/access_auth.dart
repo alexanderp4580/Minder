@@ -181,5 +181,5 @@ class AccessAuth {
     return {'Authorization': 'Bearer ${data['access_token']}'};
   }
 
-  Future<void> webSignIn() async => redirectWeb('$base/cdn-cgi/access/login');
+  Future<void> webSignIn() async => redirectWeb(base);
 }

@@ -23,6 +23,20 @@ type Service struct {
 func New(s *store.Store, c *command.Service, m Model, limit, rate float64) *Service {
 	return &Service{store: s, commands: c, model: m, limit: limit, rate: rate}
 }
+func (a *Service) Preflight() error {
+	cost, e := a.store.MonthCost()
+	if e != nil {
+		return e
+	}
+	if cost+0.02*a.rate > a.limit {
+		return domain.ErrLimit
+	}
+	if ready, ok := a.model.(interface{ Ready() error }); ok {
+		return ready.Ready()
+	}
+	return nil
+}
+
 func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -30,7 +44,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 	if e != nil {
 		return nil, e
 	}
-	if cost+0.02 > a.limit {
+	if cost+0.02*a.rate > a.limit {
 		return nil, domain.ErrLimit
 	}
 	items, e := a.store.Items()
@@ -54,11 +68,24 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 	if len(messages) == 1 || messages[len(messages)-1].Role != "user" || messages[len(messages)-1].Content != text {
 		messages = append(messages, Message{Role: "user", Content: text})
 	}
+	encoded, _ := json.Marshal(messages)
+	if len(encoded) > 60000 {
+		return nil, &domain.Invalid{Field: "request", Message: "The conversation is too large. Try a shorter request."}
+	}
+	if ready, ok := a.model.(interface{ Ready() error }); ok {
+		if e := ready.Ready(); e != nil {
+			return nil, e
+		}
+	}
+	reservation, e := a.store.ReserveUsage(a.limit, 0.02*a.rate)
+	if e != nil {
+		return nil, e
+	}
 	r, e := a.model.Complete(ctx, messages)
 	if e != nil {
 		return nil, e
 	}
-	if e = a.store.RecordUsage(r.CostUSD*a.rate, map[string]any{"cost_usd": r.CostUSD, "usd_to_eur": a.rate, "usage": r.RawUsage}); e != nil {
+	if e = a.store.SettleUsage(reservation, r.CostUSD*a.rate, map[string]any{"cost_usd": r.CostUSD, "usd_to_eur": a.rate, "usage": r.RawUsage}); e != nil {
 		return nil, e
 	}
 	if len(r.Calls) > 1 {

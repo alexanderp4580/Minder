@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+mkdir -p .local docs/evidence
+./toolchain/run go go build -o /workspace/.local/minder ./cmd/minder
+check_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+check_db=$(mktemp "$PWD/.local/browser-XXXXXX.db")
+ENV=development AUTH_MODE=dev DATABASE_PATH="$check_db" OPENROUTER_API_KEY=local-fixture OPENROUTER_URL=http://127.0.0.1:8181 WEB_DIR=app/build/web LISTEN_ADDR="127.0.0.1:$check_port" .local/minder > .local/browser-server.log 2>&1 &
+check_pid=$!
+trap 'kill "$check_pid" 2>/dev/null || true' EXIT
+curl --fail --silent --retry 5 --retry-delay 1 --retry-connrefused http://127.0.0.1:$check_port/v1/health
+MINDER_URL=http://127.0.0.1:$check_port node toolchain/browser-check.cjs
+python3 - "$check_db" <<'PY'
+import sqlite3,json,sys
+c=sqlite3.connect(sys.argv[1]);items=[json.loads(r[0]) for r in c.execute('select body from item')]
+assert len(items)==1 and items[0]['status']=='open' and items[0]['due_at']=='2026-11-13T09:00:00Z',items
+assert c.execute('select count(*) from audit').fetchone()[0]==4
+assert c.execute('select sum(cost_eur) from usage').fetchone()[0]>0
+print('PASS: browser writes persisted in SQLite; Undo restored open status; audit and usage recorded.')
+PY

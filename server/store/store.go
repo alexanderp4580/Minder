@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/rand"
 	"database/sql"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,9 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+//go:embed schema.sql
+var schema string
 
 type Store struct {
 	db *sql.DB
@@ -32,13 +36,7 @@ func Open(path string) (*Store, error) {
 		return nil, e
 	}
 	db.SetMaxOpenConns(1)
-	_, e = db.Exec(`CREATE TABLE IF NOT EXISTS item(id TEXT PRIMARY KEY, body TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS pending_change(id TEXT PRIMARY KEY, body TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY, actor TEXT NOT NULL CHECK(actor IN ('owner','agent')), body TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS chat_entry(seq INTEGER PRIMARY KEY AUTOINCREMENT,id TEXT UNIQUE NOT NULL,body TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS event(cursor INTEGER PRIMARY KEY AUTOINCREMENT,entry_id TEXT NOT NULL,body TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS usage(id TEXT PRIMARY KEY,month TEXT NOT NULL,cost_eur REAL NOT NULL,body TEXT NOT NULL);
- PRAGMA user_version=1;`)
+	_, e = db.Exec(schema)
 	if e != nil {
 		db.Close()
 		return nil, e
@@ -206,6 +204,32 @@ func (s *Store) RecordUsage(cost float64, v any) error {
 	}
 	return s.Write(func(t *Tx) error {
 		_, e := t.tx.Exec("INSERT INTO usage(id,month,cost_eur,body) VALUES(?,?,?,?)", ID(), month(), cost, body(v))
+		return e
+	})
+}
+
+// Reserve before a provider call. A crash or unknown provider cost keeps the reservation.
+func (s *Store) ReserveUsage(limit, amount float64) (id string, err error) {
+	id = ID()
+	err = s.Write(func(t *Tx) error {
+		var total float64
+		if e := t.tx.QueryRow("SELECT COALESCE(SUM(cost_eur),0) FROM usage WHERE month=?", month()).Scan(&total); e != nil {
+			return e
+		}
+		if total+amount > limit {
+			return domain.ErrLimit
+		}
+		_, e := t.tx.Exec("INSERT INTO usage(id,month,cost_eur,body) VALUES(?,?,?,?)", id, month(), amount, body(map[string]any{"reserved": true, "cost_eur": amount}))
+		return e
+	})
+	return
+}
+func (s *Store) SettleUsage(id string, cost float64, value any) error {
+	if cost < 0 {
+		return fmt.Errorf("invalid cost")
+	}
+	return s.Write(func(t *Tx) error {
+		_, e := t.tx.Exec("UPDATE usage SET cost_eur=?,body=? WHERE id=?", cost, body(value), id)
 		return e
 	})
 }

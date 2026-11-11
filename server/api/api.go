@@ -166,6 +166,12 @@ func (s *Server) message(w http.ResponseWriter, r *http.Request) {
 		fail(w, &domain.Invalid{Field: "text", Message: "Use 1 to 4,000 characters."})
 		return
 	}
+	if ready, ok := s.assistant.(interface{ Preflight() error }); ok {
+		if e := ready.Preflight(); e != nil {
+			fail(w, e)
+			return
+		}
+	}
 	if !s.processing.TryLock() {
 		write(w, 429, map[string]string{"code": "busy", "message": "Wait for Minder to finish."})
 		return

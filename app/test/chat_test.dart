@@ -21,7 +21,7 @@ Entry entry(
   'kind': kind,
   'text': text,
   'created_at': '2026-11-11T09:00:00Z',
-  if (change != null) 'change': change,
+  'change': ?change,
 });
 Map<String, dynamic> preview({String state = 'pending', String? undo}) => {
   'id': 'p',
@@ -31,7 +31,7 @@ Map<String, dynamic> preview({String state = 'pending', String? undo}) => {
     {'name': 'title', 'new': 'Call plumber'},
   ],
   'state': state,
-  if (undo != null) 'undo_id': undo,
+  'undo_id': ?undo,
 };
 
 class FakeRepository implements ChatRepository {
@@ -56,7 +56,7 @@ class FakeRepository implements ChatRepository {
 
   @override
   Future<Entry> act(String route) async {
-    if (route.endsWith('discard'))
+    if (route.endsWith('discard')) {
       return entry(
         'p',
         4,
@@ -64,8 +64,10 @@ class FakeRepository implements ChatRepository {
         text: 'Change discarded.',
         change: preview(state: 'discarded'),
       );
-    if (route.startsWith('/v1/undo'))
+    }
+    if (route.startsWith('/v1/undo')) {
       return entry('undo', 5, 'result', text: 'Undone: Call plumber.');
+    }
     return entry(
       'result',
       3,
@@ -84,9 +86,19 @@ class FakeRepository implements ChatRepository {
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    for (final name in ['Michroma','Chakra Petch']) {
-      final loader=FontLoader(name);
-      for(final file in name=='Michroma'?['Michroma-Regular.ttf']:['ChakraPetch-Regular.ttf','ChakraPetch-Medium.ttf','ChakraPetch-SemiBold.ttf','ChakraPetch-Bold.ttf']) {loader.addFont(rootBundle.load('assets/fonts/$file'));}
+    for (final name in ['Michroma', 'Chakra Petch']) {
+      final loader = FontLoader(name);
+      for (final file
+          in name == 'Michroma'
+              ? ['Michroma-Regular.ttf']
+              : [
+                  'ChakraPetch-Regular.ttf',
+                  'ChakraPetch-Medium.ttf',
+                  'ChakraPetch-SemiBold.ttf',
+                  'ChakraPetch-Bold.ttf',
+                ]) {
+        loader.addFont(rootBundle.load('assets/fonts/$file'));
+      }
       await loader.load();
     }
   });
