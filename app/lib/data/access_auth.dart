@@ -76,6 +76,7 @@ class AccessAuth {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'client_name': 'Minder Android',
+              'client_uri': base,
               'redirect_uris': [redirect],
               'grant_types': ['authorization_code', 'refresh_token'],
               'response_types': ['code'],

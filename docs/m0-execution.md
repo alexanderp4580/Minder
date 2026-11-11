@@ -40,6 +40,6 @@ Build: Flutter web and Android APK. Validate HTTP health and stream through the 
 ## Delivery state
 
 The local checks pass. Coolify serves the container and reports it healthy.
-The arm64 APK reached the owner's Telegram chat. The real model key and physical phone checks remain open.
+The arm64 APK reached the owner's Telegram chat. The real model key is configured, and real calls pass locally. The Firefox callback passes in the emulator. Phone confirmation remains open.
 Task 8 has protocol evidence; native phone sign-in remains open. Task 10 has build and delivery evidence; phone approval remains open.
 Full results and review items: [evidence/m0.md](evidence/m0.md).

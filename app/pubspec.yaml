@@ -1,7 +1,7 @@
 name: minder
 description: Personal task assistant.
 publish_to: none
-version: 0.1.0+1
+version: 0.1.1+2
 environment:
   sdk: ^3.13.5
 dependencies:
@@ -11,7 +11,7 @@ dependencies:
   http: ^1.5.0
   flutter_riverpod: ^3.0.0
   flutter_secure_storage: ^10.0.0
-  flutter_web_auth_2: ^4.1.0
+  flutter_web_auth_2: ^5.1.0
   crypto: ^3.0.6
 dev_dependencies:
   flutter_test:

@@ -16,3 +16,8 @@ Keep that cache for APK updates. Do not add the key to Git.
 `real-model-browser.cjs` checks preview, Confirm, query and Undo through compiled Flutter web.
 The check requires real provider costs for each call and leaves no item in its temporary database.
 The browser process receives no model key.
+
+`android-callback-check.py` checks the browser-to-app callback on a disposable emulator.
+It clears only the emulator installation of Minder and rejects physical device serials.
+`app/test/native_auth_probe.dart` is its emulator-only entrypoint. The loopback fixture redirects from Firefox to the app.
+The check asserts foreground ownership and callback delivery. It creates no account or authenticated session.

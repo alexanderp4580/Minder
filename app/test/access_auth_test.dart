@@ -25,6 +25,7 @@ void main() {
       if (r.url.path == '/register') {
         final j = jsonDecode(r.body);
         expect(j['token_endpoint_auth_method'], 'none');
+        expect(j['client_uri'], 'https://minder.liveleds.io');
         expect(j['redirect_uris'], ['io.liveleds.minder:/oauth/callback']);
         return http.Response('{"client_id":"native-client"}', 201);
       }

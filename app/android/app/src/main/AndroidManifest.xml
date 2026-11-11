@@ -26,7 +26,8 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name="com.linusu.flutter_web_auth_2.CallbackActivity" android:exported="true">
+        <activity android:name="com.linusu.flutter_web_auth_2.AuthenticationManagementActivity" android:exported="false" android:launchMode="singleTask"/>
+        <activity android:name="com.linusu.flutter_web_auth_2.CallbackActivity" android:exported="true" android:taskAffinity="">
             <intent-filter android:label="Minder sign-in">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>

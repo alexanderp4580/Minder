@@ -114,7 +114,7 @@ Every command has two steps, preview and apply (architecture.md). Apply runs in 
 
 ## Fixed constraints
 
-- No secret in the repository. Keys come from the environment. The OpenRouter key stays in TokenCrypt. A real model call uses `tokencrypt run --with openrouter_api_key`.
+- No secret in the repository. Keys come from the environment. The OpenRouter key stays in TokenCrypt. A real model call uses `tokencrypt run --with openrouter_minder_token`.
 - Only `store` writes SQL. Only `command` changes data.
 - Times are UTC in storage and Europe/Amsterdam by default in display.
 - The text on screen follows the foundation rules. No hex value in a widget.
@@ -172,7 +172,7 @@ Not in the criteria: reminders, push, voice, backup, and any screen other than c
 
 ## Owner actions
 
-- Part A: add `openrouter_api_key` to TokenCrypt. I request it for the real-call checks only.
+- Part A: The key exists as `openrouter_minder_token` in TokenCrypt. I request it for the real-call checks only.
 - Part B: the Cloudflare Access application exists (see architecture.md, "Cloudflare setup"). Coolify needs an application for the container and the domain `minder.liveleds.io`. That step is task 9.
 - Approve the slice (see below).
 
