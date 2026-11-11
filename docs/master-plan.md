@@ -66,7 +66,7 @@ The milestones follow the P0 list in the requirements. Sizes are not estimated y
 | Milestone | Delivers |
 |---|---|
 | M0 Working chat | Go service and Flutter chat app end to end: text assistant with preview and Confirm, items, debug APK. Part B adds Cloudflare sign-in and the Coolify deploy. Spec: [m0-spec.md](m0-spec.md) |
-| M1 Items and reminder engine | Items, lists, profiles and recurrence in SQLite; scheduler with catch-up; nag state |
+| M1 Items and reminder engine | Items, lists, profiles and recurrence in SQLite; scheduler with catch-up; nag state. Specs: [notifications-spec.md](notifications-spec.md), [m1-spec.md](m1-spec.md) |
 | M2 Notifications | Firebase push, Android notification with Done, Snooze and Open, sticky nagging |
 | M3 Chat summaries | Today, upcoming and list answers in chat. Other views only if you ask |
 | M4 Voice and Edit | Voice recording, the speech model on OpenRouter, and Edit in the preview card |

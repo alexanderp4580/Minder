@@ -20,33 +20,46 @@ type Invalid struct {
 func (e *Invalid) Error() string { return e.Message }
 
 type Item struct {
-	RemindAt    string `json:"remind_at,omitempty"`
-	NagMinutes  int    `json:"nag_minutes,omitempty"`
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Status      string `json:"status"`
-	DueAt       string `json:"due_at,omitempty"`
-	Timezone    string `json:"timezone"`
-	Notes       string `json:"notes,omitempty"`
-	Version     int    `json:"version"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
-	CompletedAt string `json:"completed_at,omitempty"`
+	List        string      `json:"list,omitempty"`
+	ProfileID   string      `json:"profile,omitempty"`
+	Recurrence  *Recurrence `json:"recurrence,omitempty"`
+	RemindAt    string      `json:"remind_at,omitempty"`
+	NagMinutes  int         `json:"nag_minutes,omitempty"`
+	ID          string      `json:"id"`
+	Title       string      `json:"title"`
+	Status      string      `json:"status"`
+	DueAt       string      `json:"due_at,omitempty"`
+	Timezone    string      `json:"timezone"`
+	Notes       string      `json:"notes,omitempty"`
+	Version     int         `json:"version"`
+	CreatedAt   string      `json:"created_at"`
+	UpdatedAt   string      `json:"updated_at"`
+	CompletedAt string      `json:"completed_at,omitempty"`
 }
 type Proposal struct {
-	RemindAt        string `json:"remind_at,omitempty"`
-	NagMinutes      int    `json:"nag_minutes,omitempty"`
-	ClearReminder   bool   `json:"clear_reminder,omitempty"`
-	ClearNag        bool   `json:"clear_nag,omitempty"`
-	Action          string `json:"action"`
-	ItemID          string `json:"item_id,omitempty"`
-	ExpectedVersion int    `json:"expected_version,omitempty"`
-	Title           string `json:"title,omitempty"`
-	DueAt           string `json:"due_at,omitempty"`
-	Timezone        string `json:"timezone,omitempty"`
-	Notes           string `json:"notes,omitempty"`
-	ClearDue        bool   `json:"clear_due,omitempty"`
-	ClearNotes      bool   `json:"clear_notes,omitempty"`
+	List                string      `json:"list,omitempty"`
+	ClearList           bool        `json:"clear_list,omitempty"`
+	Profile             string      `json:"profile,omitempty"`
+	ClearProfile        bool        `json:"clear_profile,omitempty"`
+	Recurrence          *Recurrence `json:"recurrence,omitempty"`
+	ClearRecurrence     bool        `json:"clear_recurrence,omitempty"`
+	ProfileID           string      `json:"profile_id,omitempty"`
+	ProfileName         string      `json:"profile_name,omitempty"`
+	ProfileRemindBefore *int        `json:"profile_remind_before_minutes,omitempty"`
+	ProfileNag          *int        `json:"profile_nag_minutes,omitempty"`
+	RemindAt            string      `json:"remind_at,omitempty"`
+	NagMinutes          int         `json:"nag_minutes,omitempty"`
+	ClearReminder       bool        `json:"clear_reminder,omitempty"`
+	ClearNag            bool        `json:"clear_nag,omitempty"`
+	Action              string      `json:"action"`
+	ItemID              string      `json:"item_id,omitempty"`
+	ExpectedVersion     int         `json:"expected_version,omitempty"`
+	Title               string      `json:"title,omitempty"`
+	DueAt               string      `json:"due_at,omitempty"`
+	Timezone            string      `json:"timezone,omitempty"`
+	Notes               string      `json:"notes,omitempty"`
+	ClearDue            bool        `json:"clear_due,omitempty"`
+	ClearNotes          bool        `json:"clear_notes,omitempty"`
 }
 type Field struct {
 	Name string `json:"name"`
@@ -71,6 +84,8 @@ type Entry struct {
 	Change    *Change   `json:"change,omitempty"`
 }
 type Pending struct {
+	BeforeProfile *Profile
+	AfterProfile  *Profile
 	ID       string
 	Proposal Proposal
 	Before   *Item
@@ -80,6 +95,8 @@ type Pending struct {
 	ResultID string
 }
 type Audit struct {
+	BeforeProfile *Profile
+	AfterProfile  *Profile
 	ID     string
 	Before *Item
 	After  Item
@@ -118,6 +135,13 @@ func Validate(i *Item) error {
 			return &Invalid{"remind_at", "Use a reminder date and time with a timezone."}
 		}
 		i.RemindAt = t.UTC().Format(time.RFC3339)
+	}
+	i.List = strings.TrimSpace(i.List)
+	if utf8.RuneCountInString(i.List) > 60 {
+		return &Invalid{"list", "Use a list name with at most 60 characters."}
+	}
+	if e := validateRecurrence(i); e != nil {
+		return e
 	}
 	switch i.Status {
 	case "open", "in_progress", "done", "cancelled":

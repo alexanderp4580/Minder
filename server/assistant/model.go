@@ -108,21 +108,34 @@ func (m *OpenRouter) Complete(ctx context.Context, messages []Message) (Response
 	return out, nil
 }
 func tools() []any {
-	props := map[string]any{"title": map[string]string{"type": "string"}, "due_at": map[string]string{"type": "string", "description": "RFC3339 with timezone; omit if unknown"}, "timezone": map[string]string{"type": "string"}, "notes": map[string]string{"type": "string"}, "item_id": map[string]string{"type": "string"}, "expected_version": map[string]string{"type": "integer"}, "clear_due": map[string]string{"type": "boolean"}, "clear_notes": map[string]string{"type": "boolean"}}
+	str := map[string]string{"type": "string"}
+	flag := map[string]string{"type": "boolean"}
+	props := map[string]any{"title": str, "due_at": map[string]string{"type": "string", "description": "RFC3339 with timezone; omit if unknown"}, "timezone": str, "notes": str, "item_id": str, "expected_version": map[string]string{"type": "integer"}, "clear_due": flag, "clear_notes": flag}
 	props["remind_at"] = map[string]string{"type": "string", "description": "Explicit reminder time in RFC3339. Set only when the owner asks for a reminder."}
 	props["nag_minutes"] = map[string]string{"type": "integer", "description": "Minutes between nags, 1 to 1440. Use 15 by default for reminders. Zero disables nagging."}
-	props["clear_reminder"] = map[string]string{"type": "boolean"}
-	props["clear_nag"] = map[string]string{"type": "boolean"}
+	props["clear_reminder"], props["clear_nag"] = flag, flag
+	props["list"] = map[string]string{"type": "string", "description": "List name. Reuse an existing list name."}
+	props["clear_list"] = flag
+	props["profile"] = map[string]string{"type": "string", "description": "Profile id from the profile list."}
+	props["clear_profile"] = flag
+	props["recurrence"] = map[string]any{"type": "object", "description": "Repeat rule. The item needs a due time.", "properties": map[string]any{"every": map[string]any{"type": "string", "enum": []string{"daily", "weekly", "monthly", "yearly"}}, "interval": map[string]string{"type": "integer"}, "after_completion": flag}, "required": []string{"every", "interval"}, "additionalProperties": false}
+	props["clear_recurrence"] = flag
 	out := []any{}
-	for _, n := range []string{"propose_create", "propose_update", "propose_complete", "list_items"} {
-		required := []string{}
-		switch n {
-		case "propose_create":
-			required = []string{"title"}
-		case "propose_update", "propose_complete":
+	for _, n := range []string{"propose_create", "propose_update", "propose_complete"} {
+		required := []string{"title"}
+		if n != "propose_create" {
 			required = []string{"item_id", "expected_version"}
 		}
-		out = append(out, map[string]any{"type": "function", "function": map[string]any{"name": n, "description": "Propose a change for owner confirmation, or list current items. Never invent item IDs.", "parameters": map[string]any{"type": "object", "properties": props, "required": required, "additionalProperties": false}}})
+		out = append(out, tool(n, "Propose an item change for owner confirmation. Never invent item IDs.", props, required))
 	}
+	profile := map[string]any{"profile_id": map[string]string{"type": "string", "description": "Omit to add a new profile."}, "expected_version": map[string]string{"type": "integer"}, "profile_name": str, "profile_remind_before_minutes": map[string]string{"type": "integer", "description": "Minutes before the due time, 0 to 20160."}, "profile_nag_minutes": map[string]string{"type": "integer", "description": "Minutes between nags, 0 to 1440."}}
+	out = append(out, tool("propose_profile", "Propose a new profile or a change to one for owner confirmation.", profile, nil))
+	out = append(out, tool("list_items", "List open items, optionally for one list.", map[string]any{"list": str}, nil))
 	return out
+}
+func tool(name, description string, props map[string]any, required []string) any {
+	if required == nil {
+		required = []string{}
+	}
+	return map[string]any{"type": "function", "function": map[string]any{"name": name, "description": description, "parameters": map[string]any{"type": "object", "properties": props, "required": required, "additionalProperties": false}}}
 }

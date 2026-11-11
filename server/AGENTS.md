@@ -16,3 +16,9 @@ The latest user message stays last. Confirmed changes must not become new propos
 
 `GET` and `HEAD /brand/minder-icon.png` serve only the embedded public branding PNG.
 The web client, scripts, chat and all mutation routes still require a valid owner assertion in production.
+
+Items carry `list`, `profile` and `recurrence`. `domain` owns recurrence rules, `NextDue` and `EffectiveReminder`.
+Profiles live in the `profile` table (schema version 3). `store` seeds the five built-ins once and never overwrites edits.
+A profile edit reschedules the reminders of items that use it in the same transaction.
+`command` owns profile previews with the same Confirm, conflict and Undo rules as items. Completing a repeating item moves its due time.
+The assistant proposes profile changes through `propose_profile`. Spec: `../docs/m1-spec.md`.

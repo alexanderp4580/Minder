@@ -3,6 +3,7 @@ package command
 import (
 	"errors"
 	"fmt"
+	"time"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/store"
 )
@@ -17,6 +18,9 @@ func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
 		switch p.Action {
 		case "create_item":
 			after = domain.Item{ID: store.ID(), Title: p.Title, DueAt: p.DueAt, Timezone: p.Timezone, Notes: p.Notes, RemindAt: p.RemindAt, NagMinutes: p.NagMinutes, Status: "open", Version: 1, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}
+			if e := setAttributes(t, p, &after); e != nil {
+				return e
+			}
 		case "update_item", "complete_item":
 			i, e := t.Item(p.ItemID)
 			if e != nil {
@@ -33,7 +37,13 @@ func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
 				if i.Status != "open" && i.Status != "in_progress" {
 					return domain.ErrConflict
 				}
-				after.Status = "done"
+				if i.Recurrence != nil {
+					if e := roll(&after, time.Now()); e != nil {
+						return e
+					}
+				} else {
+					after.Status = "done"
+				}
 				after.CompletedAt = domain.Now()
 			} else {
 				if p.RemindAt != "" {
@@ -62,7 +72,14 @@ func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
 				if p.Timezone != "" {
 					after.Timezone = p.Timezone
 				}
+				if e := setAttributes(t, p, &after); e != nil {
+					return e
+				}
 			}
+		case "create_profile", "update_profile":
+			entry, e := previewProfile(t, p)
+			out = entry
+			return e
 		default:
 			return &domain.Invalid{Field: "action", Message: "Choose create, change or complete."}
 		}
@@ -75,7 +92,7 @@ func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
 		if before != nil {
 			old = *before
 		}
-		for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}} {
+		for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}, {Name: "list", Old: old.List, New: after.List}, {Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, after.ProfileID)}, {Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(after.Recurrence)}} {
 			if f.Old != f.New {
 				fields = append(fields, f)
 			}
@@ -101,6 +118,9 @@ func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 		}
 		if p.State != "pending" {
 			return domain.ErrConflict
+		}
+		if p.AfterProfile != nil {
+			return confirmProfile(t, &p, &out)
 		}
 		if p.Before != nil {
 			i, e := t.Item(p.Before.ID)
@@ -169,6 +189,9 @@ func (c *Service) Undo(id string) (out domain.Entry, err error) {
 		if a.Undone {
 			return domain.ErrConflict
 		}
+		if a.AfterProfile != nil {
+			return undoProfile(t, &a, &out)
+		}
 		current, e := t.Item(a.After.ID)
 		if e != nil || current.Version != a.After.Version {
 			return domain.ErrConflict
@@ -221,6 +244,22 @@ func (c *Service) Refresh(id string) (domain.Entry, error) {
 	})
 	if err != nil {
 		return domain.Entry{}, err
+	}
+	if p.BeforeProfile != nil {
+		profiles, e := c.Store.Profiles()
+		if e != nil {
+			return domain.Entry{}, e
+		}
+		found := false
+		for _, v := range profiles {
+			if v.ID == p.BeforeProfile.ID {
+				p.Proposal.ExpectedVersion = v.Version
+				found = true
+			}
+		}
+		if !found {
+			return domain.Entry{}, domain.ErrNotFound
+		}
 	}
 	if p.Before != nil {
 		items, e := c.Store.Items()

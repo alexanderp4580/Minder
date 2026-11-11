@@ -10,11 +10,12 @@ Product requirements and design docs for Minder.
 - `foundation.md`: design rules for the chat screen: colour, type, space, components, states
 - `architecture.md`: Go service and Flutter app architecture, checks done, spikes
 - `m0-spec.md`: scope, interfaces, task plan and acceptance criteria of milestone M0
+- `m1-spec.md`: scope, behaviour, interfaces and acceptance of the lists, profiles and recurrence slice
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
 - Later design specs, plans and evidence files per slice
 
 - `m0-execution.md`: approved execution order and checks
-- `evidence/`: M0 verification results, real model costs, hosted access checks, Firefox callback proof and app/consent branding checks
+- `evidence/`: M0 and M1 verification results, real model costs, hosted access checks, Firefox callback proof and app/consent branding checks
 
 # Local Contracts
 

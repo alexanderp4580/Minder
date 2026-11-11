@@ -41,7 +41,12 @@ func Open(path string) (*Store, error) {
 		db.Close()
 		return nil, e
 	}
-	return &Store{db: db}, nil
+	st := &Store{db: db}
+	if e = st.seedProfiles(); e != nil {
+		db.Close()
+		return nil, e
+	}
+	return st, nil
 }
 func (s *Store) Close() error { return s.db.Close() }
 func (s *Store) Write(fn func(*Tx) error) error {

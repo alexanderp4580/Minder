@@ -216,6 +216,43 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     c.dispose();
   });
+  testWidgets('profile preview shows its action and field labels', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repo = FakeRepository();
+    repo.saved.add(
+      entry(
+        'p',
+        1,
+        'preview',
+        change: {
+          'id': 'p',
+          'action': 'update_profile',
+          'item_title': 'Chore',
+          'fields': [
+            {'name': 'remind_before_minutes', 'old': '0', 'new': '30'},
+          ],
+          'state': 'pending',
+        },
+      ),
+    );
+    final c = ChatController(repo, pollInterval: const Duration(days: 1));
+    await c.start();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: Tokens.theme,
+        home: ChatScreen(controller: c),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('PREVIEW · CHANGE PROFILE'), findsOneWidget);
+    expect(find.text('Remind before (minutes):'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
   testWidgets('entry types match M0 golden', (tester) async {
     tester.view.physicalSize = const Size(412, 892);
     tester.view.devicePixelRatio = 1;

@@ -140,3 +140,65 @@ func TestModelReceivesConfirmedProposalBeforeNextQuestion(t *testing.T) {
 		t.Fatal("latest request was not last")
 	}
 }
+
+func newAssistant(t *testing.T, r Response) (*Service, *store.Store, *fakeModel) {
+	t.Helper()
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() { s.Close() })
+	f := &fakeModel{r: r}
+	return New(s, command.New(s), f, 5, 1), s, f
+}
+
+func TestProposalCarriesListProfileAndRecurrence(t *testing.T) {
+	a, _, _ := newAssistant(t, Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"Water plants","due_at":"2026-11-14T09:00:00Z","list":"Home","profile":"chore","recurrence":{"every":"weekly","interval":1}}`}}, CostUSD: 0.001})
+	entries, e := a.Reply(context.Background(), "Water the plants every week")
+	if e != nil || len(entries) != 1 {
+		t.Fatal(e)
+	}
+	got := map[string]string{}
+	for _, f := range entries[0].Change.Fields {
+		got[f.Name] = f.New
+	}
+	if got["list"] != "Home" || got["profile"] != "Chore" || got["recurrence"] != "every week" {
+		t.Fatalf("fields %v", got)
+	}
+}
+
+func TestProfileToolProposesProfileChange(t *testing.T) {
+	a, s, _ := newAssistant(t, Response{Calls: []Call{{Name: "propose_profile", Arguments: `{"profile_id":"chore","expected_version":1,"profile_nag_minutes":30}`}}, CostUSD: 0.001})
+	entries, e := a.Reply(context.Background(), "Nag me every 30 minutes about chores")
+	if e != nil || entries[0].Change.Action != "update_profile" {
+		t.Fatalf("%+v %v", entries, e)
+	}
+	ps, _ := s.Profiles()
+	for _, p := range ps {
+		if p.ID == "chore" && p.NagMinutes != 0 {
+			t.Fatal("assistant applied a profile change")
+		}
+	}
+}
+
+func TestListQuestionAnswersOnlyThatList(t *testing.T) {
+	a, s, f := newAssistant(t, Response{CostUSD: 0.001})
+	for _, i := range []domain.Item{
+		{ID: "1", Title: "Milk", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", List: "Groceries"},
+		{ID: "2", Title: "Taxes", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", List: "Admin"},
+		{ID: "3", Title: "Eggs", Status: "done", Version: 1, Timezone: "Europe/Amsterdam", List: "Groceries"},
+	} {
+		i := i
+		if e := s.Write(func(tx *store.Tx) error { return tx.PutItem(i) }); e != nil {
+			t.Fatal(e)
+		}
+	}
+	f.r = Response{Calls: []Call{{Name: "list_items", Arguments: `{"list":"groceries"}`}}, CostUSD: 0.001}
+	entries, e := a.Reply(context.Background(), "What is on Groceries?")
+	if e != nil || !strings.Contains(entries[0].Text, "Milk") || strings.Contains(entries[0].Text, "Taxes") || strings.Contains(entries[0].Text, "Eggs") {
+		t.Fatalf("%q %v", entries[0].Text, e)
+	}
+	if !strings.Contains(f.messages[0].Content, "Admin") || !strings.Contains(f.messages[0].Content, "daily-task") {
+		t.Fatal("context lacks lists or profiles")
+	}
+}

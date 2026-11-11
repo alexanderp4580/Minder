@@ -330,11 +330,7 @@ class _ChatScreenState extends State<ChatScreen> {
         const SizedBox(height: 7),
         if (ch != null && e.kind == 'preview') ...[
           Text(
-            'PREVIEW · ${ch['action'] == 'create_item'
-                ? 'CREATE ITEM'
-                : ch['action'] == 'complete_item'
-                ? 'COMPLETE ITEM'
-                : 'CHANGE ITEM'}',
+            'PREVIEW · ${_action(ch['action'] as String)}',
             style: const TextStyle(
               fontSize: 12,
               color: Tokens.muted,
@@ -515,7 +511,20 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  String _action(String name) => switch (name) {
+    'create_item' => 'CREATE ITEM',
+    'complete_item' => 'COMPLETE ITEM',
+    'create_profile' => 'ADD PROFILE',
+    'update_profile' => 'CHANGE PROFILE',
+    _ => 'CHANGE ITEM',
+  };
+
   String _field(String name) => switch (name) {
+    'list' => 'List',
+    'profile' => 'Profile',
+    'recurrence' => 'Repeats',
+    'name' => 'Name',
+    'remind_before_minutes' => 'Remind before (minutes)',
     'due_at' => 'Due',
     'remind_at' => 'Remind at',
     'nag_minutes' => 'Nag interval (minutes)',

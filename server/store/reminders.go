@@ -48,25 +48,52 @@ func (t *Tx) closeReminders(itemID, state string) error {
 	_, e = t.tx.Exec("DELETE FROM push_delivery WHERE occurrence_id IN (SELECT id FROM reminder_occurrence WHERE item_id=?)", itemID)
 	return e
 }
-func (t *Tx) syncReminder(old *domain.Item, i domain.Item) error {
-	if old != nil && old.RemindAt == i.RemindAt && old.NagMinutes == i.NagMinutes && (old.Status == "open" || old.Status == "in_progress") == (i.Status == "open" || i.Status == "in_progress") {
+type reminderSpec struct {
+	at     string
+	nag    int
+	active bool
+}
+
+func specOf(i domain.Item, p *domain.Profile) reminderSpec {
+	at, nag := domain.EffectiveReminder(i, p)
+	return reminderSpec{at, nag, at != "" && (i.Status == "open" || i.Status == "in_progress")}
+}
+
+// applyReminder replaces the schedule when the effective reminder changed. It cancels open occurrences first.
+func (t *Tx) applyReminder(itemID string, old, now reminderSpec) error {
+	if old == now {
 		return nil
 	}
-	if e := t.closeReminders(i.ID, "cancelled"); e != nil {
+	if e := t.closeReminders(itemID, "cancelled"); e != nil {
 		return e
 	}
-	if _, e := t.tx.Exec("DELETE FROM reminder_schedule WHERE item_id=?", i.ID); e != nil {
+	if _, e := t.tx.Exec("DELETE FROM reminder_schedule WHERE item_id=?", itemID); e != nil {
 		return e
 	}
-	if i.RemindAt == "" || (i.Status != "open" && i.Status != "in_progress") {
+	if !now.active {
 		return nil
 	}
-	at, e := time.Parse(time.RFC3339, i.RemindAt)
+	at, e := time.Parse(time.RFC3339, now.at)
 	if e != nil {
 		return e
 	}
-	_, e = t.tx.Exec("INSERT INTO reminder_schedule VALUES(?,?,?,?,?)", i.ID, ID(), at.Unix(), i.NagMinutes, "active")
+	_, e = t.tx.Exec("INSERT INTO reminder_schedule VALUES(?,?,?,?,?)", itemID, ID(), at.Unix(), now.nag, "active")
 	return e
+}
+func (t *Tx) syncReminder(old *domain.Item, i domain.Item) error {
+	var before reminderSpec
+	if old != nil {
+		p, e := t.profileOf(old.ProfileID)
+		if e != nil {
+			return e
+		}
+		before = specOf(*old, p)
+	}
+	p, e := t.profileOf(i.ProfileID)
+	if e != nil {
+		return e
+	}
+	return t.applyReminder(i.ID, before, specOf(i, p))
 }
 func (s *Store) RegisterDevice(id, token string) error {
 	if len(id) < 1 || len(id) > 128 || len(token) < 1 || len(token) > 4096 || strings.TrimSpace(token) != token {
