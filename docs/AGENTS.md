@@ -14,7 +14,7 @@ Product requirements and design docs for Minder.
 - Later design specs, plans and evidence files per slice
 
 - `m0-execution.md`: approved execution order and checks
-- `evidence/`: M0 verification results, real model costs, hosted access checks and Firefox callback proof
+- `evidence/`: M0 verification results, real model costs, hosted access checks, Firefox callback proof and app/consent branding checks
 
 # Local Contracts
 
