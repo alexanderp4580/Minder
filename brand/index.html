@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minder brand guide</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+:root{--void:#0a0a0a;--panel:#161616;--line:#3a3a3a;--edge:#6b6b6b;--text:#f2f2f2;--muted:#b5b5b5;--signal:#e0121a;--white:#ffffff;--alert:#ff4448;--col:108px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+a:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.top a:focus-visible{outline-offset:-2px}
+body{margin:0;background:var(--void);color:var(--text);font-family:'Chakra Petch',sans-serif;font-weight:500;font-size:16px;line-height:1.55}
+a{color:inherit}
+.mono{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
+.lab{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--alert);font-weight:600}
+h1,h2,h3{font-family:'Michroma',sans-serif;font-weight:400;text-transform:uppercase;margin:0}
+h2{font-size:clamp(22px,3.4vw,34px);letter-spacing:6px}
+h3{font-size:13px;letter-spacing:4px;margin:34px 0 12px}
+p{margin:0 0 14px;max-width:62ch;color:var(--text)}
+h2+p{margin-top:14px}
+code,.hex{font-family:'Chakra Petch',monospace;font-weight:600}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:10;background:var(--void);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px;padding:0 20px 0 0;height:48px}
+.top .brand .short{display:none}
+.top .brand{text-decoration:none;gap:8px;padding:0 6px;width:var(--col);height:100%;border-right:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:Michroma;font-size:10px;letter-spacing:2px;text-transform:uppercase}
+.top nav{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto}
+.top nav a{display:flex;align-items:center;gap:8px;padding:4px 10px;text-decoration:none;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.top nav a u{width:10px;height:10px;border:1.5px solid var(--signal);flex:none}
+.top nav a.done u{background:var(--signal)}
+.top nav a.now{color:var(--text)}
+.top nav a.now u{background:var(--text);border-color:var(--text)}
+.top .ver{font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+
+/* sections: edge column + body */
+.sec{display:grid;grid-template-columns:var(--col) minmax(0,1fr);border-bottom:1px solid var(--line)}
+.edge{border-right:1px solid var(--line)}
+.edge div{position:sticky;top:48px;display:flex;flex-direction:column;align-items:center;gap:14px;padding:56px 0 24px}
+.edge b{writing-mode:vertical-rl;transform:rotate(180deg);font-size:56px;line-height:1;font-weight:700;white-space:nowrap}
+.edge b i{font-style:normal;color:var(--signal)}
+.edge small{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--muted)}
+.body{padding:56px clamp(20px,5vw,64px) 72px;max-width:1100px}
+
+/* hero */
+.hero .body{padding-top:80px}
+.hero h1{font-size:clamp(28px,9vw,92px);letter-spacing:.14em;line-height:1}
+.focus{position:relative;padding:18px 22px;margin:34px 0 0;max-width:640px}
+.focus:before,.focus:after,.focus i:before,.focus i:after{content:"";position:absolute;width:16px;height:16px;border:2px solid var(--signal)}
+.focus:before{left:0;top:0;border-right:0;border-bottom:0}
+.focus:after{right:0;top:0;border-left:0;border-bottom:0}
+.focus i:before{left:0;bottom:0;border-right:0;border-top:0}
+.focus i:after{right:0;bottom:0;border-left:0;border-top:0}
+.focus i{position:absolute;inset:0}
+.focus .lab{margin-bottom:8px}
+.focus p{margin:0;font-size:18px;color:var(--text)}
+
+/* principles */
+.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0;border:1px solid var(--line);margin-top:28px}
+.three div{padding:20px;border-right:1px solid var(--line)}
+.three div:last-child{border-right:0}
+.three h3{margin:10px 0 8px}
+.three p{margin:0;font-size:14px}
+.refs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.refs span{border:1px solid var(--edge);padding:6px 12px;font-size:12px;letter-spacing:2px;text-transform:uppercase}
+
+/* colour */
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:20px}
+.sw div{padding:60px 14px 14px;border:1px solid var(--edge);position:relative}
+.sw b{display:block;font-size:14px;letter-spacing:2px;text-transform:uppercase}
+.sw span{font-size:12px}
+.sw em{position:absolute;right:12px;top:12px;font-style:normal;font-size:11px;letter-spacing:2px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{overflow-wrap:anywhere;border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top;color:var(--text)}
+th{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.ok{color:var(--text)}
+.tw{overflow-x:auto}
+
+/* type */
+.spec{border:1px solid var(--line);margin-top:20px}
+.spec>div{display:grid;grid-template-columns:150px 1fr;border-bottom:1px solid var(--line)}
+.spec>div:last-child{border-bottom:0}
+.spec .k{padding:16px;border-right:1px solid var(--line)}
+.spec .v{padding:16px}
+.spec .meta{font-size:12px;color:var(--muted);margin-top:6px;letter-spacing:1px}
+
+/* notification card */
+.c{width:340px;max-width:100%;min-width:0;background:var(--void);border:1px solid var(--line);display:grid;grid-template-columns:70px minmax(0,1fr);position:relative}
+.c .side{border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px 0}
+.c .side b{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:700;font-size:44px;line-height:1;white-space:nowrap}
+.c .side b i{font-style:normal;color:var(--signal)}
+.c .side small{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;letter-spacing:4px;color:var(--muted);text-transform:uppercase}
+.c .head{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.c .meta{font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between}
+.c .ttl{font-family:'Michroma';font-size:22px;letter-spacing:5px;text-transform:uppercase;margin-top:10px}
+.c .fx{margin:14px 16px 0;padding:12px 14px;position:relative}
+.c .fx:before,.c .fx:after,.c .fx i:before,.c .fx i:after{content:"";position:absolute;width:12px;height:12px;border:2px solid var(--signal)}
+.c .fx:before{left:0;top:0;border-right:0;border-bottom:0}
+.c .fx:after{right:0;top:0;border-left:0;border-bottom:0}
+.c .fx i:before{left:0;bottom:0;border-right:0;border-top:0}
+.c .fx i:after{right:0;bottom:0;border-left:0;border-top:0}
+.c .fx i{position:absolute;inset:0}
+.c .fx .lab{margin-bottom:6px}
+.c .fx .txt{font-size:15px;line-height:1.4;color:var(--text)}
+.sq{display:flex;gap:6px;margin:14px 16px 0}
+.sq u{width:14px;height:14px;border:1.5px solid var(--signal);flex:none}
+.sq u.on{background:var(--signal)}.sq u.now{background:var(--text);border-color:var(--text)}
+.acts{padding:16px}
+.btn-p{height:54px;background:var(--signal);color:var(--white);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;letter-spacing:4px;text-transform:uppercase;margin-bottom:8px;clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%)}
+.btn-2{display:flex;gap:8px}
+.btn-2 span{flex:1;height:48px;background:var(--panel);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;letter-spacing:3px;text-transform:uppercase}
+
+/* icons */
+.cb{width:24px;height:24px;background:currentColor;-webkit-mask:var(--u) center/contain no-repeat;mask:var(--u) center/contain no-repeat;display:block;flex:none}
+.icons{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0;border-top:1px solid var(--line);border-left:1px solid var(--line);margin-top:20px}
+.icons div{padding:18px 10px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.icons .cb{width:32px;height:32px;color:var(--text)}
+.icons span{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.btn-p .cb,.btn-2 .cb{width:20px;height:20px}
+.btn-p,.btn-2 span{gap:8px}
+
+/* anatomy */
+.anat{display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start;margin-top:24px}
+.pin.l{left:-34px;right:auto}
+.pin{position:absolute;width:22px;height:22px;background:var(--text);color:var(--void);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;right:-34px}
+.legend{flex:1;min-width:min(260px,100%);margin:0;padding:0;list-style:none;counter-reset:n}
+.legend li{counter-increment:n;display:grid;grid-template-columns:30px 1fr;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.legend li:before{content:counter(n);width:22px;height:22px;background:var(--text);color:var(--void);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.legend b{display:block;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--alert);font-weight:600}
+
+.pair{display:flex;gap:40px;flex-wrap:wrap;margin-top:24px;align-items:flex-start}
+.grow{flex:1;min-width:min(260px,100%)}
+.pair figure{margin:0;min-width:0;max-width:100%;width:340px}
+.pair figcaption{font-size:12px;letter-spacing:1px;color:var(--muted);margin-top:10px;max-width:340px}
+.dim{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;border:1px solid var(--line);margin-top:20px}
+.dim div{padding:14px 16px;border-right:1px solid var(--line)}
+.dim div:last-child{border-right:0}
+.dim b{display:block;font-size:24px;font-family:'Michroma';font-weight:400;letter-spacing:2px}
+.dim span{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
+.status{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--alert)}
+footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+
+@media(max-width:700px){
+ table,tbody,tr,th,td{display:block}
+ tr:first-child{display:none}
+ tr{border:1px solid var(--line);margin-bottom:8px}
+ td{border:0;border-bottom:1px solid var(--line)}
+ tr td:last-child{border-bottom:0}
+ .tw{overflow:visible}
+ .dim{grid-template-columns:1fr}
+ .dim div{border-right:0;border-bottom:1px solid var(--line)}
+ .dim div:last-child{border-bottom:0}
+ :root{--col:52px}
+ .edge b{font-size:34px}
+ .top .ver{display:none}
+ .spec>div{grid-template-columns:1fr}
+ .spec .k{border-right:0;border-bottom:1px solid var(--line);padding-bottom:10px}
+ .three div{border-right:0;border-bottom:1px solid var(--line)}
+ .three div:last-child{border-bottom:0}
+ .pin{display:none}
+ .legend li{grid-template-columns:1fr}
+ .legend li:before{display:none}
+ .anat>div:first-child{margin:0!important;width:100%}
+ .top .brand .full{display:none}
+ .top .brand .short{display:inline;font-size:14px}
+ .body{padding-top:36px}
+ td[data-l]:before{content:attr(data-l);display:block;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600}
+}
+@media(max-width:400px){
+ h2{font-size:20px;letter-spacing:4px}
+ .icons div{padding:16px 8px}
+ .c{grid-template-columns:52px minmax(0,1fr)}
+ .c .side b{font-size:34px}
+ .c .head{padding:12px 12px 10px}
+ .c .fx{margin:12px 12px 0}
+ .sq{margin:12px 12px 0}
+ .acts{padding:12px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+ <a class="brand" href="#intro" aria-label="Minder"><span class="full">Minder</span><span class="short">M</span></a>
+ <nav id="nav" aria-label="Sections">
+  <a href="#intro"><u></u>Intro</a>
+  <a href="#colour"><u></u>Colour</a>
+  <a href="#type"><u></u>Type</a>
+  <a href="#icons"><u></u>Icons</a>
+  <a href="#layout"><u></u>Layout</a>
+  <a href="#actions"><u></u>Actions</a>
+  <a href="#cards"><u></u>Cards</a>
+  <a href="#voice"><u></u>Voice</a>
+  <a href="#platforms"><u></u>Platforms</a>
+ </nav>
+ <div class="ver">v0.1 · 2026-11-11</div>
+</header>
+
+<main>
+<section class="sec hero" id="intro">
+ <div class="edge"><div><b>01<i>/</i>09</b><small>Intro</small></div></div>
+ <div class="body">
+  <div class="mono">Brand guide · draft for approval</div>
+  <h1>Minder</h1>
+  <div class="focus"><i></i>
+   <div class="lab">Purpose</div>
+   <p>Minder is a personal assistant for tasks, lists, reminders and schedules. The interface is black and red. Each element shows information or gives an action.</p>
+  </div>
+
+  <div class="three">
+   <div><span class="lab">A</span><h3>Information first</h3><p>Each element shows information or gives an action. The edge column shows a count or a time. The brackets show the next step.</p></div>
+   <div><span class="lab">B</span><h3>One accent</h3><p>Signal red shows state and action. All other parts are black, white or grey.</p></div>
+   <div><span class="lab">C</span><h3>Wide and angular</h3><p>The design uses corner brackets, a vertical edge column, wide letters and one cut corner on the main button.</p></div>
+  </div>
+
+  <h3>References</h3>
+  <div class="refs"><span>Arasaka product graphics</span><span>HUD-style posters</span><span>Death Stranding interface</span><span>Japanese typesetting (kumihan, JLReq)</span></div>
+ </div>
+</section>
+
+<section class="sec" id="colour">
+ <div class="edge"><div><b>02<i>/</i>09</b><small>Colour</small></div></div>
+ <div class="body">
+  <h2>Colour</h2>
+  <p>The palette has nine colours. Signal is the only accent.</p>
+  <div class="sw">
+   <div style="background:#0a0a0a"><em>BG</em><b>Void</b><span class="hex">#0A0A0A</span><br><span>Background</span></div>
+   <div style="background:#161616"><em>FILL</em><b>Panel</b><span class="hex">#161616</span><br><span>Secondary button fill</span></div>
+   <div style="background:#3a3a3a"><em>RULE</em><b>Line</b><span class="hex">#3A3A3A</span><br><span>Dividers</span></div>
+   <div style="background:#6b6b6b;color:#f2f2f2"><em>RULE</em><b>Edge</b><span class="hex">#6B6B6B</span><br><span>Control outlines</span></div>
+   <div style="background:#f2f2f2;color:#0a0a0a"><em>TEXT</em><b>Text</b><span class="hex">#F2F2F2</span><br><span>Primary text</span></div>
+   <div style="background:#b5b5b5;color:#0a0a0a"><em>TEXT</em><b>Muted</b><span class="hex">#B5B5B5</span><br><span>Secondary text</span></div>
+   <div style="background:#e0121a;color:#ffffff"><em>STATE</em><b>Signal</b><span class="hex">#E0121A</span><br><span>Fills, lines, done state</span></div>
+   <div style="background:#ffffff;color:#0a0a0a"><em>TEXT</em><b>White</b><span class="hex">#FFFFFF</span><br><span>Text on Signal fills</span></div>
+   <div style="background:#ff4448;color:#0a0a0a"><em>TEXT</em><b>Alert</b><span class="hex">#FF4448</span><br><span>Short red labels</span></div>
+  </div>
+
+  <h3>Contrast</h3>
+  <div class="tw"><table>
+   <tr><th>Pair</th><th>Ratio</th><th>Use</th></tr>
+   <tr><td>Text on Void</td><td class="ok">17.7 : 1</td><td>Body text</td></tr>
+   <tr><td>Muted on Void</td><td class="ok">9.7 : 1</td><td>Meta text</td></tr>
+   <tr><td>Alert on Void</td><td class="ok">5.8 : 1</td><td>Labels, 11 px and up</td></tr>
+   <tr><td>White on Signal</td><td class="ok">4.9 : 1</td><td>Text on Signal fills</td></tr>
+   <tr><td>Edge on Void</td><td class="ok">3.7 : 1</td><td>Control outlines</td></tr>
+   <tr><td>Signal on Void</td><td class="ok">4.0 : 1</td><td>Fills and lines</td></tr>
+   <tr><td>Line on Void</td><td class="ok">1.7 : 1</td><td>Dividers, always beside other marks</td></tr>
+  </table></div>
+  <p style="margin-top:12px;font-size:13px;color:var(--muted)">The ratios use the WCAG relative-luminance formula.</p>
+ </div>
+</section>
+
+<section class="sec" id="type">
+ <div class="edge"><div><b>03<i>/</i>09</b><small>Type</small></div></div>
+ <div class="body">
+  <h2>Type</h2>
+  <p>Use Michroma for titles. Use Chakra Petch for all other text.</p>
+  <div class="spec">
+   <div><div class="k"><span class="lab">Title</span></div><div class="v"><div style="font-family:Michroma;font-size:clamp(26px,8vw,34px);letter-spacing:5px">TODAY</div><div class="meta">Michroma · uppercase · 22 px · 5 px spacing (18 px on event cards)</div></div></div>
+   <div><div class="k"><span class="lab">Edge numerals</span></div><div class="v"><div style="font-weight:700;font-size:48px;line-height:1">3<span style="color:var(--signal)">/</span>7</div><div class="meta">Chakra Petch 700 · 44 px · rotated 90° · slash in Signal</div></div></div>
+   <div><div class="k"><span class="lab">Label</span></div><div class="v"><div class="lab" style="color:var(--alert)">Next step · 2 min</div><div class="meta">Chakra Petch 600 · uppercase · 11 px · 3 px spacing · Alert</div></div></div>
+   <div><div class="k"><span class="lab">Body</span></div><div class="v"><div style="font-size:18px">Open the tax portal and log in.</div><div class="meta">Chakra Petch 500 · 15 px · Text</div></div></div>
+   <div><div class="k"><span class="lab">Button</span></div><div class="v"><div style="font-weight:700;letter-spacing:4px;font-size:18px">DONE · SNOOZE · OPEN</div><div class="meta">Chakra Petch 700 · uppercase · 14 to 16 px · 3 to 4 px spacing</div></div></div>
+  </div>
+  <h3>Licence</h3>
+  <p>The Google Fonts repository lists Michroma and Chakra Petch under the OFL (METADATA checked 2026-11-11). Self-hosting and use in the Android app: to check.</p>
+ </div>
+</section>
+
+<section class="sec" id="icons">
+ <div class="edge"><div><b>04<i>/</i>09</b><small>Icons</small></div></div>
+ <div class="body">
+  <h2>Icons</h2>
+  <p>Use IBM Carbon icons. The set is square and technical. All icons have one stroke weight (to check).</p>
+  <div class="icons"><div><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/checkmark.svg)"></i><span>Done</span></div><div><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/alarm.svg)"></i><span>Snooze</span></div><div><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/arrow--up-right.svg)"></i><span>Open</span></div><div><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/calendar.svg)"></i><span>Calendar</span></div><div><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/list--checked.svg)"></i><span>List</span></div><div><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/notification.svg)"></i><span>Notification</span></div><div><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/search.svg)"></i><span>Search</span></div><div><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/microphone.svg)"></i><span>Voice</span></div></div>
+  <h3>Rules</h3>
+  <ul class="rules">
+   <li>Use 32 px in tiles and 24 px in lists. Use 20 px inside buttons.</li>
+   <li>Show an icon next to a text label. Use the Text colour or the button text colour.</li>
+   <li>The logo is the word Minder. It has no icon.</li>
+  </ul>
+  <h3>Source</h3>
+  <div class="tw"><table>
+   <tr><th>Item</th><th>Value</th></tr>
+   <tr><td>Pack</td><td>@carbon/icons 11.92.0</td></tr>
+   <tr><td>Licence</td><td>Apache-2.0 (GitHub licence API and npm)</td></tr>
+   <tr><td>CDN</td><td>cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/</td></tr>
+   <tr><td>Android notifications</td><td>The status-bar icon needs a single-colour shape. Check the Android rules before use (to check).</td></tr>
+  </table></div>
+ </div>
+</section>
+
+<section class="sec" id="layout">
+ <div class="edge"><div><b>05<i>/</i>09</b><small>Layout</small></div></div>
+ <div class="body">
+  <h2>Layout</h2>
+  <p>A notification has an edge column, a header, a title, a focus frame, a row of squares and the actions.</p>
+  <div class="anat">
+   <div style="position:relative;margin:0 34px">
+    <div class="c">
+     <div class="side"><b>3<i>/</i>7</b><small>Done</small></div>
+     <div>
+      <div class="head"><div class="meta"><span>Minder</span><span>07:30</span></div><div class="ttl">Today</div></div>
+      <div class="fx"><i></i><div class="lab">Next step · 2 min</div><div class="txt">Open the tax portal and log in.</div></div>
+      <div class="sq"><u class="on"></u><u class="on"></u><u class="on"></u><u class="now"></u><u></u><u></u><u></u></div>
+      <div class="acts"><div class="btn-p">Done</div><div class="btn-2"><span>Snooze</span><span>Open</span></div></div>
+     </div>
+    </div>
+    <div class="pin l" aria-hidden="true" data-t=".side">1</div>
+    <div class="pin" aria-hidden="true" data-t=".head .meta">2</div>
+    <div class="pin" aria-hidden="true" data-t=".ttl">3</div>
+    <div class="pin" aria-hidden="true" data-t=".fx">4</div>
+    <div class="pin" aria-hidden="true" data-t=".sq">5</div>
+    <div class="pin" aria-hidden="true" data-t=".acts">6</div>
+   </div>
+   <ol class="legend">
+    <li><div><b>Edge column</b>Shows the main number and its label in vertical text. The daily card shows the done items and the total. The event card shows the event time.</div></li>
+    <li><div><b>Header</b>Shows the app name on the left and the time on the right.</div></li>
+    <li><div><b>Title</b>Shows the state in one word, or the item title.</div></li>
+    <li><div><b>Focus frame</b>Red corner brackets show the next step. A label gives the time it takes. One sentence gives the step.</div></li>
+    <li><div><b>Squares</b>Each item has one square. A red square is done. A white square is the current item. An outline square is not done.</div></li>
+    <li><div><b>Actions</b>Shows the buttons Done, Snooze and Open.</div></li>
+   </ol>
+  </div>
+  <h3>Rules</h3>
+  <p>Use the Line colour for dividers. Card corners are square. The cut corner on the main button is the only angled shape.</p>
+ </div>
+</section>
+
+<section class="sec" id="actions">
+ <div class="edge"><div><b>06<i>/</i>09</b><small>Actions</small></div></div>
+ <div class="body">
+  <h2>Actions</h2>
+  <p>Done is the main action. Snooze and Open are below it.</p>
+  <div class="pair">
+   <figure style="width:308px"><div><div class="btn-p"><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/checkmark.svg)"></i>Done</div><div class="btn-2"><span><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/alarm.svg)"></i>Snooze</span><span><i class="cb" aria-hidden="true" style="--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/arrow--up-right.svg)"></i>Open</span></div></div><figcaption>Order: Done, Snooze, Open.</figcaption></figure>
+   <div class="grow">
+    <div class="dim" style="margin-top:0">
+     <div><b>54</b><span>px Done height</span></div>
+     <div><b>48</b><span>px secondary height</span></div>
+     <div><b>12</b><span>px cut corner</span></div>
+    </div>
+    <h3>Spec</h3>
+    <div class="tw"><table>
+     <tr><th>Button</th><th>Fill</th><th>Outline</th><th>Text</th></tr>
+     <tr><td>Done</td><td>Signal</td><td>none</td><td>White, 16 px</td></tr>
+     <tr><td>Snooze, Open</td><td>Panel</td><td>Edge, 1 px</td><td>Text, 14 px</td></tr>
+    </table></div>
+    <p style="margin-top:14px">Snooze options follow section 6.2 of the requirements: 15 min, 1 h, tonight, tomorrow and custom. Material guidance gives 48 dp as the minimum touch target (to check).</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="sec" id="cards">
+ <div class="edge"><div><b>07<i>/</i>09</b><small>Cards</small></div></div>
+ <div class="body">
+  <h2>Cards</h2>
+  <p>Two cards use the same layout.</p>
+  <div class="pair">
+   <figure>
+    <div class="c"><div class="side"><b>3<i>/</i>7</b><small>Done</small></div><div>
+     <div class="head"><div class="meta"><span>Minder</span><span>07:30</span></div><div class="ttl">Today</div></div>
+     <div class="fx"><i></i><div class="lab">Next step · 2 min</div><div class="txt">Open the tax portal and log in.</div></div>
+     <div class="sq"><u class="on"></u><u class="on"></u><u class="on"></u><u class="now"></u><u></u><u></u><u></u></div>
+     <div class="acts"><div class="btn-p">Done</div><div class="btn-2"><span>Snooze</span><span>Open</span></div></div></div></div>
+    <figcaption>Daily progress card. The edge column shows the number of items done.</figcaption>
+   </figure>
+   <figure>
+    <div class="c"><div class="side"><b>10<i>:</i>00</b><small>Today</small></div><div>
+     <div class="head"><div class="meta"><span>Minder · Reminder</span><span>08:15</span></div><div class="ttl" style="font-size:18px">Dentist</div></div>
+     <div class="fx"><i></i><div class="lab">Leave by 09:30</div><div class="txt">Dentist at 10:00.</div></div>
+     <div class="acts"><div class="btn-p">Done</div><div class="btn-2"><span>Snooze</span><span>Open</span></div></div></div></div>
+    <figcaption>Event reminder. The edge column shows the event time. A single reminder has no squares.</figcaption>
+   </figure>
+  </div>
+ </div>
+</section>
+
+<section class="sec" id="voice">
+ <div class="edge"><div><b>08<i>/</i>09</b><small>Voice</small></div></div>
+ <div class="body">
+  <h2>Voice</h2>
+  <p>Write short, direct sentences in English.</p>
+  <div class="tw"><table>
+   <tr><th>Field</th><th>Rule</th><th>Example</th></tr>
+   <tr><td>Title</td><td>Use one or two words. State the situation.</td><td>Today</td></tr>
+   <tr><td>Label</td><td>Use uppercase. Name the kind of information.</td><td>NEXT STEP · 2 MIN</td></tr>
+   <tr><td>Body</td><td>Write one sentence in sentence case. Give the next step and the time it takes.</td><td>Open the tax portal and log in.</td></tr>
+   <tr><td>Buttons</td><td>Use one word.</td><td>Done</td></tr>
+  </table></div>
+  <h3>Writing style</h3>
+  <p>Write at about 80% of ASD-STE100. This applies to all text the user reads: notifications, Telegram messages, digests, error messages and the interface. Use sentences of 20 words or fewer. Use the active voice and simple tenses. Use one word for one meaning. Give instructions as commands. The exact rules: to check against the official ASD-STE100 specification.</p>
+ </div>
+</section>
+
+<section class="sec" id="platforms">
+ <div class="edge"><div><b>09<i>/</i>09</b><small>Platforms</small></div></div>
+ <div class="body">
+  <h2>Platforms</h2>
+  <p>Minder appears in Telegram, on the web and in Android notifications.</p>
+  <div class="tw"><table>
+   <tr><th>Surface</th><th>Application</th><th>Status</th></tr>
+   <tr><td>Android notification</td><td>A custom layout shows the edge column, brackets and buttons. Community sources say that notification text cannot use a custom font. The title and edge numerals must then be images.</td><td class="status">To check against Android documentation</td></tr>
+   <tr><td>Telegram</td><td>Telegram shows message text and inline buttons in its own fonts and colours. Use the voice rules and the button order Done, Snooze, Open.</td><td class="status">To check which formatting bots can use</td></tr>
+   <tr><td>Web client</td><td>The full guide applies.</td><td class="status">Design pending</td></tr>
+   <tr><td>Nag, escalation, quiet hours, digests, painful-task steps</td><td>Use the same layout.</td><td class="status">Design pending</td></tr>
+  </table></div>
+ </div>
+</section>
+</main>
+
+<footer>Minder brand guide · v0.1 · draft for approval</footer>
+
+<script>
+(function(){
+ var secs=[].slice.call(document.querySelectorAll('.sec')),links=[].slice.call(document.querySelectorAll('#nav a'));
+ function upd(){
+  var y=window.scrollY+120,cur=0;
+  secs.forEach(function(s,i){if(s.offsetTop<=y)cur=i});
+  links.forEach(function(a,i){a.className=i<cur?'done':(i===cur?'now':'');if(i===cur)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current')});
+ }
+ window.addEventListener('scroll',upd,{passive:true});upd();
+ function pins(){
+  document.querySelectorAll('.pin').forEach(function(p){
+   var w=p.parentNode,t=w.querySelector(p.getAttribute('data-t'));
+   var r=t.getBoundingClientRect(),wr=w.getBoundingClientRect();
+   p.style.top=(r.top-wr.top+r.height/2-11)+'px';
+  });
+ }
+ window.addEventListener('load',pins);window.addEventListener('resize',pins);
+ if(document.fonts)document.fonts.ready.then(pins);
+ document.querySelectorAll('table').forEach(function(t){
+  var h=[].map.call(t.querySelectorAll('th'),function(x){return x.textContent});
+  t.querySelectorAll('tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){if(td.tagName==='TD'&&h[i])td.setAttribute('data-l',h[i])})});
+ });
+})();
+</script>
+</body>
+</html>
