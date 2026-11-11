@@ -11,6 +11,12 @@ import (
 
 // setAttributes applies the list, profile and recurrence parts of a proposal to an item.
 func setAttributes(t *store.Tx, p domain.Proposal, i *domain.Item) error {
+	if p.ClearLocation {
+		i.Location = ""
+	}
+	if p.Location != "" {
+		i.Location = p.Location
+	}
 	if p.ClearList {
 		i.List = ""
 	}

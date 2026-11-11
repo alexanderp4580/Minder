@@ -8,7 +8,8 @@ Status 2026-11-12. The owner asked for M1 to finish without questions. Reminders
 - Lists: an item can carry a list name.
 - Profiles: reminder defaults for a kind of item. Five built-ins and your own.
 - Recurrence: daily, weekly, monthly and yearly repeats, fixed or after completion.
-- The assistant sets all three and answers "what is on Groceries".
+- Location: an optional place on an item, up to 200 characters.
+- The assistant sets all four, answers "what is on Groceries", and asks a follow-up when a missing detail matters.
 
 **Out (later)**
 - Reset and clone of lists, subtasks, labels, priority, projects, profile statuses, loudness.
@@ -24,10 +25,17 @@ Status 2026-11-12. The owner asked for M1 to finish without questions. Reminders
 - Completing a repeating item keeps it open and moves its due time. A reminder set on the item keeps its distance to the due time. Undo restores the old times.
 - Every change still shows a preview. Profile changes use the same preview, Confirm, conflict and Undo rules as items.
 
+## Follow-up questions
+
+- The assistant asks one question when a missing detail clearly matters. An appointment or event without a place gets "Where is it?".
+- It asks one question at a time and once for each request. It does not ask about a detail you declined or skipped.
+- Your answer leads to a normal preview. The question changes nothing.
+- Date-only tasks, such as "Buy milk tomorrow", get no question.
+
 ## Interfaces
 
-Item fields: `list`, `profile` (profile id), `recurrence` (`every`, `interval`, `after_completion`).
-Proposal fields: `list`, `clear_list`, `profile`, `clear_profile`, `recurrence`, `clear_recurrence`, and for profiles `profile_id`, `profile_name`, `profile_remind_before_minutes`, `profile_nag_minutes` with `expected_version`.
+Item fields: `location`, `list`, `profile` (profile id), `recurrence` (`every`, `interval`, `after_completion`).
+Proposal fields: `location`, `clear_location`, `list`, `clear_list`, `profile`, `clear_profile`, `recurrence`, `clear_recurrence`, and for profiles `profile_id`, `profile_name`, `profile_remind_before_minutes`, `profile_nag_minutes` with `expected_version`.
 Actions: `create_profile` and `update_profile` join the item actions.
 Model tools: the three item tools take the new fields. `propose_profile` adds or changes a profile. `list_items` takes an optional `list`.
 The model context holds the list names and all profiles.

@@ -116,6 +116,8 @@ func tools() []any {
 	props["clear_reminder"], props["clear_nag"] = flag, flag
 	props["list"] = map[string]string{"type": "string", "description": "List name. Reuse an existing list name."}
 	props["clear_list"] = flag
+	props["location"] = map[string]string{"type": "string", "description": "Where the item happens, for example an address or a place name."}
+	props["clear_location"] = flag
 	props["profile"] = map[string]string{"type": "string", "description": "Profile id from the profile list."}
 	props["clear_profile"] = flag
 	props["recurrence"] = map[string]any{"type": "object", "description": "Repeat rule. The item needs a due time.", "properties": map[string]any{"every": map[string]any{"type": "string", "enum": []string{"daily", "weekly", "monthly", "yearly"}}, "interval": map[string]string{"type": "integer"}, "after_completion": flag}, "required": []string{"every", "interval"}, "additionalProperties": false}

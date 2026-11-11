@@ -31,7 +31,10 @@ Steps:
 - [x] Commit (`4f8515b`), push, APK 0.3.0 built (arm64, SHA-256 starts `94d444a3`).
 - [x] Deployed `e2ab375` to production without `force`: 28 seconds, `running:healthy`. A forced deploy takes about 5.5 minutes because it rebuilds every layer. Use `force` only when a build input outside the Dockerfile layers changes.
 - [x] APK 0.3.0 sent to Telegram. APK 0.3.1 hides the notification button and text once notifications are on.
-- [ ] Owner phone check of lists, profiles and recurrence.
+- [x] Location field and follow-up questions (tests pass, real-model run in `docs/evidence/m1.md`).
+- [ ] Deploy and APK for the location change.
+- [ ] Owner phone check of lists, profiles, recurrence and follow-up questions.
+- Open: "Buy milk tomorrow" gets no due time. The model writes the date into the notes.
 
 ## Checks
 

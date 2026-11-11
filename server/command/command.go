@@ -92,7 +92,7 @@ func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
 		if before != nil {
 			old = *before
 		}
-		for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}, {Name: "list", Old: old.List, New: after.List}, {Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, after.ProfileID)}, {Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(after.Recurrence)}} {
+		for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}, {Name: "location", Old: old.Location, New: after.Location}, {Name: "list", Old: old.List, New: after.List}, {Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, after.ProfileID)}, {Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(after.Recurrence)}} {
 			if f.Old != f.New {
 				fields = append(fields, f)
 			}

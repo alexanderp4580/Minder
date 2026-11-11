@@ -520,6 +520,7 @@ class _ChatScreenState extends State<ChatScreen> {
   };
 
   String _field(String name) => switch (name) {
+    'location' => 'Location',
     'list' => 'List',
     'profile' => 'Profile',
     'recurrence' => 'Repeats',

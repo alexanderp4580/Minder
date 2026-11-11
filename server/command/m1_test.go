@@ -162,3 +162,34 @@ func profile(ps []domain.Profile, id string) domain.Profile {
 	return domain.Profile{}
 }
 
+
+func TestLocationIsStoredShownAndLimited(t *testing.T) {
+	c, _ := setup(t)
+	i := create(t, c, domain.Proposal{Title: "Dentist", DueAt: "2026-11-13T09:00:00Z", Location: "  Dr Smit, Damrak 1 "})
+	if i.Location != "Dr Smit, Damrak 1" {
+		t.Fatalf("location %q", i.Location)
+	}
+	pv, e := c.Preview(domain.Proposal{Action: "update_item", ItemID: i.ID, ExpectedVersion: i.Version, Location: "Clinic Noord"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	found := false
+	for _, f := range pv.Change.Fields {
+		found = found || (f.Name == "location" && f.Old == "Dr Smit, Damrak 1" && f.New == "Clinic Noord")
+	}
+	if !found {
+		t.Fatalf("fields %+v", pv.Change.Fields)
+	}
+	c.Confirm(pv.Change.ID)
+	pv, _ = c.Preview(domain.Proposal{Action: "update_item", ItemID: i.ID, ExpectedVersion: i.Version + 1, ClearLocation: true})
+	c.Confirm(pv.Change.ID)
+	items, _ := c.Store.Items()
+	if items[0].Location != "" {
+		t.Fatal("location not cleared")
+	}
+	_, e = c.Preview(domain.Proposal{Action: "create_item", Title: "x", Location: string(make([]byte, 201))})
+	var invalid *domain.Invalid
+	if !errors.As(e, &invalid) || invalid.Field != "location" {
+		t.Fatalf("long location: %v", e)
+	}
+}

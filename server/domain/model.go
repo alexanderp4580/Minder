@@ -20,6 +20,7 @@ type Invalid struct {
 func (e *Invalid) Error() string { return e.Message }
 
 type Item struct {
+	Location    string      `json:"location,omitempty"`
 	List        string      `json:"list,omitempty"`
 	ProfileID   string      `json:"profile,omitempty"`
 	Recurrence  *Recurrence `json:"recurrence,omitempty"`
@@ -37,6 +38,8 @@ type Item struct {
 	CompletedAt string      `json:"completed_at,omitempty"`
 }
 type Proposal struct {
+	Location        string      `json:"location,omitempty"`
+	ClearLocation   bool        `json:"clear_location,omitempty"`
 	List                string      `json:"list,omitempty"`
 	ClearList           bool        `json:"clear_list,omitempty"`
 	Profile             string      `json:"profile,omitempty"`
@@ -139,6 +142,10 @@ func Validate(i *Item) error {
 	i.List = strings.TrimSpace(i.List)
 	if utf8.RuneCountInString(i.List) > 60 {
 		return &Invalid{"list", "Use a list name with at most 60 characters."}
+	}
+	i.Location = strings.TrimSpace(i.Location)
+	if utf8.RuneCountInString(i.Location) > 200 {
+		return &Invalid{"location", "Use a location with at most 200 characters."}
 	}
 	if e := validateRecurrence(i); e != nil {
 		return e

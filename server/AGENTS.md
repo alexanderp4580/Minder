@@ -22,3 +22,4 @@ Profiles live in the `profile` table (schema version 3). `store` seeds the five 
 A profile edit reschedules the reminders of items that use it in the same transaction.
 `command` owns profile previews with the same Confirm, conflict and Undo rules as items. Completing a repeating item moves its due time.
 The assistant proposes profile changes through `propose_profile`. Spec: `../docs/m1-spec.md`.
+Items carry an optional `location`. The system prompt tells the model to ask one follow-up when a missing detail matters, and not to ask again after a decline.

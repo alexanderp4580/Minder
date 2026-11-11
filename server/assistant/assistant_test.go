@@ -202,3 +202,17 @@ func TestListQuestionAnswersOnlyThatList(t *testing.T) {
 		t.Fatal("context lacks lists or profiles")
 	}
 }
+
+func TestPromptGuidesFollowUpQuestions(t *testing.T) {
+	a, _, f := newAssistant(t, Response{Text: "Where is the dentist?", CostUSD: 0.001})
+	entries, e := a.Reply(context.Background(), "Dentist on Friday at 9")
+	if e != nil || entries[0].Kind != "minder" || entries[0].Text != "Where is the dentist?" {
+		t.Fatalf("%+v %v", entries, e)
+	}
+	system := f.messages[0].Content
+	for _, want := range []string{"follow-up", "location", "once", "declined"} {
+		if !strings.Contains(system, want) {
+			t.Errorf("prompt lacks %q", want)
+		}
+	}
+}
