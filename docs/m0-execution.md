@@ -6,14 +6,14 @@ No sub-agents. Record unresolved guidance for later. Phone approval still gates 
 
 ## Tasks
 
-- [ ] 0. Pin existing Go 1.27.2 and Flutter 3.47.6 Podman images; generate Android/web skeletons.
-- [ ] 1. SQLite schema and domain validation; prove migrations repeat safely and rows survive reopen.
-- [ ] 2. Preview/confirm/discard/undo transactions; prove idempotency, optimistic conflicts, audit and one-use undo.
-- [ ] 3. Cloudflare JWT verifier and production guard; test signature, expiry, audience and owner rejection.
-- [ ] 4. Chat history and SSE; prove ordered cursors, updates, reconnect replay and heartbeat.
-- [ ] 5. OpenRouter tool client and assistant; fake boundary tests, clarify ambiguous requests, meter costs and block excess.
-- [ ] 6. Flutter tokens and chat widgets; widget and golden tests for user, reply, preview, result, error and waiting.
-- [ ] 7. Controller/API; prove send, confirm, discard, undo, retry and reconnect against controlled transport.
+- [x] 0. Pin existing Go 1.27.2 and Flutter 3.47.6 Podman images; generate Android/web skeletons.
+- [x] 1. SQLite schema and domain validation; prove migrations repeat safely and rows survive reopen.
+- [x] 2. Preview/confirm/discard/undo transactions; prove idempotency, optimistic conflicts, audit and one-use undo.
+- [x] 3. Cloudflare JWT verifier and production guard; test signature, expiry, audience and owner rejection.
+- [x] 4. Chat history and SSE; prove ordered cursors, updates, reconnect replay and heartbeat.
+- [x] 5. OpenRouter tool client and assistant; fake boundary tests, clarify ambiguous requests, meter costs and block excess.
+- [x] 6. Flutter tokens and chat widgets; widget and golden tests for user, reply, preview, result, error and waiting.
+- [x] 7. Controller/API; prove send, confirm, discard, undo, retry and reconnect against controlled transport.
 - [ ] 8. Android OAuth discovery, PKCE and refresh; web uses same-origin cookies. Test protocol boundaries.
 - [ ] 9. Local web/server end-to-end first, then production container and Coolify deployment where credentials permit.
 - [ ] 10. Build arm64 APK, deliver through configured Telegram chat, record evidence and outstanding external checks.

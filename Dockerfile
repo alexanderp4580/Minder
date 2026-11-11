@@ -16,7 +16,7 @@ COPY server/ ./
 RUN CGO_ENABLED=1 go build -trimpath -ldflags='-s -w' -o /minder ./cmd/minder
 
 FROM docker.io/library/debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/* && useradd -u 10001 -m minder && mkdir /data /srv && chown minder:minder /data /srv
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/* && useradd -u 10001 -m minder && mkdir -p /data /srv && chown minder:minder /data /srv
 COPY --from=server /minder /usr/local/bin/minder
 COPY --from=flutter /build/app/build/web /srv/web
 ENV ENV=production AUTH_MODE=cloudflare DATABASE_PATH=/data/minder.db WEB_DIR=/srv/web LISTEN_ADDR=0.0.0.0:8080

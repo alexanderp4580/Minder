@@ -8,3 +8,6 @@ Verify runners by building and testing both projects. Use `git diff --check` for
 `model_fixture.py` provides the test-only OpenRouter boundary on loopback port 8181.
 `local-check` uses a temporary database and random free port. `browser-check.cjs` drives compiled Flutter web.
 The Flutter cache holds NDK 28.2.13676358. Android builds use Java 17 and at most two Gradle workers.
+
+The debug signing key lives in the named cache at `/cache/android/debug.keystore`.
+Keep that cache for APK updates. Do not add the key to Git.
