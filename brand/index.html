@@ -67,6 +67,9 @@ code,.hex{font-family:'Chakra Petch',monospace;font-weight:600}
 .refs span{border:1px solid var(--edge);padding:6px 12px;font-size:12px;letter-spacing:2px;text-transform:uppercase}
 
 /* colour */
+.lchips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.lchip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--edge);padding:7px 12px;font-size:12px;letter-spacing:2px;text-transform:uppercase}
+.lchip i{width:10px;height:10px;display:block}
 .sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:20px}
 .sw div{padding:60px 14px 14px;border:1px solid var(--edge);position:relative}
 .sw b{display:block;font-size:14px;letter-spacing:2px;text-transform:uppercase}
@@ -202,7 +205,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
 <section class="sec hero" id="intro">
  <div class="edge"><div><b>01<i>/</i>09</b><small>Intro</small></div></div>
  <div class="body">
-  <div class="mono">Brand guide · draft for approval</div>
+  <div class="mono">Brand guide · v0.1</div>
   <h1>Minder</h1>
   <div class="focus"><i></i>
    <div class="lab">Purpose</div>
@@ -210,8 +213,8 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
   </div>
 
   <div class="three">
-   <div><span class="lab">A</span><h3>Information first</h3><p>Each element shows information or gives an action. The edge column shows a count or a time. The brackets show the next step.</p></div>
-   <div><span class="lab">B</span><h3>One accent</h3><p>Signal red shows state and action. All other parts are black, white or grey.</p></div>
+   <div><span class="lab">A</span><h3>Information first</h3><p>The edge column shows a count or a time. The brackets mark the most urgent item. Every mark has a reason.</p></div>
+   <div><span class="lab">B</span><h3>Red means state</h3><p>Signal red shows state and action. Six label colours tag items. All other parts are black, white or grey.</p></div>
    <div><span class="lab">C</span><h3>Wide and angular</h3><p>The design uses corner brackets, a vertical edge column, wide letters and one cut corner on the main button.</p></div>
   </div>
 
@@ -224,7 +227,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
  <div class="edge"><div><b>02<i>/</i>09</b><small>Colour</small></div></div>
  <div class="body">
   <h2>Colour</h2>
-  <p>The palette has nine colours. Signal is the only accent.</p>
+  <p>The core palette has nine colours. Signal is the only state colour. Six label colours tag items.</p>
   <div class="sw">
    <div style="background:#0a0a0a"><em>BG</em><b>Void</b><span class="hex">#0A0A0A</span><br><span>Background</span></div>
    <div style="background:#161616"><em>FILL</em><b>Panel</b><span class="hex">#161616</span><br><span>Secondary button fill</span></div>
@@ -237,6 +240,20 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
    <div style="background:#ff4448;color:#0a0a0a"><em>TEXT</em><b>Alert</b><span class="hex">#FF4448</span><br><span>Short red labels</span></div>
   </div>
 
+  <h3>Label colours</h3>
+  <p>A label colour always appears with its label text. Use label colours only for labels. Signal red keeps its meaning of state and action.</p>
+  <div class="sw"><div style="background:#3b86f0;color:#0a0a0a"><em>LABEL</em><b>Blue</b><span class="hex">#3B86F0</span></div><div style="background:#34d1bf;color:#0a0a0a"><em>LABEL</em><b>Teal</b><span class="hex">#34D1BF</span></div><div style="background:#9be38a;color:#0a0a0a"><em>LABEL</em><b>Green</b><span class="hex">#9BE38A</span></div><div style="background:#e9a020;color:#0a0a0a"><em>LABEL</em><b>Amber</b><span class="hex">#E9A020</span></div><div style="background:#c3b0ff;color:#0a0a0a"><em>LABEL</em><b>Lilac</b><span class="hex">#C3B0FF</span></div><div style="background:#6f879f;color:#0a0a0a"><em>LABEL</em><b>Slate</b><span class="hex">#6F879F</span></div></div>
+  <div class="lchips"><span class="lchip"><i style="background:#3b86f0"></i>#blue</span><span class="lchip"><i style="background:#34d1bf"></i>#teal</span><span class="lchip"><i style="background:#9be38a"></i>#green</span><span class="lchip"><i style="background:#e9a020"></i>#amber</span><span class="lchip"><i style="background:#c3b0ff"></i>#lilac</span><span class="lchip"><i style="background:#6f879f"></i>#slate</span></div>
+  <div class="tw"><table>
+   <tr><th>Colour</th><th>On Void</th><th>On Panel</th></tr>
+   <tr><td>Blue</td><td class="ok">5.5 : 1</td><td class="ok">5.0 : 1</td></tr>
+   <tr><td>Teal</td><td class="ok">10.4 : 1</td><td class="ok">9.5 : 1</td></tr>
+   <tr><td>Green</td><td class="ok">13.0 : 1</td><td class="ok">11.9 : 1</td></tr>
+   <tr><td>Amber</td><td class="ok">9.0 : 1</td><td class="ok">8.2 : 1</td></tr>
+   <tr><td>Lilac</td><td class="ok">10.4 : 1</td><td class="ok">9.5 : 1</td></tr>
+   <tr><td>Slate</td><td class="ok">5.3 : 1</td><td class="ok">4.9 : 1</td></tr>
+  </table></div>
+  <p style="margin-top:12px;font-size:13px;color:var(--muted)">Smallest difference between any two label colours or Signal (CIEDE2000, Machado 2009 simulation): 10.6 for normal vision, 12.6 for deuteranopia, 13.9 for protanopia and 9.9 for tritanopia.</p>
   <h3>Contrast</h3>
   <div class="tw"><table>
    <tr><th>Pair</th><th>Ratio</th><th>Use</th></tr>
@@ -260,8 +277,8 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
   <div class="spec">
    <div><div class="k"><span class="lab">Title</span></div><div class="v"><div style="font-family:Michroma;font-size:clamp(26px,8vw,34px);letter-spacing:5px">TODAY</div><div class="meta">Michroma · uppercase · 22 px · 5 px spacing (18 px on event cards)</div></div></div>
    <div><div class="k"><span class="lab">Edge numerals</span></div><div class="v"><div style="font-weight:700;font-size:48px;line-height:1">3<span style="color:var(--signal)">/</span>7</div><div class="meta">Chakra Petch 700 · 44 px · rotated 90° · slash in Signal</div></div></div>
-   <div><div class="k"><span class="lab">Label</span></div><div class="v"><div class="lab" style="color:var(--alert)">Next step · 2 min</div><div class="meta">Chakra Petch 600 · uppercase · 11 px · 3 px spacing · Alert</div></div></div>
-   <div><div class="k"><span class="lab">Body</span></div><div class="v"><div style="font-size:18px">Open the tax portal and log in.</div><div class="meta">Chakra Petch 500 · 15 px · Text</div></div></div>
+   <div><div class="k"><span class="lab">Label</span></div><div class="v"><div class="lab" style="color:var(--alert)">Most urgent · overdue</div><div class="meta">Chakra Petch 600 · uppercase · 11 px · 3 px spacing · Alert</div></div></div>
+   <div><div class="k"><span class="lab">Body</span></div><div class="v"><div style="font-size:18px">Pay tax bill</div><div class="meta">Chakra Petch 500 · 15 px · Text</div></div></div>
    <div><div class="k"><span class="lab">Button</span></div><div class="v"><div style="font-weight:700;letter-spacing:4px;font-size:18px">DONE · SNOOZE · OPEN</div><div class="meta">Chakra Petch 700 · uppercase · 14 to 16 px · 3 to 4 px spacing</div></div></div>
   </div>
   <h3>Licence</h3>
@@ -287,7 +304,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
    <tr><td>Pack</td><td>@carbon/icons 11.92.0</td></tr>
    <tr><td>Licence</td><td>Apache-2.0 (GitHub licence API and npm)</td></tr>
    <tr><td>CDN</td><td>cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/</td></tr>
-   <tr><td>Android notifications</td><td>The status-bar icon needs a single-colour shape. Check the Android rules before use (to check).</td></tr>
+   <tr><td>Android notifications</td><td>Android status-bar icon rules: to check.</td></tr>
   </table></div>
  </div>
 </section>
@@ -303,7 +320,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
      <div class="side"><b>3<i>/</i>7</b><small>Done</small></div>
      <div>
       <div class="head"><div class="meta"><span>Minder</span><span>07:30</span></div><div class="ttl">Today</div></div>
-      <div class="fx"><i></i><div class="lab">Next step · 2 min</div><div class="txt">Open the tax portal and log in.</div></div>
+      <div class="fx"><i></i><div class="lab">Most urgent · overdue</div><div class="txt">Pay tax bill</div></div>
       <div class="sq"><u class="on"></u><u class="on"></u><u class="on"></u><u class="now"></u><u></u><u></u><u></u></div>
       <div class="acts"><div class="btn-p">Done</div><div class="btn-2"><span>Snooze</span><span>Open</span></div></div>
      </div>
@@ -319,7 +336,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
     <li><div><b>Edge column</b>Shows the main number and its label in vertical text. The daily card shows the done items and the total. The event card shows the event time.</div></li>
     <li><div><b>Header</b>Shows the app name on the left and the time on the right.</div></li>
     <li><div><b>Title</b>Shows the state in one word, or the item title.</div></li>
-    <li><div><b>Focus frame</b>Red corner brackets show the next step. A label gives the time it takes. One sentence gives the step.</div></li>
+    <li><div><b>Focus frame</b>Red corner brackets mark the most urgent item. A label gives its status. One line gives its title.</div></li>
     <li><div><b>Squares</b>Each item has one square. A red square is done. A white square is the current item. An outline square is not done.</div></li>
     <li><div><b>Actions</b>Shows the buttons Done, Snooze and Open.</div></li>
    </ol>
@@ -363,7 +380,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
    <figure>
     <div class="c"><div class="side"><b>3<i>/</i>7</b><small>Done</small></div><div>
      <div class="head"><div class="meta"><span>Minder</span><span>07:30</span></div><div class="ttl">Today</div></div>
-     <div class="fx"><i></i><div class="lab">Next step · 2 min</div><div class="txt">Open the tax portal and log in.</div></div>
+     <div class="fx"><i></i><div class="lab">Most urgent · overdue</div><div class="txt">Pay tax bill</div></div>
      <div class="sq"><u class="on"></u><u class="on"></u><u class="on"></u><u class="now"></u><u></u><u></u><u></u></div>
      <div class="acts"><div class="btn-p">Done</div><div class="btn-2"><span>Snooze</span><span>Open</span></div></div></div></div>
     <figcaption>Daily progress card. The edge column shows the number of items done.</figcaption>
@@ -387,12 +404,12 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
   <div class="tw"><table>
    <tr><th>Field</th><th>Rule</th><th>Example</th></tr>
    <tr><td>Title</td><td>Use one or two words. State the situation.</td><td>Today</td></tr>
-   <tr><td>Label</td><td>Use uppercase. Name the kind of information.</td><td>NEXT STEP · 2 MIN</td></tr>
-   <tr><td>Body</td><td>Write one sentence in sentence case. Give the next step and the time it takes.</td><td>Open the tax portal and log in.</td></tr>
+   <tr><td>Label</td><td>Use uppercase. Name the status or the kind of information.</td><td>MOST URGENT · OVERDUE</td></tr>
+   <tr><td>Body</td><td>Write one line in sentence case. Give the item title.</td><td>Pay tax bill</td></tr>
    <tr><td>Buttons</td><td>Use one word.</td><td>Done</td></tr>
   </table></div>
   <h3>Writing style</h3>
-  <p>Write at about 80% of ASD-STE100. This applies to all text the user reads: notifications, Telegram messages, digests, error messages and the interface. Use sentences of 20 words or fewer. Use the active voice and simple tenses. Use one word for one meaning. Give instructions as commands. The exact rules: to check against the official ASD-STE100 specification.</p>
+  <p>Write at about 80% of ASD-STE100. This applies to all text the user reads: notifications, assistant messages, digests, error messages and the interface. Use sentences of 20 words or fewer. Use the active voice and simple tenses. Use one word for one meaning. Give instructions as commands. The exact rules: to check against the official ASD-STE100 specification.</p>
  </div>
 </section>
 
@@ -400,13 +417,13 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
  <div class="edge"><div><b>09<i>/</i>09</b><small>Platforms</small></div></div>
  <div class="body">
   <h2>Platforms</h2>
-  <p>Minder appears in Telegram, on the web and in Android notifications.</p>
+  <p>Minder appears in the Android app, on the web and in Android notifications.</p>
   <div class="tw"><table>
    <tr><th>Surface</th><th>Application</th><th>Status</th></tr>
    <tr><td>Android notification</td><td>A custom layout shows the edge column, brackets and buttons. Community sources say that notification text cannot use a custom font. The title and edge numerals must then be images.</td><td class="status">To check against Android documentation</td></tr>
-   <tr><td>Telegram</td><td>Telegram shows message text and inline buttons in its own fonts and colours. Use the voice rules and the button order Done, Snooze, Open.</td><td class="status">To check which formatting bots can use</td></tr>
+   <tr><td>Android app</td><td>The full guide applies, built with Flutter.</td><td class="status">Design pending</td></tr>
    <tr><td>Web client</td><td>The full guide applies.</td><td class="status">Design pending</td></tr>
-   <tr><td>Nag, escalation, quiet hours, digests, painful-task steps</td><td>Use the same layout.</td><td class="status">Design pending</td></tr>
+   <tr><td>Nag, escalation, digests</td><td>Use the same layout.</td><td class="status">Design pending</td></tr>
   </table></div>
  </div>
 </section>
