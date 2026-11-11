@@ -10,3 +10,6 @@ Android browser callbacks use the authentication management activity from `flutt
 The exported callback uses an empty task affinity. The authentication manager uses `singleTask` to reuse the pending browser flow.
 A Firefox callback must return to Minder and deliver its result.
 OAuth client metadata includes the Minder site URL. Verify changes with `toolchain/android-callback-check.py` on a disposable emulator.
+
+The launcher badge comes from `brand/app-icon.svg`. `toolchain/render-icons.py` exports adaptive, themed and legacy icons.
+Web manifests and favicons use the same badge. OAuth client metadata includes both `client_uri` and `logo_uri`.

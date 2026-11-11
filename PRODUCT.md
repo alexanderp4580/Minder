@@ -39,7 +39,7 @@ The owner captures items by assistant chat (text, voice), email forwarding and m
 
 ## Brand Commitments
 
-The brand guide `brand/index.html` is binding: Void/Signal palette, Michroma titles, Chakra Petch text, edge column per section, focus frame, square progress row. The logo is the word Minder, with no icon. Colour values, sizes and contrast ratios live in that file. Items marked "to check" or "Design pending" there stay open.
+The brand guide `brand/index.html` is binding: Void/Signal palette, Michroma titles, Chakra Petch text, edge column per section, focus frame, square progress row. The primary logo is the word Minder. The app badge uses an M with Signal focus corners. Colour values, sizes and contrast ratios live in that file. Items marked "to check" or "Design pending" there stay open.
 
 ## Evidence on Hand
 

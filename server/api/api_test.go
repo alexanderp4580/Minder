@@ -7,6 +7,7 @@ import (
 	"github.com/alexanderp4580/Minder/server/command"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/store"
+	"image/png"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -125,5 +126,40 @@ func TestBudgetErrorIsReturnedBeforeAcceptingMessage(t *testing.T) {
 	entries, _ := s.History(0, 50)
 	if len(entries) != 0 {
 		t.Fatal("blocked request entered chat")
+	}
+}
+
+func TestPublicLogoDoesNotExposePrivateRoutes(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	h := New(s, command.New(s), replier{s}, &Verifier{}, "")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/brand/minder-icon.png", nil))
+	if w.Code != 200 || w.Header().Get("Content-Type") != "image/png" {
+		t.Fatalf("logo: %d %s", w.Code, w.Header().Get("Content-Type"))
+	}
+	icon, e := png.Decode(w.Body)
+	if e != nil || icon.Bounds().Dx() != 192 || icon.Bounds().Dy() != 192 {
+		t.Fatal("invalid public logo", e)
+	}
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("HEAD", "/brand/minder-icon.png", nil))
+	if w.Code != 200 || w.Body.Len() != 0 {
+		t.Fatal("HEAD logo returned a body or failed")
+	}
+	for _, path := range []string{"/", "/main.dart.js", "/v1/chat", "/v1/events", "/brand/minder-icon.png/extra", "/brand/minder-icon.png/../v1/chat"} {
+		w = httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
+		if w.Code != 401 {
+			t.Fatalf("private route %s returned %d", path, w.Code)
+		}
+	}
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("POST", "/brand/minder-icon.png", nil))
+	if w.Code != 401 {
+		t.Fatal("public logo accepted an unauthenticated write")
 	}
 }

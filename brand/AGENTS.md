@@ -4,7 +4,7 @@ Brand guide website for Minder: colour, type, icons, layout, actions, cards, com
 
 # Ownership
 
-This `brand/` folder owns `index.html`, a single static page with inline CSS and a small script. The script marks the current section in the navigation, places the layout pins and labels table cells on narrow screens.
+This `brand/` folder owns `index.html`, `app-icon.svg` and its PNG preview. The page uses inline CSS and a small script. The script marks the current section in the navigation, places the layout pins and labels table cells on narrow screens.
 
 # Local Contracts
 
@@ -13,7 +13,7 @@ This `brand/` folder owns `index.html`, a single static page with inline CSS and
 - Signal red has five uses: focus frame, overdue or urgent state, primary action, selected or active state, live recording. Everything else is neutral. No text is below 12 px. Every control has a 44 × 44 px hit area. `--edge` is for outlines only, never text.
 - The Components section mirrors the component rules of `docs/mockups/common.css`; change both in the same edit.
 - Items not yet verified carry "to check" or "Design pending".
-- Fonts load from Google Fonts. Icons load from jsDelivr (@carbon/icons, pinned version). The logo is the word Minder, with no icon.
+- Fonts load from Google Fonts. Icons load from jsDelivr (@carbon/icons, pinned version). The primary logo is the word Minder. App launchers and OAuth consent use the M badge in `app-icon.svg`.
 
 # Work Guidance
 
@@ -26,3 +26,6 @@ Serve locally with `python3 -I -m http.server 8899 --directory brand` and open `
 # Child DOX Index
 
 No child instruction files.
+
+`app-icon.svg` is the canonical app badge. `toolchain/render-icons.py` exports all Android, web and public grant-logo assets.
+The M uses Text colour. Its four focus corners use Signal. The background uses Void.

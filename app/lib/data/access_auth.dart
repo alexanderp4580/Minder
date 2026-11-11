@@ -77,6 +77,7 @@ class AccessAuth {
             body: jsonEncode({
               'client_name': 'Minder Android',
               'client_uri': base,
+              'logo_uri': '$base/brand/minder-icon.png',
               'redirect_uris': [redirect],
               'grant_types': ['authorization_code', 'refresh_token'],
               'response_types': ['code'],

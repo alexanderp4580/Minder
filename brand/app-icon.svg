@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <title>Minder app icon</title>
+  <rect width="108" height="108" fill="#0a0a0a"/>
+  <g id="minder-mark">
+    <path id="letter" fill="#f2f2f2" d="M36 72V36H43L54 52L65 36H72V72H64V51L54 65L44 51V72Z"/>
+    <path id="frame" fill="none" stroke="#e0121a" stroke-width="4" stroke-linecap="square" d="M30 42V30H42M66 30H78V42M78 66V78H66M42 78H30V66"/>
+  </g>
+</svg>

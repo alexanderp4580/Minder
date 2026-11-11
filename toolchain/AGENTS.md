@@ -21,3 +21,6 @@ The browser process receives no model key.
 It clears only the emulator installation of Minder and rejects physical device serials.
 `app/test/native_auth_probe.dart` is its emulator-only entrypoint. The loopback fixture redirects from Firefox to the app.
 The check asserts foreground ownership and callback delivery. It creates no account or authenticated session.
+
+`render-icons.py` exports launcher, web, favicon and public-logo assets from `brand/app-icon.svg`. It requires `rsvg-convert`.
+Do not edit generated icon files by hand. Rebuild exports after changing the SVG.

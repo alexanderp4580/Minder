@@ -80,3 +80,6 @@ Root owns: this file, `README.md`, `PRODUCT.md`, `.gitignore`, `Dockerfile`, `.d
 - `server/AGENTS.md`: Go service and tests
 - `app/AGENTS.md`: Flutter client and tests
 - `toolchain/AGENTS.md`: pinned runners and build helpers
+
+Minder uses a public branding PNG for OAuth consent. This exception does not expose chat or the web client.
+The primary wordmark and app badge follow `brand/AGENTS.md`.

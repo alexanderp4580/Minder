@@ -13,3 +13,6 @@ Reserve model costs before a request; settle them from provider usage. Unknown c
 
 Model context includes preview, result and error entries as structured assistant messages.
 The latest user message stays last. Confirmed changes must not become new proposals on the next request.
+
+`GET` and `HEAD /brand/minder-icon.png` serve only the embedded public branding PNG.
+The web client, scripts, chat and all mutation routes still require a valid owner assertion in production.

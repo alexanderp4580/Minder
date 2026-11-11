@@ -66,6 +66,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		write(w, 200, map[string]string{"status": "ok", "version": "m0"})
 		return
 	}
+	if r.URL.Path == logoPath && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		serveLogo(w, r)
+		return
+	}
 	if s.verifier != nil {
 		if e := s.verifier.Verify(r.Header.Get("Cf-Access-Jwt-Assertion")); e != nil {
 			write(w, 401, map[string]string{"code": "unauthorized", "message": "Sign in to continue."})
