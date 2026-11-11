@@ -11,12 +11,11 @@ you (text, voice, share) ─▶ assistant ─▶ preview ─▶ Confirm ─▶ i
                                                                    │
                       reminder engine ◀────────────────────────────┤
                             │                                      ▼
-                  push + nagging on the phone            views: list, today, calendar
+                  push + nagging on the phone            chat answers
 ```
 
 Rules:
 - The Flutter app is the main client. One codebase builds Android and web.
-- The assistant changes nothing before you confirm.
 - No reminder is lost. After a restart the engine catches up on missed reminders.
 - Running cost is at most €10 per month.
 - Model and speech keys stay on the server.
@@ -32,12 +31,13 @@ Decided (see requirements §17):
 | Data ownership | The server owns the data and validates every command. The app needs a connection to read or change data |
 | Push | Firebase Cloud Messaging |
 | Assistant | Confirm first for every request that creates or changes data |
+| Access | Public HTTPS behind Cloudflare Access with a browser sign-in. The server verifies the token |
+| Model | Claude Haiku 5.5 through OpenRouter |
+| Speech | A speech model through OpenRouter, English only |
+| Live updates | Server-sent events for the open app. Polling is the fallback |
+| Backup | Coolify backups of a snapshot directory |
 
-Open (see requirements §16):
-
-- How the web client and the app reach the server. Leaning towards Cloudflare; not decided. Minder does not write its own authentication.
-- How the app pairs with the server.
-- Which language model and which speech service.
+Open questions are in requirements §16.
 
 The command interface does not depend on the client. A Telegram bot, an outside agent or another client can use it later.
 
@@ -48,7 +48,7 @@ Requirement: an AI agent manages everything and the data keeps its structure (re
 - One command interface carries every change. It does not depend on the client, so outside agents can use it later. The app screens and the agent use the same commands, for example create item, update item, set status, change profile.
 - The server validates each command against the schema. It rejects invalid commands with an error that tells the agent what to fix.
 - Structure lives in data: allowed statuses, profile fields and enums. Free text goes only in text fields.
-- Each command first produces a preview of the change. Nothing is saved before you confirm.
+- Each command first produces a preview of the change.
 - An audit log records every change with its actor (you or the agent). Any change can be undone.
 - Queries return structured results, so the agent reads state without guessing.
 
@@ -65,22 +65,22 @@ The milestones follow the P0 list in the requirements. Sizes are not estimated y
 
 | Milestone | Delivers |
 |---|---|
-| M0 Foundation | Flutter app skeleton (Android and web), Go service skeleton, pinned container toolchain, local checks, a deployed hello-world on Coolify, APK delivery |
+| M0 Working chat | Go service and Flutter chat app end to end: text assistant with preview and Confirm, items, debug APK. Part B adds Cloudflare sign-in and the Coolify deploy. Spec: [m0-spec.md](m0-spec.md) |
 | M1 Items and reminder engine | Items, lists, profiles and recurrence in SQLite; scheduler with catch-up; nag state |
 | M2 Notifications | Firebase push, Android notification with Done, Snooze and Open, sticky nagging |
-| M3 Views | List, Today and Calendar views in the app |
-| M4 Assistant (text) | Chat, parsing, preview with Confirm, Edit and Discard, server-side model call |
-| M5 Backup and access | Daily backup with export, app pairing, server access |
+| M3 Chat summaries | Today, upcoming and list answers in chat. Other views only if you ask |
+| M4 Voice and Edit | Voice recording, the speech model on OpenRouter, and Edit in the preview card |
+| M5 Backup | Daily snapshot and export, Coolify backup, one tested restore |
 
-P1 follows: email forwarding, Kanban and Table views, digests, voice capture, day/week/month summaries and phone calendar sync.
+P1 follows: email forwarding, List, Today and Calendar views, Kanban and Table views, digests, voice capture, day/week/month summaries and phone calendar sync.
 
 ## Risks
 
 - **Reminder delivery on Android.** Battery limits and Doze can delay push messages. The server and Firebase push deliver reminders. Measure on a real phone from M2.
 - **Custom notification layout.** Community sources say notification text cannot use a custom font. The brand layout may need images. Check before M2.
-- **Cost.** Model and speech calls must fit €10 per month. Measure the cost per request in M4.
+- **Cost.** Model and speech calls must fit €10 per month. Measure the cost per request in M0.
 - **Web exposure.** The web client holds personal data. Decide the access method before the web build leaves the Steam Deck.
-- **Parsing quality for Dutch and English.** Not measured. Test with real examples in M4.
+- **Parsing and transcription quality.** Not measured. Test with real English examples in M0.
 
 ## Order
 

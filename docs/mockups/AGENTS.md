@@ -2,18 +2,19 @@
 
 ## Purpose
 
-- HTML phone mockups (412×892 portrait) of every Minder screen, with a rendered PNG next to each
+- HTML phone mockup (412×892 portrait) of the Minder chat screen, with a rendered PNG next to it
 
 ## Ownership
 
-- `<screen>.html` and `<screen>.png` pairs, one per screen (index in `../screens.md`, "Mockups")
+- `chat.html` and `chat.png`: the chat screen, the only current design (spec in `../screens.md`)
+- `today`, `today-states`, `board`, `calendar`, `lists`, `item`, `profiles`, `assistant`, `settings`: earlier drafts for screens that are not designed now. They follow no current spec and are not maintained
 - `common.css`: shared tokens and components for every mockup
 
 ## Local Contracts
 
-- Mockups follow `../screens.md`; no feature appears in a mockup that is not in the spec
-- Mockups use the brand tokens, fonts and Carbon icons of `../../brand/index.html`: square corners, one cut corner on the primary button, Signal only for state and action
-- Data is illustrative and marked so. Counts agree on every screen. Unknown details show as "?"
+- The mockup follows `../screens.md` and `../foundation.md`; no feature appears in it that is not in the spec
+- Mockups use the brand tokens, fonts and Carbon icons of `../../brand/index.html`: square corners, one cut corner on the primary button. Signal red appears only for the focus frame, overdue or urgent state, the primary action, the selected or active state and live recording. No text is below 12 px and every control has a 44 × 44 px hit area
+- Data is illustrative. Each mockup shows one `.demo` tag in its status bar. That tag is the only place the word "illustrative" appears in a mockup. Counts agree on every screen. Unknown details show as "?"
 - A file with two states shows two phones side by side (`lists`, `profiles`)
 - Every PNG is re-rendered after its HTML or `common.css` changes
 

@@ -69,4 +69,4 @@ Update the owning DOX contracts and indexes, reread whole changed documents, and
 - `docs/AGENTS.md`: requirements and design docs
 - `brand/AGENTS.md`: brand guide website
 
-Root owns: this file, `README.md`, `.gitignore`.
+Root owns: this file, `README.md`, `PRODUCT.md`, `.gitignore`.

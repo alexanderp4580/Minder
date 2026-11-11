@@ -1,6 +1,6 @@
 # Purpose
 
-Brand guide website for Minder: colour, type, layout, actions, cards, voice and platform notes.
+Brand guide website for Minder: colour, type, icons, layout, actions, cards, components, voice and platform notes.
 
 # Ownership
 
@@ -10,6 +10,8 @@ This `brand/` folder owns `index.html`, a single static page with inline CSS and
 
 - The page follows its own guide: Void/Signal palette, Michroma titles, Chakra Petch text, edge column per section, focus frame, square progress row.
 - Colour values, sizes and contrast ratios on the page are the brand source of truth; notification and client designs copy them from here.
+- Signal red has five uses: focus frame, overdue or urgent state, primary action, selected or active state, live recording. Everything else is neutral. No text is below 12 px. Every control has a 44 × 44 px hit area. `--edge` is for outlines only, never text.
+- The Components section mirrors the component rules of `docs/mockups/common.css`; change both in the same edit.
 - Items not yet verified carry "to check" or "Design pending".
 - Fonts load from Google Fonts. Icons load from jsDelivr (@carbon/icons, pinned version). The logo is the word Minder, with no icon.
 

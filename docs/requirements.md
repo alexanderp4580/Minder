@@ -1,4 +1,4 @@
-# Minder — Requirements Spec
+# Minder · Requirements Spec
 
 Version 0.1 · 2026-11-11 · Owner: Alexander
 
@@ -8,7 +8,7 @@ A single personal system for tasks, lists, reminders, calendar events and schedu
 
 ### 1.1 Interaction model
 
-- **Flutter app:** the main client. One codebase builds for Android and for the web. It holds the assistant chat (text and voice), the views of §4, the summaries and the notifications.
+- **Flutter app:** the main client. One codebase builds for Android and for the web. It is one chat screen for the assistant (text and voice), summaries and reminders. The views of §4 are not designed.
 - **Backend:** a Go service with a SQLite database, in one container on the Coolify server. It stores the data, runs the reminder schedule, calls the language model and the speech service, and sends push messages through Firebase Cloud Messaging.
 - **Telegram:** not part of v1. The assistant interface does not depend on the client, so a bot can be added later.
 
@@ -53,7 +53,9 @@ The most important requirement: an AI agent can manage everything in Minder (ite
 - Effort / dread rating (see §7)
 - Created, updated, completed timestamps
 
-## 4. Views (tabs)
+## 4. Views (not designed)
+
+The owner decided on 2026-11-11 that the app has one chat screen and needs no other screen now. The assistant shows lists and summaries as chat messages. This section keeps the view requirements for later.
 
 Each list or project can be opened in any view. The view choice is remembered per list.
 
@@ -86,7 +88,7 @@ Each list or project can be opened in any view. The view choice is remembered pe
 - Record a voice message. The server transcribes it and then parses it.
 - Photos and screenshots: extract text and parse.
 - The assistant replies with a parsed preview and the buttons **Confirm / Edit / Discard**.
-- This applies to every assistant request that creates or changes data, including edits and deletes of existing items (for example "move the dentist to Friday"). The assistant changes nothing before you confirm.
+- This applies to every assistant request that creates or changes data, including edits and deletes of existing items (for example "move the dentist to Friday").
 - The assistant also answers questions: today, upcoming, list contents and search.
 
 ### 5.3 Email forwarding
@@ -171,12 +173,12 @@ Each list or project can be opened in any view. The view choice is remembered pe
 - Built from the same Flutter code as the Android app.
 - All views from §4.
 - Also the debug target on the Steam Deck.
-- Exposure and sign-in: see §16.
+- Exposure and sign-in: see §17 (Cloudflare Access).
 
 ## 13. Data & privacy
 
 - Self-hosted. All data stays on own infrastructure where possible.
-- Single user. The server accepts requests only from the paired owner device. Pairing and sign-in: see §16.
+- Single user. The server accepts requests only from the owner, who signs in through Cloudflare Access (§17).
 - Daily automatic backup, with export of everything to an open format (JSON + .ics).
 - Import from common task apps (CSV at minimum).
 - Clearly state which external services (if any) see email content, and allow a fully local parsing option.
@@ -191,15 +193,15 @@ Each list or project can be opened in any view. The view choice is remembered pe
 | Availability | Personal use; tolerate brief downtime, but no reminder may be lost (catch up on restart) |
 | Platforms | Android and web, from one Flutter codebase |
 | Timezone | Europe/Amsterdam default; DST-correct; per-event timezone for travel |
-| Language | English UI; parsing understands English and Dutch input |
+| Language | English UI and English input |
 | Writing style | All text the user reads (assistant messages, notifications, digests, errors, interface) follows about 80% of ASD-STE100: short sentences, active voice, one meaning per word |
 
 ## 15. Priorities
 
 | Priority | Features |
 |---|---|
-| **P0 (MVP)** | Items, lists, List + Calendar + Today views, assistant chat with confirm (text), Android push with sticky nagging + Done/Snooze, recurring items, backup |
-| **P1** | Email forwarding + parsing, Kanban + Table views, digests, voice capture, day/week/month summaries, phone calendar sync |
+| **P0 (MVP)** | Items, lists, assistant chat with confirm (text), Android push with sticky nagging + Done/Snooze, recurring items, backup |
+| **P1** | Email forwarding + parsing, List, Today and Calendar views, Kanban + Table views, digests, voice capture, day/week/month summaries, phone calendar sync |
 | **P2** | Gantt view, saved filters, photo capture, rot detection, stats, import |
 
 ## 16. Open questions
@@ -212,22 +214,30 @@ Each list or project can be opened in any view. The view choice is remembered pe
 - Does a profile attach to an item, to a list, or to both?
 - Which profiles use statuses, and what are they?
 - Do items keep subtasks and checklists?
-- Catch-up sends all missed reminders (you said "probably all"). Should very old ones, for example more than a week late, be grouped into one message?
+- Catch-up sends all missed reminders. Should very old ones, for example more than a week late, be grouped into one message?
 - Which of share-sheet quick-add and a home-screen widget belong in v1?
-- Do the Done and Snooze buttons act at once? Proposal: yes, because only assistant requests need confirmation.
-- How does the web client reach you: tailnet only, or public behind an existing sign-in service? Minder does not write its own authentication.
-- How does the app pair with the server, and does it reach the server over public HTTPS or over the tailnet? Leaning towards Cloudflare; not decided.
-- Which language model and which speech service? Both must fit the €10 limit.
 
 ## 17. Architecture decisions
 
 | Area | Decision |
 |---|---|
-| Client | Flutter, one codebase for Android and web |
+| Client | Flutter, one codebase for Android and web. One chat screen; no other screen is designed |
 | Backend | Go, one process, SQLite, one container on Coolify |
 | Data ownership | The server owns the data and validates every command. The app needs a connection to read or change data |
 | Push | Firebase Cloud Messaging |
 | Keys | Model and speech keys stay on the server |
 | Assistant | Confirm first for every request that creates or changes data |
 | Agent management | The assistant manages everything through one command interface that validates every change. Outside agents can use it later |
+| Access | The app and the web client reach the server over public HTTPS behind Cloudflare Access. Minder writes no authentication; the server verifies the Cloudflare token |
+| Sign-in | Browser sign-in on web. Cloudflare managed OAuth on Android, with a service token as the fallback |
+| Nag | A reminder is a notification and a message in the chat. Acting on either one stops the nag |
+| Done, Snooze | Act at once, with an Undo button. Only assistant requests need Confirm |
+| Model | Claude Haiku 5.5 through OpenRouter (`anthropic/claude-haiku-5.5`), $0.10 per million input tokens and $0.50 per million output tokens (checked 2026-11-11) |
+| Cost limit | €5 per month for model and speech together. The service refuses assistant requests past it |
+| Web hosting | The Go service serves the Flutter web build from the same container |
+| Live updates | The open app listens to a server-sent event stream. Push through Firebase covers a closed app. Polling is the fallback if the M0 test fails |
+| Preview | A preview card never expires. Confirm fails with an error if the item changed after the preview |
+| Backup | Coolify backups of a backup directory. A daily job writes a SQLite snapshot and a JSON and .ics export into it. Backups stay on the same server |
+| Speech | A speech model through OpenRouter, English only. The endpoint exists; the model is chosen in M4 |
+| State management | Riverpod in the Flutter app |
 | Budget | At most €10 per month |

@@ -6,7 +6,10 @@ Product requirements and design docs for Minder.
 
 - `requirements.md`: product requirements, open questions and architecture decisions
 - `master-plan.md`: architecture, designs to write, milestones, risks and order of work
-- `screens.md`: app screens, navigation, objects, flows and open decisions
+- `screens.md`: the chat screen, objects and open decisions
+- `foundation.md`: design rules for the chat screen: colour, type, space, components, states
+- `architecture.md`: Go service and Flutter app architecture, checks done, spikes
+- `m0-spec.md`: scope, interfaces, task plan and acceptance criteria of milestone M0
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
 - Later design specs, plans and evidence files per slice
 
@@ -16,7 +19,7 @@ Product requirements and design docs for Minder.
 - `master-plan.md` and `requirements.md` must agree; a decision changed in one changes in the other in the same edit
 - Decisions the user made are written as decided; undecided items stay in the "Open questions" section of `requirements.md`
 - Facts about other projects, services and libraries are verified against their source before they are written
-- When a screen spec exists, its mockup and the mockup index change in the same edit
+- When a screen spec exists, its mockup changes in the same edit
 
 # Work Guidance
 
