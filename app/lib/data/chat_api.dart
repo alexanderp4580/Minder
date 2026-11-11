@@ -1,0 +1,142 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../domain/entry.dart';
+
+class ApiException implements Exception {
+  const ApiException(
+    this.message, {
+    this.unauthorized = false,
+    this.replacement,
+  });
+  final String message;
+  final bool unauthorized;
+  final Entry? replacement;
+  @override
+  String toString() => message;
+}
+
+abstract interface class ChatRepository {
+  Future<List<Entry>> history(int after);
+  Stream<Entry> watch(int after);
+  Future<Entry> send(String text);
+  Future<Entry> act(String route);
+  void close();
+}
+
+class ChatApi implements ChatRepository {
+  ChatApi(this.base, {http.Client? client, this.authorization})
+    : _client = client ?? http.Client();
+  final String base;
+  final http.Client _client;
+  final Future<Map<String, String>> Function()? authorization;
+  final _streamClients = <http.Client>{};
+  Uri _uri(String path) => Uri.parse('$base$path');
+  Future<Map<String, String>> _headers() async => {
+    'Content-Type': 'application/json',
+    ...?(await authorization?.call()),
+  };
+  Future<dynamic> _request(String method, String path, {Object? body}) async {
+    try {
+      final req = http.Request(method, _uri(path));
+      req.headers.addAll(await _headers());
+      if (body != null) req.body = jsonEncode(body);
+      final stream = await _client
+          .send(req)
+          .timeout(const Duration(seconds: 20));
+      final res = await http.Response.fromStream(stream)
+          .timeout(const Duration(seconds: 20));
+      dynamic data;
+      try {
+        data = jsonDecode(res.body);
+      } catch (_) {
+        if (res.statusCode == 401 || res.statusCode == 403) {
+          throw const ApiException('Sign in to continue.', unauthorized: true);
+        }
+        throw const ApiException('The server reply was unreadable. Try again.');
+      }
+      if (res.statusCode >= 400) {
+        final j = data as Map<String, dynamic>;
+        throw ApiException(
+          j['message'] as String? ?? 'Try again.',
+          unauthorized: res.statusCode == 401,
+          replacement: j['entry'] is Map<String, dynamic>
+              ? Entry.fromJson(j['entry'] as Map<String, dynamic>)
+              : null,
+        );
+      }
+      return data;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw const ApiException('Check your connection. Then try again.');
+    }
+  }
+
+  @override
+  Future<List<Entry>> history(int after) async =>
+      ((await _request('GET', '/v1/chat?after=$after&limit=200')) as List)
+          .map((j) => Entry.fromJson(j as Map<String, dynamic>))
+          .toList();
+  @override
+  Future<Entry> send(String text) async {
+    final j = await _request(
+      'POST',
+      '/v1/chat/messages',
+      body: {'text': text},
+    ) as Map<String, dynamic>;
+    return Entry.fromJson(j['entry'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Entry> act(String route) async =>
+      Entry.fromJson(await _request('POST', route) as Map<String, dynamic>);
+  @override
+  Stream<Entry> watch(int after) async* {
+    final client = http.Client();
+    _streamClients.add(client);
+    try {
+      final req = http.Request('GET', _uri('/v1/events?after=$after'));
+      req.headers.addAll(await _headers());
+      req.headers['Accept'] = 'text/event-stream';
+      final res = await client.send(req).timeout(const Duration(seconds: 20));
+      if (res.statusCode != 200) {
+        throw ApiException(
+          'Sign in to continue.',
+          unauthorized: res.statusCode == 401,
+        );
+      }
+      final data = <String>[];
+      await for (final line
+          in res.stream
+              .timeout(const Duration(seconds: 45))
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())) {
+        if (line.startsWith('data: ')) {
+          data.add(line.substring(6));
+        }
+        if (line.isEmpty && data.isNotEmpty) {
+          final j = jsonDecode(data.join('\n'));
+          data.clear();
+          if (j is Map<String, dynamic> && j['id'] != null) {
+            yield Entry.fromJson(j);
+          }
+        }
+      }
+    } finally {
+      _streamClients.remove(client);
+      client.close();
+    }
+  }
+
+  @override
+  void close() {
+    for (final client in _streamClients.toList()) {
+      client.close();
+    }
+    _streamClients.clear();
+    _client.close();
+  }
+}

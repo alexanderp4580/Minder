@@ -13,6 +13,9 @@ Product requirements and design docs for Minder.
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
 - Later design specs, plans and evidence files per slice
 
+- `m0-execution.md`: approved execution order and checks
+- `evidence/`: M0 verification results
+
 # Local Contracts
 
 - `requirements.md` is the single source of requirements; refinements edit it in place

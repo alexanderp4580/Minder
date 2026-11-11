@@ -1,0 +1,211 @@
+package store
+
+import (
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/alexanderp4580/Minder/server/domain"
+	_ "github.com/mattn/go-sqlite3"
+)
+
+type Store struct {
+	db *sql.DB
+	mu sync.Mutex
+}
+type Tx struct{ tx *sql.Tx }
+
+func ID() string {
+	var b [16]byte
+	if _, e := rand.Read(b[:]); e != nil {
+		panic(e)
+	}
+	return hex.EncodeToString(b[:])
+}
+func Open(path string) (*Store, error) {
+	db, e := sql.Open("sqlite3", path+"?_foreign_keys=on&_busy_timeout=5000&_journal_mode=WAL")
+	if e != nil {
+		return nil, e
+	}
+	db.SetMaxOpenConns(1)
+	_, e = db.Exec(`CREATE TABLE IF NOT EXISTS item(id TEXT PRIMARY KEY, body TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS pending_change(id TEXT PRIMARY KEY, body TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY, actor TEXT NOT NULL CHECK(actor IN ('owner','agent')), body TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS chat_entry(seq INTEGER PRIMARY KEY AUTOINCREMENT,id TEXT UNIQUE NOT NULL,body TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS event(cursor INTEGER PRIMARY KEY AUTOINCREMENT,entry_id TEXT NOT NULL,body TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS usage(id TEXT PRIMARY KEY,month TEXT NOT NULL,cost_eur REAL NOT NULL,body TEXT NOT NULL);
+ PRAGMA user_version=1;`)
+	if e != nil {
+		db.Close()
+		return nil, e
+	}
+	return &Store{db: db}, nil
+}
+func (s *Store) Close() error { return s.db.Close() }
+func (s *Store) Write(fn func(*Tx) error) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tx, e := s.db.Begin()
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback()
+	if e = fn(&Tx{tx}); e != nil {
+		return e
+	}
+	return tx.Commit()
+}
+func decode[T any](row *sql.Row) (T, error) {
+	var v T
+	var b string
+	e := row.Scan(&b)
+	if e == sql.ErrNoRows {
+		return v, domain.ErrNotFound
+	}
+	if e != nil {
+		return v, e
+	}
+	e = json.Unmarshal([]byte(b), &v)
+	return v, e
+}
+func body(v any) string {
+	b, e := json.Marshal(v)
+	if e != nil {
+		panic(e)
+	}
+	return string(b)
+}
+func (t *Tx) Item(id string) (domain.Item, error) {
+	return decode[domain.Item](t.tx.QueryRow("SELECT body FROM item WHERE id=?", id))
+}
+func (t *Tx) PutItem(i domain.Item) error {
+	_, e := t.tx.Exec("INSERT INTO item(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", i.ID, body(i))
+	return e
+}
+func (t *Tx) DeleteItem(id string) error {
+	_, e := t.tx.Exec("DELETE FROM item WHERE id=?", id)
+	return e
+}
+func (t *Tx) Pending(id string) (domain.Pending, error) {
+	return decode[domain.Pending](t.tx.QueryRow("SELECT body FROM pending_change WHERE id=?", id))
+}
+func (t *Tx) PutPending(p domain.Pending) error {
+	_, e := t.tx.Exec("INSERT INTO pending_change(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", p.ID, body(p))
+	return e
+}
+func (t *Tx) Audit(id string) (domain.Audit, error) {
+	return decode[domain.Audit](t.tx.QueryRow("SELECT body FROM audit WHERE id=?", id))
+}
+func (t *Tx) PutAudit(a domain.Audit) error {
+	_, e := t.tx.Exec("INSERT INTO audit(id,actor,body) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", a.ID, a.Actor, body(a))
+	return e
+}
+func (t *Tx) Entry(id string) (domain.Entry, error) {
+	return decode[domain.Entry](t.tx.QueryRow("SELECT body FROM chat_entry WHERE id=?", id))
+}
+func (t *Tx) PutEntry(e domain.Entry) (domain.Entry, error) {
+	if e.ID == "" {
+		e.ID = ID()
+	}
+	if e.CreatedAt == "" {
+		e.CreatedAt = domain.Now()
+	}
+	r, err := t.tx.Exec("INSERT INTO event(entry_id,body) VALUES(?,?)", e.ID, "{}")
+	if err != nil {
+		return e, err
+	}
+	e.Cursor, err = r.LastInsertId()
+	if err != nil {
+		return e, err
+	}
+	if _, err = t.tx.Exec("UPDATE event SET body=? WHERE cursor=?", body(e), e.Cursor); err != nil {
+		return e, err
+	}
+	_, err = t.tx.Exec("INSERT INTO chat_entry(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", e.ID, body(e))
+	return e, err
+}
+func (s *Store) AddEntry(e domain.Entry) (out domain.Entry, err error) {
+	err = s.Write(func(t *Tx) error { var e2 error; out, e2 = t.PutEntry(e); return e2 })
+	return
+}
+func (s *Store) Items() ([]domain.Item, error) {
+	rows, e := s.db.Query("SELECT body FROM item ORDER BY id")
+	if e != nil {
+		return nil, e
+	}
+	defer rows.Close()
+	out := []domain.Item{}
+	for rows.Next() {
+		var b string
+		var i domain.Item
+		if e = rows.Scan(&b); e != nil {
+			return nil, e
+		}
+		if e = json.Unmarshal([]byte(b), &i); e != nil {
+			return nil, e
+		}
+		out = append(out, i)
+	}
+	return out, rows.Err()
+}
+func (s *Store) History(after int64, limit int) ([]domain.Entry, error) {
+	if limit < 1 || limit > 200 {
+		limit = 50
+	}
+	query := "SELECT body FROM event WHERE cursor>? ORDER BY cursor LIMIT ?"
+	if after == 0 {
+		query = "SELECT body FROM (SELECT seq,body FROM chat_entry ORDER BY seq DESC LIMIT ?) ORDER BY seq"
+	}
+	var rows *sql.Rows
+	var err error
+	if after == 0 {
+		rows, err = s.db.Query(query, limit)
+	} else {
+		rows, err = s.db.Query(query, after, limit)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []domain.Entry{}
+	for rows.Next() {
+		var b string
+		var e domain.Entry
+		if err = rows.Scan(&b); err != nil {
+			return nil, err
+		}
+		if err = json.Unmarshal([]byte(b), &e); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+func (s *Store) Events(after int64, limit int) ([]domain.Entry, error) {
+	if after == 0 {
+		after = -1
+	}
+	return s.History(after, limit)
+}
+func (s *Store) AuditCount() (n int, e error) {
+	e = s.db.QueryRow("SELECT COUNT(*) FROM audit").Scan(&n)
+	return
+}
+func month() string { return time.Now().UTC().Format("2006-01") }
+func (s *Store) MonthCost() (n float64, e error) {
+	e = s.db.QueryRow("SELECT COALESCE(SUM(cost_eur),0) FROM usage WHERE month=?", month()).Scan(&n)
+	return
+}
+func (s *Store) RecordUsage(cost float64, v any) error {
+	if cost < 0 {
+		return fmt.Errorf("invalid cost")
+	}
+	return s.Write(func(t *Tx) error {
+		_, e := t.tx.Exec("INSERT INTO usage(id,month,cost_eur,body) VALUES(?,?,?,?)", ID(), month(), cost, body(v))
+		return e
+	})
+}

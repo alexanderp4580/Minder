@@ -63,6 +63,12 @@ Run fresh, relevant local checks on the final integrated tree before claiming su
 
 Update the owning DOX contracts and indexes, reread whole changed documents, and check their links and agreement. Use `stop-slop` and its references for targeted editing of documentation and UI copy: remove filler, vague claims, and formulaic prose; retain technical meaning, factual qualifiers, uncertainty, and exact values. Keep one canonical copy of each contract. Report changed files, verification evidence, and remaining gaps in a short handoff.
 
+## M0 execution authorization
+
+The owner approved M0 on 2026-11-11. Execute inline without sub-agents. Test local Flutter web first.
+Send the APK through the existing Telegram bot and chat. Record review questions for later.
+The approved execution plan is `docs/m0-execution.md`. Phone approval still gates merging.
+
 ## Child DOX Index
 
 - `.githooks/AGENTS.md`: commit-message hooks, setup and tests
@@ -70,3 +76,7 @@ Update the owning DOX contracts and indexes, reread whole changed documents, and
 - `brand/AGENTS.md`: brand guide website
 
 Root owns: this file, `README.md`, `PRODUCT.md`, `.gitignore`.
+
+- `server/AGENTS.md`: Go service and tests
+- `app/AGENTS.md`: Flutter client and tests
+- `toolchain/AGENTS.md`: pinned runners and build helpers
