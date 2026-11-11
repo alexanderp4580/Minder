@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../application/chat_controller.dart';
+import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
 import 'tokens.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, required this.controller, this.signIn});
+  const ChatScreen({
+    super.key,
+    required this.controller,
+    this.signIn,
+    this.enableNotifications,
+    this.notificationStatus,
+    this.notificationsBusy = false,
+  });
+  final Future<void> Function()? enableNotifications;
+  final String? notificationStatus;
+  final bool notificationsBusy;
   final ChatController controller;
   final Future<void> Function()? signIn;
   @override
@@ -129,6 +140,28 @@ class _ChatScreenState extends State<ChatScreen> {
                       ],
                     ),
                   ),
+                  if (widget.enableNotifications != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Tokens.gutter,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextButton(
+                            onPressed: widget.notificationsBusy
+                                ? null
+                                : widget.enableNotifications,
+                            child: const Text('Enable notifications'),
+                          ),
+                          if (widget.notificationStatus != null)
+                            Text(
+                              widget.notificationStatus!,
+                              style: const TextStyle(color: Tokens.muted),
+                            ),
+                        ],
+                      ),
+                    ),
                   Expanded(
                     child: SelectionArea(
                       child: ListView(
@@ -280,6 +313,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final c = widget.controller;
     final mine = e.kind == 'user';
     final ch = e.change;
+    final reminder = e.reminder;
     final pending = e.kind == 'preview' && ch?['state'] == 'pending';
     final time = TimeOfDay.fromDateTime(e.createdAt.toLocal()).format(context);
     final body = Column(
@@ -344,13 +378,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   FilledButton(
                     onPressed: c.acting
                         ? null
-                        : () => c.act('/v1/changes/${ch['id']}/confirm'),
+                        : () => c.confirm(ch['id'] as String),
                     child: const Text('Confirm'),
                   ),
                   TextButton(
                     onPressed: c.acting
                         ? null
-                        : () => c.act('/v1/changes/${ch['id']}/discard'),
+                        : () => c.discard(ch['id'] as String),
                     child: const Text('Discard'),
                   ),
                 ],
@@ -372,17 +406,96 @@ class _ChatScreenState extends State<ChatScreen> {
               color: e.kind == 'error' ? Tokens.alert : Tokens.text,
             ),
           ),
+        if (reminder != null && reminder['state'] == 'active')
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              spacing: 8,
+              children: [
+                FilledButton(
+                  onPressed: c.acting
+                      ? null
+                      : () => c.remind(
+                          reminder['id'] as String,
+                          ReminderAction.done,
+                        ),
+                  child: const Text('Done'),
+                ),
+                PopupMenuButton<ReminderAction>(
+                  enabled: !c.acting,
+                  onSelected: (action) =>
+                      c.remind(reminder['id'] as String, action),
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: ReminderAction.snooze15,
+                      child: Text('15 minutes'),
+                    ),
+                    const PopupMenuItem(
+                      value: ReminderAction.snooze60,
+                      child: Text('1 hour'),
+                    ),
+                    const PopupMenuItem(
+                      value: ReminderAction.tonight,
+                      child: Text('Tonight'),
+                    ),
+                    const PopupMenuItem(
+                      value: ReminderAction.tomorrow,
+                      child: Text('Tomorrow'),
+                    ),
+                  ],
+                  child: const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Text('Snooze'),
+                  ),
+                ),
+                TextButton(
+                  onPressed: c.acting
+                      ? null
+                      : () => c.remind(
+                          reminder['id'] as String,
+                          ReminderAction.acknowledge,
+                        ),
+                  child: const Text('Open'),
+                ),
+              ],
+            ),
+          ),
+        if (reminder != null && reminder['state'] != 'active')
+          Text(
+            reminder['state'] == 'superseded'
+                ? 'See the latest reminder.'
+                : reminder['state'] == 'cancelled'
+                ? 'Reminder cancelled.'
+                : 'Reminder handled.',
+            style: const TextStyle(color: Tokens.muted),
+          ),
         if (e.kind == 'result' && ch?['undo_id'] != null)
-          TextButton(
-            onPressed: c.acting
-                ? null
-                : () => c.act('/v1/undo/${ch!['undo_id']}'),
-            child: const Text('Undo'),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Tokens.text,
+                side: const BorderSide(color: Tokens.edge),
+                shape: const RoundedRectangleBorder(),
+              ),
+              onPressed: c.acting
+                  ? null
+                  : () => c.undo(ch!['undo_id'] as String),
+              child: const Text('Undo'),
+            ),
           ),
         if (e.kind == 'error')
-          TextButton(
-            onPressed: c.waiting ? null : () => c.retry(text: c.retryText(e)),
-            child: const Text('Retry'),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Tokens.text,
+                side: const BorderSide(color: Tokens.edge),
+                shape: const RoundedRectangleBorder(),
+              ),
+              onPressed: c.waiting ? null : () => c.retry(text: c.retryText(e)),
+              child: const Text('Retry'),
+            ),
           ),
       ],
     );
@@ -404,6 +517,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String _field(String name) => switch (name) {
     'due_at' => 'Due',
+    'remind_at' => 'Remind at',
+    'nag_minutes' => 'Nag interval (minutes)',
     'title' => 'Title',
     'notes' => 'Notes',
     'status' => 'Status',

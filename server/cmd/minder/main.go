@@ -5,6 +5,7 @@ import (
 	"github.com/alexanderp4580/Minder/server/api"
 	"github.com/alexanderp4580/Minder/server/assistant"
 	"github.com/alexanderp4580/Minder/server/command"
+	"github.com/alexanderp4580/Minder/server/reminder"
 	"github.com/alexanderp4580/Minder/server/store"
 	"log"
 	"net/http"
@@ -58,6 +59,22 @@ func main() {
 	srv := &http.Server{Addr: env("LISTEN_ADDR", "127.0.0.1:8080"), Handler: handler, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 1 << 16}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	worker := &reminder.Worker{Store: s}
+	if raw := os.Getenv("FIREBASE_SERVICE_ACCOUNT_JSON"); raw != "" {
+		sender, e := reminder.NewFCM(raw)
+		if e != nil {
+			log.Fatal("Firebase service account configuration is invalid")
+		}
+		worker.Sender = sender
+		config, e := api.ParsePushConfig(os.Getenv("FIREBASE_ANDROID_CONFIG"))
+		if e != nil || config == nil || config.ProjectID != sender.ProjectID {
+			log.Fatal("Firebase Android configuration is invalid")
+		}
+		handler.PushConfig = config
+	} else {
+		log.Print("Firebase push is not configured; reminders remain available in chat")
+	}
+	go worker.Run(ctx)
 	go func() {
 		<-ctx.Done()
 		timeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)

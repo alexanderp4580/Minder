@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/application/chat_controller.dart';
-import 'package:minder/data/chat_api.dart';
+import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
 import 'package:minder/ui/chat_screen.dart';
 import 'package:minder/ui/tokens.dart';
@@ -55,27 +55,27 @@ class FakeRepository implements ChatRepository {
   }
 
   @override
-  Future<Entry> act(String route) async {
-    if (route.endsWith('discard')) {
-      return entry(
-        'p',
-        4,
-        'preview',
-        text: 'Change discarded.',
-        change: preview(state: 'discarded'),
-      );
-    }
-    if (route.startsWith('/v1/undo')) {
-      return entry('undo', 5, 'result', text: 'Undone: Call plumber.');
-    }
-    return entry(
-      'result',
-      3,
-      'result',
-      text: 'Saved: Call plumber.',
-      change: preview(state: 'confirmed', undo: 'audit'),
-    );
-  }
+  Future<Entry> confirm(String changeId) async => entry(
+    'result',
+    3,
+    'result',
+    text: 'Saved: Call plumber.',
+    change: preview(state: 'confirmed', undo: 'audit'),
+  );
+  @override
+  Future<Entry> discard(String changeId) async => entry(
+    'p',
+    4,
+    'preview',
+    text: 'Change discarded.',
+    change: preview(state: 'discarded'),
+  );
+  @override
+  Future<Entry> undo(String undoId) async =>
+      entry('undo', 5, 'result', text: 'Undone: Call plumber.');
+  @override
+  Future<Entry> actOnReminder(String reminderId, ReminderAction action) async =>
+      confirm(reminderId);
 
   @override
   void close() {
@@ -112,9 +112,9 @@ void main() {
     repo.events.add(entry('p', 2, 'preview', change: preview()));
     await Future<void>.delayed(Duration.zero);
     expect(c.waiting, isFalse);
-    await c.act('/v1/changes/p/confirm');
+    await c.confirm('p');
     expect(c.entries.last.kind, 'result');
-    await c.act('/v1/undo/audit');
+    await c.undo('audit');
     expect(c.entries.last.text, 'Undone: Call plumber.');
     c.dispose();
   });
@@ -130,7 +130,7 @@ void main() {
     expect(repo.sends, 1);
     repo.events.add(entry('p', 2, 'preview', change: preview()));
     await Future<void>.delayed(Duration.zero);
-    await c.act('/v1/changes/p/discard');
+    await c.discard('p');
     expect(c.entries.last.change?['state'], 'discarded');
     c.dispose();
   });
@@ -177,6 +177,42 @@ void main() {
     expect(repo.sends, 1);
     expect(find.text('Working'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
+  testWidgets('active reminder shows Done, Snooze and Open and routes Done', (
+    tester,
+  ) async {
+    tester.view.reset();
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repo = FakeRepository();
+    repo.saved.add(
+      Entry.fromJson({
+        'id': 'r',
+        'cursor': 1,
+        'kind': 'minder',
+        'text': 'Reminder: Call plumber.',
+        'created_at': '2026-11-11T09:00:00Z',
+        'reminder': {'id': 'occ1', 'state': 'active'},
+      }),
+    );
+    final c = ChatController(repo, pollInterval: const Duration(days: 1));
+    await c.start();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: Tokens.theme,
+        home: ChatScreen(controller: c),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Done'), findsOneWidget);
+    expect(find.text('Snooze'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(find.text('Saved: Call plumber.'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     c.dispose();
   });

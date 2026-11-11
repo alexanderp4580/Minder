@@ -3,30 +3,10 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
 
-class ApiException implements Exception {
-  const ApiException(
-    this.message, {
-    this.unauthorized = false,
-    this.replacement,
-  });
-  final String message;
-  final bool unauthorized;
-  final Entry? replacement;
-  @override
-  String toString() => message;
-}
-
-abstract interface class ChatRepository {
-  Future<List<Entry>> history(int after);
-  Stream<Entry> watch(int after);
-  Future<Entry> send(String text);
-  Future<Entry> act(String route);
-  void close();
-}
-
-class ChatApi implements ChatRepository {
+class ChatApi implements ChatRepository, PushRepository {
   ChatApi(this.base, {http.Client? client, this.authorization})
     : _client = client ?? http.Client();
   final String base;
@@ -76,6 +56,18 @@ class ChatApi implements ChatRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> pushConfig() async =>
+      (await _request('GET', '/v1/push/config')) as Map<String, dynamic>;
+  @override
+  Future<void> registerDevice(String id, String token) async {
+    await _request(
+      'POST',
+      '/v1/push/devices',
+      body: {'device_id': id, 'token': token},
+    );
+  }
+
+  @override
   Future<List<Entry>> history(int after) async =>
       ((await _request('GET', '/v1/chat?after=$after&limit=200')) as List)
           .map((j) => Entry.fromJson(j as Map<String, dynamic>))
@@ -90,9 +82,27 @@ class ChatApi implements ChatRepository {
     return Entry.fromJson(j['entry'] as Map<String, dynamic>);
   }
 
-  @override
-  Future<Entry> act(String route) async =>
+  Future<Entry> _post(String route) async =>
       Entry.fromJson(await _request('POST', route) as Map<String, dynamic>);
+  @override
+  Future<Entry> confirm(String changeId) =>
+      _post('/v1/changes/$changeId/confirm');
+  @override
+  Future<Entry> discard(String changeId) =>
+      _post('/v1/changes/$changeId/discard');
+  @override
+  Future<Entry> undo(String undoId) => _post('/v1/undo/$undoId');
+  @override
+  Future<Entry> actOnReminder(String reminderId, ReminderAction action) =>
+      _post('/v1/reminders/$reminderId/${_wire(action)}');
+  static String _wire(ReminderAction a) => switch (a) {
+    ReminderAction.done => 'done',
+    ReminderAction.acknowledge => 'ack',
+    ReminderAction.snooze15 => 'snooze15',
+    ReminderAction.snooze60 => 'snooze60',
+    ReminderAction.tonight => 'tonight',
+    ReminderAction.tomorrow => 'tomorrow',
+  };
   @override
   Stream<Entry> watch(int after) async* {
     final client = http.Client();

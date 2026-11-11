@@ -20,6 +20,8 @@ type Invalid struct {
 func (e *Invalid) Error() string { return e.Message }
 
 type Item struct {
+	RemindAt    string `json:"remind_at,omitempty"`
+	NagMinutes  int    `json:"nag_minutes,omitempty"`
 	ID          string `json:"id"`
 	Title       string `json:"title"`
 	Status      string `json:"status"`
@@ -32,6 +34,10 @@ type Item struct {
 	CompletedAt string `json:"completed_at,omitempty"`
 }
 type Proposal struct {
+	RemindAt        string `json:"remind_at,omitempty"`
+	NagMinutes      int    `json:"nag_minutes,omitempty"`
+	ClearReminder   bool   `json:"clear_reminder,omitempty"`
+	ClearNag        bool   `json:"clear_nag,omitempty"`
 	Action          string `json:"action"`
 	ItemID          string `json:"item_id,omitempty"`
 	ExpectedVersion int    `json:"expected_version,omitempty"`
@@ -56,12 +62,13 @@ type Change struct {
 	UndoID    string  `json:"undo_id,omitempty"`
 }
 type Entry struct {
-	ID        string  `json:"id"`
-	Cursor    int64   `json:"cursor"`
-	Kind      string  `json:"kind"`
-	Text      string  `json:"text"`
-	CreatedAt string  `json:"created_at"`
-	Change    *Change `json:"change,omitempty"`
+	Reminder  *Reminder `json:"reminder,omitempty"`
+	ID        string    `json:"id"`
+	Cursor    int64     `json:"cursor"`
+	Kind      string    `json:"kind"`
+	Text      string    `json:"text"`
+	CreatedAt string    `json:"created_at"`
+	Change    *Change   `json:"change,omitempty"`
 }
 type Pending struct {
 	ID       string
@@ -102,10 +109,30 @@ func Validate(i *Item) error {
 		}
 		i.DueAt = t.UTC().Format(time.RFC3339)
 	}
+	if i.NagMinutes < 0 || i.NagMinutes > 1440 || (i.NagMinutes != 0 && i.RemindAt == "") {
+		return &Invalid{"nag_minutes", "Set a reminder and a nag interval from 0 to 1,440 minutes."}
+	}
+	if i.RemindAt != "" {
+		t, e := time.Parse(time.RFC3339, i.RemindAt)
+		if e != nil {
+			return &Invalid{"remind_at", "Use a reminder date and time with a timezone."}
+		}
+		i.RemindAt = t.UTC().Format(time.RFC3339)
+	}
 	switch i.Status {
 	case "open", "in_progress", "done", "cancelled":
 	default:
 		return fmt.Errorf("invalid status")
 	}
 	return nil
+}
+
+// Reminder identifies one firing, so stale notification actions cannot alter a newer firing.
+type Reminder struct {
+	ID          string `json:"id"`
+	ItemID      string `json:"item_id"`
+	Title       string `json:"title"`
+	ScheduledAt string `json:"scheduled_at"`
+	State       string `json:"state"`
+	Late        bool   `json:"late"`
 }

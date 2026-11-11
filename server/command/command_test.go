@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 )
 
 func setup(t *testing.T) (*Service, *store.Store) {
@@ -124,5 +125,65 @@ func TestValidation(t *testing.T) {
 		if _, e := c.Preview(p); e == nil {
 			t.Fatalf("accepted %+v", p)
 		}
+	}
+}
+
+func TestReminderPreviewRequiresConfirmationAndValidSchedule(t *testing.T) {
+	c, s := setup(t)
+	p, e := c.Preview(domain.Proposal{Action: "create_item", Title: "Take bins out", RemindAt: "2026-11-12T18:00:00+01:00", NagMinutes: 15})
+	if e != nil {
+		t.Fatal(e)
+	}
+	items, _ := s.Items()
+	if len(items) != 0 {
+		t.Fatal("preview wrote reminder item")
+	}
+	if _, e = c.Confirm(p.Change.ID); e != nil {
+		t.Fatal(e)
+	}
+	items, _ = s.Items()
+	if items[0].RemindAt != "2026-11-12T17:00:00Z" || items[0].NagMinutes != 15 {
+		t.Fatalf("schedule %+v", items)
+	}
+	found := false
+	for _, f := range p.Change.Fields {
+		if f.Name == "remind_at" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("reminder omitted from preview")
+	}
+	for _, bad := range []domain.Proposal{{Action: "create_item", Title: "x", RemindAt: "tomorrow"}, {Action: "create_item", Title: "x", NagMinutes: 15}, {Action: "create_item", Title: "x", RemindAt: "2026-11-12T17:00:00Z", NagMinutes: -1}, {Action: "create_item", Title: "x", RemindAt: "2026-11-12T17:00:00Z", NagMinutes: 1441}} {
+		if _, e = c.Preview(bad); e == nil {
+			t.Fatalf("accepted %+v", bad)
+		}
+	}
+}
+
+func TestNotificationDoneCanUndoWithoutRearmingOtherChanges(t *testing.T) {
+	c, s := setup(t)
+	now := time.Now().UTC().Truncate(time.Second)
+	p, e := c.Preview(domain.Proposal{Action: "create_item", Title: "Bins", RemindAt: now.Format(time.RFC3339), NagMinutes: 15})
+	if e != nil {
+		t.Fatal(e)
+	}
+	c.Confirm(p.Change.ID)
+	s.DueReminders(now)
+	active, _ := s.ActiveReminders()
+	result, e := s.ReminderAction(active[0].Reminder.ID, "done", now)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if result.Change == nil || result.Change.UndoID == "" {
+		t.Fatal("notification Done has no Undo")
+	}
+	if _, e = c.Undo(result.Change.UndoID); e != nil {
+		t.Fatal(e)
+	}
+	s.DueReminders(now)
+	active, _ = s.ActiveReminders()
+	if len(active) != 1 {
+		t.Fatal("Undo lost reminder")
 	}
 }

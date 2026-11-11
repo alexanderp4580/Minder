@@ -16,7 +16,7 @@ func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
 		var after domain.Item
 		switch p.Action {
 		case "create_item":
-			after = domain.Item{ID: store.ID(), Title: p.Title, DueAt: p.DueAt, Timezone: p.Timezone, Notes: p.Notes, Status: "open", Version: 1, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}
+			after = domain.Item{ID: store.ID(), Title: p.Title, DueAt: p.DueAt, Timezone: p.Timezone, Notes: p.Notes, RemindAt: p.RemindAt, NagMinutes: p.NagMinutes, Status: "open", Version: 1, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}
 		case "update_item", "complete_item":
 			i, e := t.Item(p.ItemID)
 			if e != nil {
@@ -36,6 +36,20 @@ func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
 				after.Status = "done"
 				after.CompletedAt = domain.Now()
 			} else {
+				if p.RemindAt != "" {
+					after.RemindAt = p.RemindAt
+					after.NagMinutes = p.NagMinutes
+				}
+				if p.NagMinutes != 0 {
+					after.NagMinutes = p.NagMinutes
+				}
+				if p.ClearNag {
+					after.NagMinutes = 0
+				}
+				if p.ClearReminder {
+					after.RemindAt = ""
+					after.NagMinutes = 0
+				}
 				if p.Title != "" {
 					after.Title = p.Title
 				}
@@ -61,7 +75,7 @@ func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
 		if before != nil {
 			old = *before
 		}
-		for _, f := range []domain.Field{{Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}} {
+		for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}} {
 			if f.Old != f.New {
 				fields = append(fields, f)
 			}

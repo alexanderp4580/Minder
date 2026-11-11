@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Controlled OpenRouter boundary for local integration tests. Never deploy it."""
 import json
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 class Handler(BaseHTTPRequestHandler):
@@ -16,6 +17,7 @@ class Handler(BaseHTTPRequestHandler):
         elif 'done' in text or 'complete' in text:
             if items:name='propose_complete';args={'item_id':items[0]['id'],'expected_version':items[0]['version']}
             else:content='Which item do you mean?'
+        elif 'remind' in text:name='propose_create';args={'title':'Water plants','remind_at':(datetime.now(timezone.utc)+timedelta(seconds=3)).strftime('%Y-%m-%dT%H:%M:%SZ'),'nag_minutes':15,'timezone':'Europe/Amsterdam'}
         elif 'plumber' in text:name='propose_create';args={'title':'Call plumber','due_at':'2026-11-12T09:00:00Z','timezone':'Europe/Amsterdam'}
         else:content='Which task do you want to add?'
         message={'role':'assistant','content':content}

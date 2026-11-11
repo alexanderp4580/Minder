@@ -81,10 +81,28 @@ func (t *Tx) Item(id string) (domain.Item, error) {
 	return decode[domain.Item](t.tx.QueryRow("SELECT body FROM item WHERE id=?", id))
 }
 func (t *Tx) PutItem(i domain.Item) error {
+	var old *domain.Item
+	previous, err := t.Item(i.ID)
+	if err == nil {
+		old = &previous
+	} else if err != domain.ErrNotFound {
+		return err
+	}
+
 	_, e := t.tx.Exec("INSERT INTO item(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", i.ID, body(i))
-	return e
+	if e != nil {
+		return e
+	}
+	return t.syncReminder(old, i)
 }
 func (t *Tx) DeleteItem(id string) error {
+	if e := t.closeReminders(id, "cancelled"); e != nil {
+		return e
+	}
+	if _, e := t.tx.Exec("DELETE FROM reminder_schedule WHERE item_id=?", id); e != nil {
+		return e
+	}
+
 	_, e := t.tx.Exec("DELETE FROM item WHERE id=?", id)
 	return e
 }

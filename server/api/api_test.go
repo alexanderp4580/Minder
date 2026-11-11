@@ -163,3 +163,37 @@ func TestPublicLogoDoesNotExposePrivateRoutes(t *testing.T) {
 		t.Fatal("public logo accepted an unauthenticated write")
 	}
 }
+
+func TestReminderRoutesNeedAuthAndRejectInvalidBodies(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "reminders"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	locked := New(s, command.New(s), replier{s}, &Verifier{}, "")
+	for _, path := range []string{"/v1/reminders", "/v1/push/config", "/v1/push/devices", "/v1/reminders/id/done"} {
+		w := httptest.NewRecorder()
+		locked.ServeHTTP(w, httptest.NewRequest("POST", path, strings.NewReader(`{}`)))
+		if w.Code != 401 {
+			t.Fatalf("unauthorized %s: %d", path, w.Code)
+		}
+	}
+	h := New(s, command.New(s), replier{s}, nil, "")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/push/devices", strings.NewReader(`{"device_id":"phone","token":"test-token"}`)))
+	if w.Code != 200 {
+		t.Fatalf("device: %d", w.Code)
+	}
+	for _, body := range []string{`{}`, `{"device_id":"p","token":"t","extra":true}`, `{"device_id":"p","token":"t"} {}`} {
+		w = httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/push/devices", strings.NewReader(body)))
+		if w.Code != 400 {
+			t.Fatalf("invalid body accepted: %d", w.Code)
+		}
+	}
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/v1/push/config", nil))
+	if w.Code != 503 {
+		t.Fatalf("missing config: %d", w.Code)
+	}
+}

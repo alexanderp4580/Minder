@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 
 import 'web_redirect_stub.dart'
     if (dart.library.js_interop) 'web_redirect_web.dart';
-import 'chat_api.dart';
+import '../domain/chat_repository.dart';
 
 class AccessAuth {
   AccessAuth(

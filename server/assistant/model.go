@@ -109,6 +109,10 @@ func (m *OpenRouter) Complete(ctx context.Context, messages []Message) (Response
 }
 func tools() []any {
 	props := map[string]any{"title": map[string]string{"type": "string"}, "due_at": map[string]string{"type": "string", "description": "RFC3339 with timezone; omit if unknown"}, "timezone": map[string]string{"type": "string"}, "notes": map[string]string{"type": "string"}, "item_id": map[string]string{"type": "string"}, "expected_version": map[string]string{"type": "integer"}, "clear_due": map[string]string{"type": "boolean"}, "clear_notes": map[string]string{"type": "boolean"}}
+	props["remind_at"] = map[string]string{"type": "string", "description": "Explicit reminder time in RFC3339. Set only when the owner asks for a reminder."}
+	props["nag_minutes"] = map[string]string{"type": "integer", "description": "Minutes between nags, 1 to 1440. Use 15 by default for reminders. Zero disables nagging."}
+	props["clear_reminder"] = map[string]string{"type": "boolean"}
+	props["clear_nag"] = map[string]string{"type": "boolean"}
 	out := []any{}
 	for _, n := range []string{"propose_create", "propose_update", "propose_complete", "list_items"} {
 		required := []string{}

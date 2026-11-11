@@ -21,6 +21,7 @@ type Replier interface {
 	Reply(context.Context, string) ([]domain.Entry, error)
 }
 type Server struct {
+	PushConfig   *PushConfig
 	store        *store.Store
 	commands     *command.Service
 	assistant    Replier
@@ -87,6 +88,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+	}
+	if s.reminderRoutes(w, r) {
+		return
 	}
 	switch {
 	case r.Method == "GET" && r.URL.Path == "/v1/chat":

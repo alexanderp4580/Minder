@@ -2,15 +2,25 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../data/chat_api.dart';
+import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
+import 'use_cases.dart';
 
 class ChatController extends ChangeNotifier {
   ChatController(
     this.repository, {
     this.pollInterval = const Duration(seconds: 5),
-  });
+  }) : _send = SendMessage(repository),
+       _confirm = ConfirmChange(repository),
+       _discard = DiscardChange(repository),
+       _undo = UndoChange(repository),
+       _remind = ActOnReminder(repository);
   final ChatRepository repository;
+  final SendMessage _send;
+  final ConfirmChange _confirm;
+  final DiscardChange _discard;
+  final UndoChange _undo;
+  final ActOnReminder _remind;
   final Duration pollInterval;
   final List<Entry> _entries = [];
   List<Entry> get entries => List.unmodifiable(_entries);
@@ -22,7 +32,7 @@ class ChatController extends ChangeNotifier {
       needsSignIn = false;
   String? error;
   String _lastText = '';
-  String? _retryRoute;
+  Future<Entry> Function()? _retryAction;
   bool _disposed = false, _syncing = false;
   Timer? _poll, _reconnect;
   StreamSubscription<Entry>? _subscription;
@@ -77,7 +87,7 @@ class ChatController extends ChangeNotifier {
       }
       connected = true;
       needsSignIn = false;
-      if (_retryRoute == null && _lastText.isEmpty) error = null;
+      if (_retryAction == null && _lastText.isEmpty) error = null;
     } catch (e) {
       _failed(e);
     } finally {
@@ -118,12 +128,12 @@ class ChatController extends ChangeNotifier {
   Future<void> send(String text) async {
     if (_disposed || waiting || text.trim().isEmpty) return;
     _lastText = text.trim();
-    _retryRoute = null;
+    _retryAction = null;
     error = null;
     waiting = true;
     _notify();
     try {
-      final e = await repository.send(_lastText);
+      final e = await _send(_lastText);
       _merge(e);
     } catch (e) {
       _failed(e);
@@ -131,15 +141,21 @@ class ChatController extends ChangeNotifier {
     _notify();
   }
 
-  Future<void> act(String route) async {
+  Future<void> confirm(String changeId) => _act(() => _confirm(changeId));
+  Future<void> discard(String changeId) => _act(() => _discard(changeId));
+  Future<void> undo(String undoId) => _act(() => _undo(undoId));
+  Future<void> remind(String reminderId, ReminderAction action) =>
+      _act(() => _remind(reminderId, action));
+
+  Future<void> _act(Future<Entry> Function() action) async {
     if (_disposed || acting) return;
     acting = true;
-    _retryRoute = route;
+    _retryAction = action;
     error = null;
     _notify();
     try {
-      _merge(await repository.act(route));
-      _retryRoute = null;
+      _merge(await action());
+      _retryAction = null;
       await sync();
     } catch (e) {
       _failed(e);
@@ -154,8 +170,8 @@ class ChatController extends ChangeNotifier {
       await send(text);
       return;
     }
-    if (_retryRoute != null) {
-      await act(_retryRoute!);
+    if (_retryAction != null) {
+      await _act(_retryAction!);
     } else if (_lastText.isNotEmpty) {
       waiting = false;
       await send(_lastText);
