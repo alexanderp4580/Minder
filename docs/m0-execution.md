@@ -15,7 +15,7 @@ No sub-agents. Record unresolved guidance for later. Phone approval still gates 
 - [x] 6. Flutter tokens and chat widgets; widget and golden tests for user, reply, preview, result, error and waiting.
 - [x] 7. Controller/API; prove send, confirm, discard, undo, retry and reconnect against controlled transport.
 - [ ] 8. Android OAuth discovery, PKCE and refresh; web uses same-origin cookies. Test protocol boundaries.
-- [ ] 9. Local web/server end-to-end first, then production container and Coolify deployment where credentials permit.
+- [x] 9. Local web/server end-to-end first, then production container and Coolify deployment where credentials permit.
 - [ ] 10. Build arm64 APK, deliver through configured Telegram chat, record evidence and outstanding external checks.
 
 ## Interfaces and checks
@@ -36,3 +36,10 @@ Build: Flutter web and Android APK. Validate HTTP health and stream through the 
 - Use hand-written JSON DTOs for M0. No code generator or icon package is needed for this slice.
 - Model cost is returned in USD. Use an explicit configurable USD-to-EUR conversion and reserve request headroom.
 - Preserve the branch until phone approval. No merge is part of this run.
+
+## Delivery state
+
+The local checks pass. Coolify serves the container and reports it healthy.
+The arm64 APK reached the owner's Telegram chat. The real model key and physical phone checks remain open.
+Task 8 has protocol evidence; native phone sign-in remains open. Task 10 has build and delivery evidence; phone approval remains open.
+Full results and review items: [evidence/m0.md](evidence/m0.md).
