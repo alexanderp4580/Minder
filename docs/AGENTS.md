@@ -6,6 +6,8 @@ Product requirements and design docs for Minder.
 
 - `requirements.md`: product requirements, open questions and architecture decisions
 - `master-plan.md`: architecture, designs to write, milestones, risks and order of work
+- `screens.md`: app screens, navigation, objects, flows and open decisions
+- `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
 - Later design specs, plans and evidence files per slice
 
 # Local Contracts
@@ -27,4 +29,4 @@ Re-read a whole doc after editing and fix contradictions. Use stop-slop for pros
 
 # Child DOX Index
 
-No child instruction files.
+- `mockups/AGENTS.md`: phone mockups, shared styles and rendering

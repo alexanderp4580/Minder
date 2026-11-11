@@ -64,7 +64,7 @@ Each list or project can be opened in any view. The view choice is remembered pe
 | **Table** | Spreadsheet-style. Choose visible columns. Sort/filter per column. Bulk edit |
 | **Gantt / Timeline** | Items with start + due shown as bars. Drag to reschedule or resize |
 | **Calendar** | Day / week / month / agenda. Shows events and dated tasks together. Drag to reschedule |
-| **Today** | Overdue + due today + scheduled today + top painful items |
+| **Today** | Overdue + due today + scheduled today. A focus frame shows the most urgent item |
 | **Upcoming** | Next 7 / 30 days, grouped by day |
 
 ### 4.1 Saved filters
