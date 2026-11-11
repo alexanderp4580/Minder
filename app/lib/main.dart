@@ -101,8 +101,12 @@ class _MinderAppState extends ConsumerState<MinderApp>
               if (nativeAndroid) await notifications!.resume();
             }
           },
-          enableNotifications: notifications?.enable,
-          notificationStatus: notifications?.status,
+          enableNotifications: notifications?.enabled == true
+              ? null
+              : notifications?.enable,
+          notificationStatus: notifications?.enabled == true
+              ? null
+              : notifications?.status,
           notificationsBusy: notifications?.busy ?? false,
         ),
       ),
