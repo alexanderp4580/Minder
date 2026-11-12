@@ -60,8 +60,8 @@ Rules:
 - Message group: 16 px above the sender line, 6 px between the sender line and the message. The sender line carries the time: "Minder · 07:30" on the left, "You · 07:31" on the right, on the side of its message.
 - Your message: 44 px left margin inside the gutter, so the box starts 64 px from the screen edge. Padding 10 px above and below, 12 px at the sides.
 - Buttons in the chat are 44 px high. Secondary buttons have a Panel fill and a 1 px Edge outline. The brand guide sizes of 54 and 48 px apply to notifications.
-- Buttons that share a row have equal gaps of 8 px. Confirm is 1.3 times as wide as Discard. Done, Snooze and Open share one row.
-- The composer is 56 px high including its hairline, with a 44 px field and a 44 px Send button.
+- Buttons that share a row have equal gaps of 8 px. The primary button is always last in its row, so its cut corner sits at the bottom right of the row. Confirm is 1.3 times as wide as Discard. Snooze, Open and Done share one row.
+- The composer is 56 px high including its hairline. The field is a 44 px box with a 1 px Edge border and 14 px side padding. It is exactly as tall as the 44 px Send button, with the text centred. Send is last.
 - Hairlines (Line colour, 1 px) separate regions. Cards use an Edge outline.
 - Corners are square. The primary button has one cut corner at the bottom right (12 px). The mic button has the same cut (10 px).
 - Every control is at least 44 × 44 px.

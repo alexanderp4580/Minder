@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:minder/application/calendar_controller.dart';
 import 'package:minder/application/chat_controller.dart';
+import 'package:minder/application/use_cases.dart';
 import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
+import 'package:minder/domain/item.dart';
+import 'package:minder/domain/item_repository.dart';
+import 'package:minder/ui/calendar_screen.dart';
 import 'package:minder/ui/chat_screen.dart';
-import 'package:minder/ui/components.dart';
 import 'package:minder/ui/tokens.dart';
+
+class EmptyItems implements ItemRepository {
+  @override
+  Future<List<Item>> itemsBetween(DateTime from, DateTime to) async => [];
+}
 
 class Repo implements ChatRepository {
   Repo(this.saved);
@@ -49,6 +58,30 @@ Entry entry(
 });
 
 void main() {
+  testWidgets('calendar days have room between the weeks', (tester) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = CalendarController(
+      LoadItems(EmptyItems()),
+      now: () => DateTime(2026, 11, 12, 10),
+    );
+    await c.load();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: Tokens.theme,
+        home: CalendarScreen(controller: c),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final first = tester.getRect(find.byKey(const ValueKey('day-2026-11-02')));
+    final next = tester.getRect(find.byKey(const ValueKey('day-2026-11-09')));
+    expect(first.height, 56);
+    expect(next.top - first.top, 56);
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
+
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     await (FontLoader('MaterialIcons')
@@ -71,31 +104,33 @@ void main() {
     }
   });
 
-  testWidgets('shared buttons follow the brand sizes', (tester) async {
+  testWidgets('the theme sizes buttons and fields at 44 px', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: Tokens.theme,
         home: Scaffold(
           body: Column(
             children: [
-              PrimaryButton(label: 'Confirm', onPressed: () {}),
-              SecondaryButton(label: 'Discard', onPressed: () {}),
-              SquareIconButton(
-                icon: Icons.calendar_month,
+              FilledButton(onPressed: () {}, child: const Text('Confirm')),
+              OutlinedButton(onPressed: () {}, child: const Text('Discard')),
+              IconButton(
                 tooltip: 'Calendar',
                 onPressed: () {},
+                icon: const Icon(Icons.calendar_month),
               ),
+              const TextField(),
             ],
           ),
         ),
       ),
     );
-    expect(tester.getSize(find.byType(PrimaryButton)).height, 44);
-    expect(tester.getSize(find.byType(SecondaryButton)).height, 44);
+    expect(tester.getSize(find.byType(FilledButton)).height, 44);
+    expect(tester.getSize(find.byType(OutlinedButton)).height, 44);
     expect(
-      tester.getSize(find.byType(SquareIconButton)),
+      tester.getSize(find.byType(IconButton)),
       const Size(Tokens.minTarget, Tokens.minTarget),
     );
+    expect(tester.getSize(find.byType(TextField)).height, 44);
   });
 
   testWidgets('chat layout follows the mockup spacing', (tester) async {
@@ -158,22 +193,26 @@ void main() {
       tester.getTopRight(find.text('YOU · 15:05')).dx,
       412 - Tokens.gutter,
     );
-    // Confirm and Discard share one row of equal width, 8 px apart.
-    final confirm = tester.getRect(find.byType(PrimaryButton).first);
-    final discard = tester.getRect(find.byType(SecondaryButton).first);
+    // Confirm and Discard share one row, 8 px apart. Confirm is last, so its
+    // cut corner sits at the bottom right of the card.
+    final confirm = tester.getRect(find.byType(FilledButton).first);
+    final discard = tester.getRect(find.byType(OutlinedButton).first);
     expect(confirm.height, 44);
     expect(discard.height, 44);
-    expect(discard.left - confirm.right, Tokens.gap);
+    expect(confirm.left - discard.right, Tokens.gap);
     expect(confirm.width / discard.width, closeTo(1.3, 0.02));
-    // The reminder buttons share one row, 8 px apart, 44 px high.
-    final done = tester.getRect(find.widgetWithText(PrimaryButton, 'Done'));
-    final snooze = tester.getRect(find.byType(SecondaryFace));
-    final open = tester.getRect(find.widgetWithText(SecondaryButton, 'Open'));
-    expect(done.top, snooze.top);
+    expect(confirm.right, 412 - Tokens.gutter - 12 - 1);
+    // The reminder buttons share one row, 8 px apart, 44 px high. Done is last,
+    // at the right edge.
+    final done = tester.getRect(find.widgetWithText(FilledButton, 'Done'));
+    final snooze = tester.getRect(find.widgetWithText(OutlinedButton, 'Snooze'));
+    final open = tester.getRect(find.widgetWithText(OutlinedButton, 'Open'));
     expect(snooze.top, open.top);
+    expect(open.top, done.top);
     expect(done.height, 44);
-    expect(snooze.left - done.right, Tokens.gap);
     expect(open.left - snooze.right, Tokens.gap);
+    expect(done.left - open.right, Tokens.gap);
+    expect(done.right, 412 - Tokens.gutter);
     // The header has no divider. The first sender line sits 38 px under the
     // status line: 22 px of list padding and 16 px of entry margin.
     final status = tester.getBottomLeft(find.text('MINDER IS HERE'));
@@ -194,11 +233,17 @@ void main() {
     // The composer is 56 px high with a 44 px send button.
     expect(tester.getSize(find.byKey(const ValueKey('composer'))).height, 56);
     expect(tester.getSize(find.byTooltip('Send')).height, 44);
+    // The text field is as tall as the Send button and shares its centre line.
+    final field = tester.getRect(find.byType(TextField));
+    final send = tester.getRect(find.byTooltip('Send'));
+    expect(field.height, 44);
+    expect(field.center.dy, send.center.dy);
+    expect(send.right, 412 - 14);
     // Every button has a 44 px hit area.
     for (final f in [
-      find.byType(PrimaryButton),
-      find.byType(SecondaryButton),
-      find.byType(SquareIconButton),
+      find.byType(FilledButton),
+      find.byType(OutlinedButton),
+      find.byType(IconButton),
     ]) {
       for (final e in f.evaluate()) {
         expect(tester.getSize(find.byWidget(e.widget)).height, greaterThanOrEqualTo(44));

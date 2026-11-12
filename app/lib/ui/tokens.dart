@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+const _body = TextStyle(
+  fontSize: 15,
+  height: 1.4,
+  color: Tokens.text,
+  fontWeight: FontWeight.w500,
+);
+
 abstract final class Tokens {
   static const voidColor = Color(0xff0a0a0a),
       panel = Color(0xff161616),
@@ -14,6 +21,8 @@ abstract final class Tokens {
   static const gutter = 20.0, gap = 8.0, minTarget = 44.0;
   static ThemeData get theme => ThemeData(
     brightness: Brightness.dark,
+    // Desktop browsers default to compact density, which shrinks fields below 44 px.
+    visualDensity: VisualDensity.standard,
     scaffoldBackgroundColor: voidColor,
     fontFamily: 'Chakra Petch',
     colorScheme: const ColorScheme.dark(
@@ -24,18 +33,17 @@ abstract final class Tokens {
       error: alert,
     ),
     textTheme: const TextTheme(
-      bodyMedium: TextStyle(
-        fontSize: 15,
-        height: 1.4,
-        color: text,
-        fontWeight: FontWeight.w500,
-      ),
+      bodyMedium: _body,
+      bodyLarge: _body,
     ),
     dividerColor: line,
     inputDecorationTheme: const InputDecorationTheme(
+      isDense: true,
       filled: true,
       fillColor: panel,
       hintStyle: TextStyle(color: dim),
+      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11.5),
+      constraints: BoxConstraints(minHeight: minTarget),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.zero,
         borderSide: BorderSide(color: edge),
@@ -49,23 +57,15 @@ abstract final class Tokens {
         borderSide: BorderSide(color: text),
       ),
     ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: text,
-        minimumSize: const Size(44, 44),
-        shape: const RoundedRectangleBorder(),
-        textStyle: const TextStyle(
-          fontFamily: 'Chakra Petch',
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    ),
+    // Primary: Signal fill, cut bottom-right corner. Secondary: Panel fill, Edge outline.
+    // Both are 44 px high. The primary button goes last in its row.
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: signal,
         foregroundColor: white,
-        minimumSize: const Size(44, 44),
+        minimumSize: const Size(minTarget, minTarget),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: const BeveledRectangleBorder(
           borderRadius: BorderRadius.only(bottomRight: Radius.circular(12)),
         ),
@@ -73,7 +73,38 @@ abstract final class Tokens {
           fontFamily: 'Chakra Petch',
           fontSize: 16,
           fontWeight: FontWeight.w700,
+          letterSpacing: 0.64,
         ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        backgroundColor: panel,
+        foregroundColor: text,
+        disabledForegroundColor: dim,
+        side: const BorderSide(color: edge),
+        minimumSize: const Size(minTarget, minTarget),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: const RoundedRectangleBorder(),
+        textStyle: const TextStyle(
+          fontFamily: 'Chakra Petch',
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.56,
+        ),
+      ),
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        backgroundColor: panel,
+        foregroundColor: text,
+        side: const BorderSide(color: edge),
+        fixedSize: const Size(minTarget, minTarget),
+        padding: EdgeInsets.zero,
+        iconSize: 20,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: const RoundedRectangleBorder(),
       ),
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(color: muted),

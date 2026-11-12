@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../application/calendar_controller.dart';
 import '../domain/item.dart';
-import 'components.dart';
 import 'format.dart';
 import 'tokens.dart';
 
@@ -80,11 +79,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                   ),
                 ),
-                SquareIconButton(
-                  tooltip: 'Chat',
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  icon: Icons.chat_bubble_outline,
-                ),
+                IconButton(tooltip: 'Chat', onPressed: () => Navigator.of(context).maybePop(), icon: const Icon(Icons.chat_bubble_outline)),
               ],
             ),
           ),
@@ -104,11 +99,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     padding: const EdgeInsets.symmetric(horizontal: Tokens.gutter),
     child: Row(
       children: [
-        SquareIconButton(
-          tooltip: 'Previous month',
-          onPressed: c.previous,
-          icon: Icons.chevron_left,
-        ),
+        IconButton(tooltip: 'Previous month', onPressed: c.previous, icon: const Icon(Icons.chevron_left)),
         Expanded(
           child: Text(
             '${_months[c.month.month - 1]} ${c.month.year}',
@@ -120,13 +111,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
         ),
-        SquareIconButton(
-          tooltip: 'Next month',
-          onPressed: c.next,
-          icon: Icons.chevron_right,
-        ),
+        IconButton(tooltip: 'Next month', onPressed: c.next, icon: const Icon(Icons.chevron_right)),
         const SizedBox(width: Tokens.gap),
-        SecondaryButton(onPressed: c.goToday, label: 'Today'),
+        OutlinedButton(onPressed: c.goToday, child: Text('Today')),
       ],
     ),
   );
@@ -186,7 +173,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),
         onTap: () => c.select(day),
         child: Container(
-          height: 48,
+          height: 56,
           decoration: BoxDecoration(
             border: Border.all(
               color: selected ? Tokens.signal : Colors.transparent,
@@ -247,10 +234,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
-            child: SecondaryButton(
-              onPressed: c.loading ? null : c.load,
-              label: 'Retry',
-            ),
+            child: OutlinedButton(onPressed: c.loading ? null : c.load, child: Text('Retry')),
           ),
           const SizedBox(height: 12),
         ],

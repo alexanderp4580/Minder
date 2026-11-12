@@ -61,6 +61,7 @@ Steps:
 - Docker context: `.dockerignore` lists the folders the image build may read. A new folder needs an entry there. The first branding deploy failed for this reason. Test a new COPY with `podman build` on a small Dockerfile before a deploy.
 - [x] Deployed `1c0efe9` (172 seconds; unhealthy for the first seconds, then `running:healthy`). Production has the calendar, the new fields and `/branding/`. The public address returns 401 without sign-in. The content at `/branding/` is not checked through the live host.
 - [x] UI spacing pass (owner: the app felt tight around headers and did not match the guide). Header without divider, time next to the sender, 44 px buttons, 56 px composer, shared button components, `ui_spec_test.dart`, mockup and `foundation.md` updated. Not deployed. Not on a phone yet.
+- Owner fixes after the spacing pass: the primary button is last in its row; the text field is 44 px and shares its centre line with Send; calendar day cells are 56 px. The field was short in desktop browsers only, because they default to compact `VisualDensity`. The theme now pins standard density. Button, icon button and field styles live in `Tokens.theme`; screens use plain Material widgets. The Snooze menu is a `MenuAnchor`.
 - Known gap: the guide uses Carbon icons and the app uses Material icons.
 - [ ] APK 0.4.0 (calendar and spacing) is not built. The owner stopped the build. Build it only when the owner asks.
 - [ ] Phone check of the calendar.

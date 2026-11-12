@@ -6,7 +6,7 @@ Status 2026-11-12. The owner asked for a calendar page. The page is read-only. C
 
 - The chat header has a Calendar button, a 44 px square on the right. The Calendar page has a matching Chat button at the same place.
 - The page shows one month as a grid. Weeks start on Monday. The grid always shows six weeks, so days of the next and last month show dimmed.
-- Each day shows up to three small squares for its items. Today is underlined. The selected day has a red frame. Opening the page selects today.
+- Each day cell is 56 px high, so the weeks have room between them. Each day shows up to three small squares for its items. Today is underlined. The selected day has a red frame. Opening the page selects today.
 - The arrows move one month. Today returns to the current month. Moving the month selects its first day.
 - Under the grid, the agenda lists the items of the selected day, earliest first. Each entry shows the time, the title and small tags for duration, priority, location, list and repeat. A finished item is struck through.
 - An item sits on its start day, else its deadline day. An item with neither does not show. An item with a start shows "09:00". An item with only a deadline shows "Due 17:00".
