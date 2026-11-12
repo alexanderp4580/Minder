@@ -12,6 +12,7 @@ Product requirements and design docs for Minder.
 - `m0-spec.md`: scope, interfaces, task plan and acceptance criteria of milestone M0
 - `m1-spec.md`: scope, behaviour, interfaces and acceptance of the lists, profiles and recurrence slice
 - `calendar-spec.md`: the read-only calendar page, its data and the start, duration and priority fields
+- `logging.md`: server log settings, events, fields, privacy limits and how to trace a missing reminder or a failed reply
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
 - `evidence/`: local and hosted verification results, architecture checks and calendar layout checks
 - `dox-license.txt`: Agent0ai DOX MIT notice

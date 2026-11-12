@@ -1,7 +1,7 @@
 # Handoff
 
-State on 2026-11-12. Branch `m0-chat`, worktree `Minder-m0-chat`.
-Keep this file current until the owner merges.
+State on 2026-11-12. Branch `main` at `2033008`, deployed. Branch `m0-chat` points at the same commit.
+Worktree `Minder-m0-chat` is clean.
 
 ## Current source
 
@@ -10,12 +10,14 @@ Keep this file current until the owner merges.
 - Start, deadline, duration, priority and location fields.
 - Read-only calendar with a month grid, spaced week rows and a scrolling day agenda.
 - Theme spacing, standard visual density, shared Material styles and golden tests.
-- Animated orbital backgrounds with distinct Calendar and Chat compositions.
+- Animated orbital backgrounds with distinct Calendar and Chat compositions, 60 percent dimmer than in APK 0.4.2.
+- A two-item bottom bar (Chat, Calendar). Headers show a title and a rule that fades left to right.
+- Structured server logs for every request, change, model call, reminder and push. See [docs/logging.md](docs/logging.md).
 - Private `/branding/` guide and public OAuth logo.
 
 The owner approved M0 and reminder delivery on a phone.
 The owner requested completion of M1 and the calendar without questions.
-Execution stays inline, without sub-agents. Phone approval still gates merging to `main`.
+The owner asked for the merge to `main` and the deployment on 2026-11-12. Work ran inline, without sub-agents.
 
 ## Architecture and DOX
 
@@ -63,16 +65,31 @@ The owner approved reconstructing the artwork and moving highlights along its fi
 The SVGs own geometry and lighting; toolchain/export-orbits.py keeps Flutter and HTML exports aligned.
 The calendar spacing and opaque cards remain unchanged.
 
+## Navigation, header and composer
+
+The bottom bar has two 56 px items. The selected item has a Signal icon and a 2 px Signal bar on its top edge.
+The bar hides while the keyboard is open. A system inset sits below the bar.
+The header rule fades from 50 percent Text colour at the left to clear at the right.
+The composer is 68 px high: 8 px above the field, 16 px below it.
+Evidence: [docs/evidence/navigation-and-logging.md](docs/evidence/navigation-and-logging.md).
+
+## Logging
+
+The server logs with `log/slog`. `LOG_LEVEL` and `LOG_FORMAT` set level and format.
+The reminder worker logs a heartbeat every five minutes with the device count, active schedules and due pushes.
+Logs never hold message text, item titles, tokens or keys.
+Reference and tracing steps: [docs/logging.md](docs/logging.md).
+
 ## Deployment and APK status
 
-The prior handoff records production commit `1c0efe9`, with calendar fields and `/branding/`.
-This review did not check the live deployment or deploy changes.
-The spacing and architecture changes remain local to `m0-chat`.
+Production runs `2033008`, deployed on 2026-11-12 as Coolify deployment `wehc4yesilvupuyue3pzpp4v`. The app is `running:healthy`.
+The Coolify application builds from `main`. It built from `m0-chat` before this deployment.
+The first production heartbeat reported one registered device, five items and no active schedule.
+Notifications did not arrive on 2026-11-12. The old build logged nothing that explains it. Watch the next reminder with the new logs.
 
-APK 0.4.2 uses the authored SVG artwork and travelling highlights, superseding the rotating-ellipse previews.
-The release arm64 build and signature checks passed; its signing certificate matches the prior APK.
-Telegram confirmed delivery through the existing bot and chat after a network retry. Phone approval remains pending.
-Evidence: [docs/evidence/orbital-artwork.md](docs/evidence/orbital-artwork.md).
+APK 0.4.6 carries the bar, the header rule, the composer spacing and the dimmer lines. Telegram confirmed one upload.
+The build uses the cached debug signing key, so it installs over earlier builds. Phone approval of the look remains pending.
+Earlier APK evidence: [docs/evidence/orbital-artwork.md](docs/evidence/orbital-artwork.md).
 
 The Coolify app is `ciw3jk5gkgiql8kfdomeyys2`.
 A Git push does not deploy. Deployment needs an explicit POST to `/deploy`.
@@ -99,6 +116,9 @@ Specs: [docs/m1-spec.md](docs/m1-spec.md), [docs/calendar-spec.md](docs/calendar
 ## Product and owner follow-ups
 
 - Phone checks of lists, profiles, recurrence, follow-up questions and calendar behaviour.
+- Phone check of the bottom bar, the header rule and the composer spacing.
+- Trace the next real reminder with [docs/logging.md](docs/logging.md). Production shows one device and no active schedule.
+- Pass the Git revision into the image build so `server configuration` shows it.
 - Android emulator notification check; the prior handoff records no emulator container.
 - Date-only handling: "Buy milk tomorrow" can omit the due time without a question.
 - Multi-change completeness: a weaker model can omit a change without an error.
