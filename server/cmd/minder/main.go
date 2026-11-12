@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -25,13 +26,19 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
-		log.Print(err)
+	logger, err := newLogger(os.Getenv, os.Stderr)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	slog.SetDefault(logger)
+	if err := run(logger); err != nil {
+		slog.Error("startup or run failed", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
+func run(logger *slog.Logger) error {
 	settings, err := config.Load(os.Getenv)
 	if err != nil {
 		return err
@@ -39,6 +46,14 @@ func run() error {
 	authentication, err := access.FromEnvironment(os.Getenv)
 	if err != nil {
 		return err
+	}
+	authMode := os.Getenv("AUTH_MODE")
+	if authMode == "" {
+		authMode = "cloudflare"
+	}
+	logStartup(logger, settings, authMode)
+	if authentication == nil {
+		slog.Warn("authentication is disabled (development or test mode)")
 	}
 	database, err := store.Open(settings.DatabasePath)
 	if err != nil {
@@ -61,6 +76,7 @@ func run() error {
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    1 << 16,
+		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 	worker := &reminder.Worker{Repository: database, Scheduler: reminders}
 	if raw := settings.FirebaseServiceAccount; raw != "" {
@@ -69,18 +85,19 @@ func run() error {
 			return errors.New("Firebase service account configuration is invalid")
 		}
 		worker.Sender = sender
+		slog.Info("firebase push configured", "project_id", sender.ProjectID)
 		pushConfig, err := api.ParsePushConfig(settings.FirebaseAndroidConfig)
 		if err != nil || pushConfig == nil || pushConfig.ProjectID != sender.ProjectID {
 			return errors.New("Firebase Android configuration is invalid")
 		}
 		handler.PushConfig = pushConfig
 	} else {
-		log.Print("Firebase push is not configured; reminders remain available in chat")
+		slog.Warn("firebase push is not configured; reminders remain available in chat")
 	}
 	listener, err := net.Listen("tcp", srv.Addr)
 	if err != nil {
 		return err
 	}
-	log.Printf("Minder listening on %s", listener.Addr())
+	slog.Info("Minder listening", "addr", listener.Addr().String())
 	return serve(ctx, srv, listener, worker.Run)
 }

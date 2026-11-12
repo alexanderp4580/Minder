@@ -1,6 +1,8 @@
 package store
 
 import (
+	"database/sql"
+	"log/slog"
 	"time"
 
 	"github.com/alexanderp4580/Minder/server/domain"
@@ -45,6 +47,43 @@ func (t *Tx) PutOccurrence(o domain.Occurrence) error {
 	return err
 }
 func (t *Tx) QueueDeliveries(id string, at time.Time) error {
-	_, err := t.tx.Exec("INSERT INTO push_delivery(occurrence_id,device_id,next_at) SELECT ?,id,? FROM push_device", id, at.Unix())
+	res, err := t.tx.Exec("INSERT INTO push_delivery(occurrence_id,device_id,next_at) SELECT ?,id,? FROM push_device", id, at.Unix())
+	if err == nil {
+		devices, _ := res.RowsAffected()
+		slog.Info("deliveries queued", "occurrence_id", id, "devices", devices, "due_at", at.UTC().Format(time.RFC3339))
+		if devices == 0 {
+			slog.Warn("no push devices registered; reminder stays in chat only", "occurrence_id", id)
+		}
+	}
 	return err
+}
+
+// ReminderStats counts the reminder pipeline for the worker heartbeat.
+func (s *Store) ReminderStats(now time.Time) (st domain.ReminderStats, err error) {
+	count := func(dest *int, query string, args ...any) {
+		if err == nil {
+			err = s.db.QueryRow(query, args...).Scan(dest)
+		}
+	}
+	count(&st.Items, "SELECT COUNT(*) FROM item")
+	count(&st.Devices, "SELECT COUNT(*) FROM push_device")
+	count(&st.SchedulesActive, "SELECT COUNT(*) FROM reminder_schedule WHERE state='active'")
+	count(&st.OccurrencesActive, "SELECT COUNT(*) FROM reminder_occurrence WHERE state='active'")
+	count(&st.DeliveriesPending, "SELECT COUNT(*) FROM push_delivery p JOIN reminder_occurrence r ON r.id=p.occurrence_id WHERE p.sent=0 AND r.state='active'")
+	count(&st.DeliveriesDue, "SELECT COUNT(*) FROM push_delivery p JOIN reminder_occurrence r ON r.id=p.occurrence_id WHERE p.sent=0 AND r.state='active' AND p.next_at<=?", now.Unix())
+	if err != nil {
+		return
+	}
+	var oldest, next sql.NullInt64
+	err = s.db.QueryRow("SELECT MIN(p.next_at) FROM push_delivery p JOIN reminder_occurrence r ON r.id=p.occurrence_id WHERE p.sent=0 AND r.state='active' AND p.next_at<=?", now.Unix()).Scan(&oldest)
+	if err == nil {
+		err = s.db.QueryRow("SELECT MIN(next_at) FROM reminder_schedule WHERE state='active'").Scan(&next)
+	}
+	if oldest.Valid {
+		st.OldestDueSeconds = now.Unix() - oldest.Int64
+	}
+	if next.Valid {
+		st.NextScheduleAt = time.Unix(next.Int64, 0).UTC().Format(time.RFC3339)
+	}
+	return
 }

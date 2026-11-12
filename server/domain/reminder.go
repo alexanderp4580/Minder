@@ -66,3 +66,11 @@ func ProjectReminder(item Item, profile *Profile) ReminderProjection {
 	at, nag := EffectiveReminder(item, profile)
 	return ReminderProjection{at, nag, at != "" && (item.Status == "open" || item.Status == "in_progress")}
 }
+
+// ReminderStats counts what the reminder pipeline holds. The worker logs it so a missing notification can be traced.
+type ReminderStats struct {
+	Items, Devices, SchedulesActive, OccurrencesActive int
+	DeliveriesPending, DeliveriesDue                   int
+	OldestDueSeconds                                   int64
+	NextScheduleAt                                     string
+}

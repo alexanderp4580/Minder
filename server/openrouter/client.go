@@ -6,7 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	neturl "net/url"
+	"strings"
 	"time"
 
 	"github.com/alexanderp4580/Minder/server/assistant"
@@ -30,6 +33,7 @@ func (m *Client) Ready() error {
 }
 func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (assistant.Response, error) {
 	if m.Key == "" {
+		slog.Error("model request failed", "stage", "setup", "reason", "model key is not configured")
 		return assistant.Response{}, &domain.ModelError{Message: "The model key is not configured."}
 	}
 	model := m.Model
@@ -42,8 +46,11 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 	}
 	payload := map[string]any{"model": model, "messages": messages, "tools": tools(), "max_tokens": maxOutputTokens, "usage": map[string]bool{"include": true}}
 	b, _ := json.Marshal(payload)
+	started := time.Now()
+	slog.Info("model request", "model", model, "endpoint_host", hostOf(url), "messages", len(messages), "tools", len(tools()), "request_bytes", len(b), "max_tokens", maxOutputTokens, "trace_id", domain.TraceID(ctx))
 	req, e := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(b))
 	if e != nil {
+		slog.Error("model request failed", "stage", "build", "error", e)
 		return assistant.Response{}, e
 	}
 	req.Header.Set("Authorization", "Bearer "+m.Key)
@@ -54,11 +61,13 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 	}
 	res, e := client.Do(req)
 	if e != nil {
+		slog.Error("model request failed", "stage", "connect", "error", e, "duration_ms", time.Since(started).Milliseconds(), "trace_id", domain.TraceID(ctx))
 		return assistant.Response{}, &domain.ModelError{Message: "The model could not connect. Try again."}
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		io.Copy(io.Discard, io.LimitReader(res.Body, 4096))
+		snippet, _ := io.ReadAll(io.LimitReader(res.Body, 512))
+		slog.Error("model request failed", "stage", "status", "status", res.StatusCode, "body", string(snippet), "duration_ms", time.Since(started).Milliseconds(), "trace_id", domain.TraceID(ctx))
 		return assistant.Response{}, &domain.ModelError{Message: fmt.Sprintf("The model returned an error (%d). Try again.", res.StatusCode)}
 	}
 	var wire struct {
@@ -78,26 +87,39 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 		Usage map[string]any `json:"usage"`
 	}
 	if e = json.NewDecoder(io.LimitReader(res.Body, 2<<20)).Decode(&wire); e != nil {
+		slog.Error("model reply rejected", "reason", "unreadable", "error", e, "status", res.StatusCode, "duration_ms", time.Since(started).Milliseconds())
 		return assistant.Response{}, &domain.ModelError{Message: "The model reply was unreadable. Try again."}
 	}
 	if len(wire.Choices) != 1 {
+		slog.Error("model reply rejected", "reason", "no_choice", "choices", len(wire.Choices))
 		return assistant.Response{}, &domain.ModelError{Message: "The model sent no reply. Try again."}
 	}
 	if wire.Choices[0].FinishReason == "length" {
+		slog.Error("model reply rejected", "reason", "truncated", "finish_reason", "length", "max_tokens", maxOutputTokens, "usage", wire.Usage)
 		return assistant.Response{}, &domain.ModelError{Message: "The model reply was cut short. Try again."}
 	}
 	cost, ok := wire.Usage["cost"].(float64)
 	if !ok || cost < 0 {
+		slog.Error("model reply rejected", "reason", "cost_missing", "usage", wire.Usage)
 		return assistant.Response{}, &domain.ModelError{Message: "The model cost is missing. Try again later."}
 	}
 	out := assistant.Response{CostUSD: cost, RawUsage: wire.Usage}
 	if wire.Choices[0].Message.Content != nil {
 		out.Text = *wire.Choices[0].Message.Content
 	}
+	var names []string
 	for _, c := range wire.Choices[0].Message.Calls {
 		out.Calls = append(out.Calls, assistant.Call{ID: c.ID, Name: c.Function.Name, Arguments: c.Function.Arguments})
+		names = append(names, c.Function.Name)
 	}
+	slog.Info("model response", "status", res.StatusCode, "finish_reason", wire.Choices[0].FinishReason, "tool_calls", strings.Join(names, ","), "content_len", len(out.Text), "cost_usd", cost, "prompt_tokens", wire.Usage["prompt_tokens"], "completion_tokens", wire.Usage["completion_tokens"], "total_tokens", wire.Usage["total_tokens"], "duration_ms", time.Since(started).Milliseconds(), "trace_id", domain.TraceID(ctx))
 	return out, nil
+}
+func hostOf(raw string) string {
+	if u, e := neturl.Parse(raw); e == nil {
+		return u.Host
+	}
+	return ""
 }
 func tools() []any {
 	str := map[string]string{"type": "string"}

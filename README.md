@@ -23,6 +23,7 @@ Production requires `CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL`.
 Set them in the deployment environment before starting this build. The server has no identity defaults.
 `CF_ISSUER` must be an HTTPS origin. Unknown `ENV` values fail startup.
 Budget and conversion settings must be finite positive numbers.
+Set `LOG_LEVEL` (debug, info, warn, error; default info) and `LOG_FORMAT` (text or json; default text). The server logs requests, state changes, model calls, push attempts and reminder events. Debug adds transactions and worker ticks. Logs never hold secrets, tokens or message text.
 The meter reserves €0.02 times the conversion rate before each call. Unknown provider costs keep that reservation.
 
 For controlled browser checks, run `python3 toolchain/model_fixture.py`, then `toolchain/local-check`.

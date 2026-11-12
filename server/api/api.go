@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/alexanderp4580/Minder/server/conversation"
 	"github.com/alexanderp4580/Minder/server/domain"
@@ -91,6 +93,8 @@ func write(w http.ResponseWriter, status int, v any) {
 func fail(w http.ResponseWriter, err error) {
 	status := 500
 	code := domain.ErrorCode(err)
+	noteError(w, err)
+	note(w, "error_code", code)
 	switch code {
 	case "invalid_field":
 		status = 400
@@ -110,10 +114,11 @@ func fail(w http.ResponseWriter, err error) {
 	}
 	write(w, status, body)
 }
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Referrer-Policy", "same-origin")
 	if h, pattern := s.public.Handler(r); pattern != "" {
+		noteAuth(w, "public")
 		h.ServeHTTP(w, r)
 		return
 	}
@@ -127,6 +132,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) authorized(w http.ResponseWriter, r *http.Request) bool {
 	if s.verifier != nil {
 		if e := s.verifier.Authenticate(r); e != nil {
+			noteAuth(w, "unauthorized")
 			write(w, http.StatusUnauthorized, map[string]string{"code": "unauthorized", "message": "Sign in to continue."})
 			return false
 		}
@@ -138,10 +144,15 @@ func (s *Server) authorized(w http.ResponseWriter, r *http.Request) bool {
 				scheme = "http"
 			}
 			if origin != scheme+"://"+r.Host {
+				noteAuth(w, "forbidden_origin")
+				note(w, "origin", truncate(origin, 200), "expected_origin", scheme+"://"+r.Host)
 				write(w, http.StatusForbidden, map[string]string{"code": "unauthorized", "message": "Use the app to send this request."})
 				return false
 			}
 		}
+	}
+	if s.verifier != nil {
+		noteAuth(w, "ok")
 	}
 	return true
 }
@@ -160,12 +171,14 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 		fail(w, e)
 		return
 	}
+	note(w, "after", after, "limit", limit, "entries", len(entries))
 	write(w, http.StatusOK, entries)
 }
 func (s *Server) items(w http.ResponseWriter, r *http.Request) {
 	from, e1 := time.Parse(time.RFC3339, r.URL.Query().Get("from"))
 	to, e2 := time.Parse(time.RFC3339, r.URL.Query().Get("to"))
 	if e1 != nil || e2 != nil || !to.After(from) || to.Sub(from) > 62*24*time.Hour {
+		note(w, "from_raw", truncate(r.URL.Query().Get("from"), 64), "to_raw", truncate(r.URL.Query().Get("to"), 64))
 		fail(w, &domain.Invalid{Field: "range", Message: "Send from and to as times, at most 62 days apart."})
 		return
 	}
@@ -174,15 +187,19 @@ func (s *Server) items(w http.ResponseWriter, r *http.Request) {
 		fail(w, e)
 		return
 	}
+	note(w, "from", from.Format(time.RFC3339), "to", to.Format(time.RFC3339), "items", len(items))
 	write(w, http.StatusOK, items)
 }
 
 // confirm applies a preview. If the item changed since, it answers 409 with a fresh preview.
 func (s *Server) confirm(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	note(w, "change_id", id)
 	entry, e := s.commands.Confirm(id)
 	if errors.Is(e, domain.ErrConflict) {
 		if replacement, re := s.commands.Refresh(id); re == nil {
+			noteError(w, e)
+			note(w, "refreshed_entry_id", replacement.ID, "outcome", "conflict_refreshed")
 			write(w, http.StatusConflict, map[string]any{"code": "conflict", "message": e.Error(), "entry": replacement})
 			return
 		}
@@ -191,22 +208,27 @@ func (s *Server) confirm(w http.ResponseWriter, r *http.Request) {
 		fail(w, e)
 		return
 	}
+	note(w, "entry_id", entry.ID, "outcome", "confirmed")
 	write(w, http.StatusOK, entry)
 }
 func (s *Server) discard(w http.ResponseWriter, r *http.Request) {
+	note(w, "change_id", r.PathValue("id"))
 	entry, e := s.commands.Discard(r.PathValue("id"))
 	if e != nil {
 		fail(w, e)
 		return
 	}
+	note(w, "entry_id", entry.ID, "outcome", "discarded")
 	write(w, http.StatusOK, entry)
 }
 func (s *Server) undo(w http.ResponseWriter, r *http.Request) {
+	note(w, "audit_id", r.PathValue("id"))
 	entry, e := s.commands.Undo(r.PathValue("id"))
 	if e != nil {
 		fail(w, e)
 		return
 	}
+	note(w, "entry_id", entry.ID, "outcome", "undone")
 	write(w, http.StatusOK, entry)
 }
 func (s *Server) message(w http.ResponseWriter, r *http.Request) {
@@ -216,6 +238,7 @@ func (s *Server) message(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 20000))
 	d.DisallowUnknownFields()
 	if e := d.Decode(&input); e != nil {
+		noteError(w, e)
 		fail(w, &domain.Invalid{Field: "text", Message: "Send a valid text message."})
 		return
 	}
@@ -224,11 +247,13 @@ func (s *Server) message(w http.ResponseWriter, r *http.Request) {
 		fail(w, &domain.Invalid{Field: "text", Message: "Send one text message."})
 		return
 	}
+	note(w, "text_len", utf8.RuneCountInString(input.Text))
 	accepted, err := s.messages.Accept(input.Text)
 	if err != nil {
 		fail(w, err)
 		return
 	}
+	note(w, "entry_id", accepted.Entry.ID, "cursor", accepted.Entry.Cursor, "reply_id", accepted.ReplyID)
 	write(w, http.StatusAccepted, accepted)
 }
 
@@ -244,6 +269,14 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 			after = n
 		}
 	}
+	opened := time.Now()
+	sent, pings := 0, 0
+	reason := "client_gone"
+	slog.Info("event stream opened", "after", after, "last_event_id", r.Header.Get("Last-Event-ID"), "remote_addr", r.RemoteAddr)
+	defer func() {
+		slog.Info("event stream closed", "reason", reason, "entries_sent", sent, "pings", pings, "last_cursor", after, "duration_ms", time.Since(opened).Milliseconds())
+		note(w, "entries_sent", sent, "pings", pings, "reason", reason)
+	}()
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache, no-transform")
 	w.Header().Set("X-Accel-Buffering", "no")
@@ -256,15 +289,22 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	send := func() bool {
 		entries, e := s.queries.Events(after, 200)
 		if e != nil {
+			reason = "query_error"
+			noteError(w, e)
+			slog.Error("event stream query failed", "after", after, "error", e)
 			return false
 		}
 		for _, entry := range entries {
 			b, _ := json.Marshal(entry)
 			http.NewResponseController(w).SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if _, e = fmt.Fprintf(w, "id: %d\nevent: entry\ndata: %s\n\n", entry.Cursor, b); e != nil {
+				reason = "write_error"
+				noteError(w, e)
 				return false
 			}
 			after = entry.Cursor
+			sent++
+			slog.Debug("event stream entry sent", "cursor", entry.Cursor, "kind", entry.Kind)
 		}
 		f.Flush()
 		return true
@@ -283,8 +323,11 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 		case <-ping.C:
 			http.NewResponseController(w).SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if _, e := fmt.Fprint(w, "event: ping\ndata: {}\n\n"); e != nil {
+				reason = "write_error"
+				noteError(w, e)
 				return
 			}
+			pings++
 			f.Flush()
 		}
 	}

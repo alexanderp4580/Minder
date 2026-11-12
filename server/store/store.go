@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"sort"
 	"sync"
 	"time"
@@ -27,36 +28,41 @@ func steps() []string {
 }
 
 // migrate upgrades the database to the newest version. It refuses a database from a newer release.
-func migrate(db *sql.DB) error {
+func migrate(db *sql.DB) (applied int, err error) {
 	var current int
 	if e := db.QueryRow("PRAGMA user_version").Scan(&current); e != nil {
-		return e
+		return 0, e
 	}
 	all := steps()
 	if current > len(all) {
-		return errors.New("The database is newer than this server.")
+		slog.Error("database is newer than this server", "schema_version", current, "server_supports", len(all))
+		return 0, errors.New("The database is newer than this server.")
 	}
 	for v := current; v < len(all); v++ {
+		started := time.Now()
 		script, e := migrations.ReadFile(all[v])
 		if e != nil {
-			return e
+			return applied, e
 		}
 		tx, e := db.Begin()
 		if e != nil {
-			return e
+			return applied, e
 		}
 		if _, e = tx.Exec(string(script)); e == nil {
 			_, e = tx.Exec(fmt.Sprintf("PRAGMA user_version=%d", v+1))
 		}
 		if e != nil {
 			tx.Rollback()
-			return fmt.Errorf("migration %s failed: %w", all[v], e)
+			slog.Error("migration failed", "name", all[v], "from_version", v, "error", e)
+			return applied, fmt.Errorf("migration %s failed: %w", all[v], e)
 		}
 		if e = tx.Commit(); e != nil {
-			return e
+			return applied, e
 		}
+		applied++
+		slog.Info("migration applied", "name", all[v], "from_version", v, "to_version", v+1, "duration_ms", time.Since(started).Milliseconds())
 	}
-	return nil
+	return applied, nil
 }
 
 type Store struct {
@@ -65,40 +71,75 @@ type Store struct {
 }
 type Tx struct{ tx *sql.Tx }
 
+// slowTransaction is the duration above which a write transaction is logged as a warning.
+var slowTransaction = 250 * time.Millisecond
+
 func Open(path string) (*Store, error) {
+	started := time.Now()
 	db, e := sql.Open("sqlite3", path+"?_foreign_keys=on&_busy_timeout=5000&_journal_mode=WAL")
 	if e != nil {
+		slog.Error("database open failed", "path", path, "error", e)
 		return nil, e
 	}
 	db.SetMaxOpenConns(1)
-	if e = migrate(db); e != nil {
+	applied, e := migrate(db)
+	if e != nil {
+		slog.Error("database open failed", "path", path, "stage", "migrate", "error", e)
 		db.Close()
 		return nil, e
 	}
 	st := &Store{db: db}
 	if e = st.seedProfiles(); e != nil {
+		slog.Error("database open failed", "path", path, "stage", "seed profiles", "error", e)
 		db.Close()
 		return nil, e
 	}
+	var version int
+	db.QueryRow("PRAGMA user_version").Scan(&version)
+	slog.Info("database opened", "path", path, "schema_version", version, "migrations_applied", applied, "duration_ms", time.Since(started).Milliseconds())
 	return st, nil
 }
-func (s *Store) Close() error { return s.db.Close() }
+func (s *Store) Close() error {
+	e := s.db.Close()
+	if e != nil {
+		slog.Error("database close failed", "error", e)
+	} else {
+		slog.Info("database closed")
+	}
+	return e
+}
 func (s *Store) Transact(fn func(port.Transaction) error) error {
 	return s.Write(func(tx *Tx) error { return fn(tx) })
 }
 
-func (s *Store) Write(fn func(*Tx) error) error {
+func (s *Store) Write(fn func(*Tx) error) (err error) {
+	queued := time.Now()
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	started := time.Now()
+	defer func() {
+		duration := time.Since(started)
+		if duration >= slowTransaction {
+			slog.Warn("slow transaction", "duration_ms", duration.Milliseconds(), "waited_ms", started.Sub(queued).Milliseconds(), "failed", err != nil)
+		} else if err == nil {
+			slog.Debug("transaction committed", "duration_ms", duration.Milliseconds(), "waited_ms", started.Sub(queued).Milliseconds())
+		}
+	}()
 	tx, e := s.db.Begin()
 	if e != nil {
+		slog.Error("transaction could not begin", "error", e)
 		return e
 	}
 	defer tx.Rollback()
 	if e = fn(&Tx{tx}); e != nil {
+		slog.Debug("transaction rolled back", "error", e)
 		return e
 	}
-	return tx.Commit()
+	if e = tx.Commit(); e != nil {
+		slog.Error("transaction commit failed", "error", e)
+		return e
+	}
+	return nil
 }
 
 // queryer is what *sql.DB and *sql.Tx share.
@@ -165,7 +206,12 @@ func (t *Tx) PutItem(i domain.Item) error {
 	if e != nil {
 		return e
 	}
-	return t.syncReminder(old, i)
+	projection, e := t.syncReminder(old, i)
+	if e != nil {
+		return e
+	}
+	slog.Info("item saved", "item_id", i.ID, "version", i.Version, "status", i.Status, "created", old == nil, "has_due", i.DueAt != "", "has_start", i.StartAt != "", "list_set", i.List != "", "profile_id", i.ProfileID, "recurring", i.Recurrence != nil, "reminder_active", projection.Active, "reminder_at", projection.At, "nag_minutes", projection.NagMinutes)
+	return nil
 }
 func (t *Tx) DeleteItem(id string) error {
 	if e := t.CloseReminders(id, "cancelled"); e != nil {
@@ -176,6 +222,9 @@ func (t *Tx) DeleteItem(id string) error {
 	}
 
 	_, e := t.tx.Exec("DELETE FROM item WHERE id=?", id)
+	if e == nil {
+		slog.Info("item deleted", "item_id", id)
+	}
 	return e
 }
 func (t *Tx) Pending(id string) (domain.Pending, error) {
@@ -183,6 +232,9 @@ func (t *Tx) Pending(id string) (domain.Pending, error) {
 }
 func (t *Tx) PutPending(p domain.Pending) error {
 	_, e := t.tx.Exec("INSERT INTO pending_change(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", p.ID, body(p))
+	if e == nil {
+		slog.Debug("pending change saved", "change_id", p.ID, "state", p.State, "action", p.Proposal.Action)
+	}
 	return e
 }
 func (t *Tx) Audit(id string) (domain.Audit, error) {
@@ -190,6 +242,9 @@ func (t *Tx) Audit(id string) (domain.Audit, error) {
 }
 func (t *Tx) PutAudit(a domain.Audit) error {
 	_, e := t.tx.Exec("INSERT INTO audit(id,actor,body) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", a.ID, a.Actor, body(a))
+	if e == nil {
+		slog.Debug("audit saved", "audit_id", a.ID, "actor", a.Actor, "undone", a.Undone)
+	}
 	return e
 }
 func (t *Tx) Entry(id string) (domain.Entry, error) {
@@ -214,6 +269,9 @@ func (t *Tx) PutEntry(e domain.Entry) (domain.Entry, error) {
 		return e, err
 	}
 	_, err = t.tx.Exec("INSERT INTO chat_entry(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", e.ID, body(e))
+	if err == nil {
+		slog.Debug("entry saved", "entry_id", e.ID, "cursor", e.Cursor, "kind", e.Kind, "text_len", len(e.Text), "cost_eur", e.CostEUR)
+	}
 	return e, err
 }
 
@@ -297,6 +355,7 @@ func (s *Store) ReserveUsage(limit, amount float64) (id string, err error) {
 			return e
 		}
 		if total+amount > limit {
+			slog.Warn("usage reservation refused", "month_cost_eur", total, "amount_eur", amount, "limit_eur", limit)
 			return domain.ErrLimit
 		}
 		_, e := t.tx.Exec("INSERT INTO usage(id,month,cost_eur,body) VALUES(?,?,?,?)", id, month(), amount, body(map[string]any{"reserved": true, "cost_eur": amount}))

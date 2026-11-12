@@ -2,6 +2,8 @@ package command
 
 import (
 	"errors"
+	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/alexanderp4580/Minder/server/domain"
@@ -18,7 +20,27 @@ type Service struct{ repository Repository }
 func New(s Repository) *Service { return &Service{s} }
 func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
 	err = c.repository.Transact(func(t port.Transaction) error { return previewIn(t, p, &out) })
+	logPreview(p, out, err)
 	return
+}
+
+// fieldNames lists which fields a change touches. Values stay out of the log.
+func fieldNames(e domain.Entry) string {
+	if e.Change == nil {
+		return ""
+	}
+	names := make([]string, 0, len(e.Change.Fields))
+	for _, f := range e.Change.Fields {
+		names = append(names, f.Name)
+	}
+	return strings.Join(names, ",")
+}
+func logPreview(p domain.Proposal, out domain.Entry, err error) {
+	if err != nil {
+		slog.Warn("change preview rejected", "action", p.Action, "item_id", p.ItemID, "profile_id", p.ProfileID, "error", err, "error_code", domain.ErrorCode(err))
+		return
+	}
+	slog.Info("change previewed", "action", p.Action, "item_id", p.ItemID, "profile_id", p.ProfileID, "change_id", out.Change.ID, "entry_id", out.ID, "fields", fieldNames(out), "expected_version", p.ExpectedVersion)
 }
 
 // PreviewAll previews several proposals in one transaction. One invalid proposal leaves no preview behind.
@@ -33,6 +55,14 @@ func (c *Service) PreviewAll(ps []domain.Proposal) (out []domain.Entry, err erro
 		}
 		return nil
 	})
+	if err != nil {
+		slog.Warn("changes preview rejected", "count", len(ps), "error", err, "error_code", domain.ErrorCode(err))
+		return
+	}
+	for i, entry := range out {
+		logPreview(ps[i], entry, nil)
+	}
+	slog.Info("changes previewed", "count", len(out))
 	return
 }
 func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
@@ -115,16 +145,20 @@ func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 	return t.PutPending(domain.Pending{ID: id, Proposal: p, Before: before, After: after, State: "pending", EntryID: out.ID})
 }
 func (c *Service) Confirm(id string) (out domain.Entry, err error) {
+	repeated, itemID, version := false, "", 0
 	err = c.repository.Transact(func(t port.Transaction) error {
 		p, e := t.Pending(id)
 		if e != nil {
 			return e
 		}
+		itemID, version = p.After.ID, p.After.Version
 		if p.State == "confirmed" {
+			repeated = true
 			out, e = t.Entry(p.ResultID)
 			return e
 		}
 		if p.State != "pending" {
+			slog.Warn("change confirm blocked", "change_id", id, "state", p.State)
 			return domain.ErrConflict
 		}
 		if p.AfterProfile != nil {
@@ -165,6 +199,19 @@ func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 		p.ResultID = out.ID
 		return t.PutPending(p)
 	})
+	switch {
+	case err != nil:
+		slog.Warn("change confirm rejected", "change_id", id, "item_id", itemID, "error", err, "error_code", domain.ErrorCode(err))
+	case repeated:
+		slog.Info("change confirm repeated", "change_id", id, "item_id", itemID, "entry_id", out.ID)
+	default:
+		action := ""
+		undo := ""
+		if out.Change != nil {
+			action, undo = out.Change.Action, out.Change.UndoID
+		}
+		slog.Info("change confirmed", "change_id", id, "action", action, "item_id", itemID, "version", version, "entry_id", out.ID, "undo_id", undo)
+	}
 	return
 }
 func (c *Service) Discard(id string) (out domain.Entry, err error) {
@@ -192,15 +239,23 @@ func (c *Service) Discard(id string) (out domain.Entry, err error) {
 		p.State = "discarded"
 		return t.PutPending(p)
 	})
+	if err != nil {
+		slog.Warn("change discard rejected", "change_id", id, "error", err, "error_code", domain.ErrorCode(err))
+	} else {
+		slog.Info("change discarded", "change_id", id, "entry_id", out.ID)
+	}
 	return
 }
 func (c *Service) Undo(id string) (out domain.Entry, err error) {
+	itemID := ""
 	err = c.repository.Transact(func(t port.Transaction) error {
 		a, e := t.Audit(id)
 		if e != nil {
 			return e
 		}
+		itemID = a.After.ID
 		if a.Undone {
+			slog.Warn("undo blocked", "audit_id", id, "reason", "already undone")
 			return domain.ErrConflict
 		}
 		if a.AfterProfile != nil {
@@ -238,6 +293,11 @@ func (c *Service) Undo(id string) (out domain.Entry, err error) {
 		out, e = t.PutEntry(domain.Entry{Kind: "result", Text: "Undone: " + a.After.Title + "."})
 		return e
 	})
+	if err != nil {
+		slog.Warn("undo rejected", "audit_id", id, "item_id", itemID, "error", err, "error_code", domain.ErrorCode(err))
+	} else {
+		slog.Info("change undone", "audit_id", id, "item_id", itemID, "entry_id", out.ID)
+	}
 	return
 }
 func (c *Service) Refresh(id string) (domain.Entry, error) {
@@ -297,5 +357,9 @@ func (c *Service) Refresh(id string) (domain.Entry, error) {
 			return domain.Entry{}, domain.ErrNotFound
 		}
 	}
-	return c.Preview(p.Proposal)
+	fresh, err := c.Preview(p.Proposal)
+	if err == nil && fresh.Change != nil {
+		slog.Info("change refreshed", "old_change_id", id, "new_change_id", fresh.Change.ID, "expected_version", p.Proposal.ExpectedVersion)
+	}
+	return fresh, err
 }

@@ -2,6 +2,7 @@ package reminder
 
 import (
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/alexanderp4580/Minder/server/domain"
@@ -20,6 +21,7 @@ func New(repository Repository) *Service { return &Service{repository: repositor
 func (s *Service) Active() ([]domain.Entry, error) { return s.repository.ActiveReminders() }
 func (s *Service) RegisterDevice(id, token string) error {
 	if err := domain.ValidateDevice(id, token); err != nil {
+		slog.Warn("push device rejected", "reason", "invalid device or token", "device_id", id, "token_len", len(token), "error", err)
 		return err
 	}
 	return s.repository.RegisterDevice(id, token)
@@ -55,6 +57,7 @@ func (s *Service) ScheduleDue(now time.Time) error {
 			if err = tx.QueueDeliveries(id, now); err != nil {
 				return err
 			}
+			scheduleAt := schedule.At.Unix()
 			schedule.State = "waiting"
 			schedule.At = time.Unix(0, 0)
 			if schedule.NagMinutes > 0 {
@@ -64,6 +67,11 @@ func (s *Service) ScheduleDue(now time.Time) error {
 			if err = tx.UpdateSchedule(schedule); err != nil {
 				return err
 			}
+			next := "none"
+			if schedule.NagMinutes > 0 {
+				next = schedule.At.UTC().Format(time.RFC3339)
+			}
+			slog.Info("reminder fired", "item_id", item.ID, "occurrence_id", id, "entry_id", entry.ID, "generation", schedule.Generation, "scheduled_at", rem.ScheduledAt, "late", rem.Late, "late_seconds", now.Unix()-scheduleAt, "nag_minutes", schedule.NagMinutes, "next", next)
 		}
 		return nil
 	})
@@ -73,18 +81,24 @@ func (s *Service) Act(id, action string, now time.Time) (out domain.Entry, err e
 	switch action {
 	case "ack", "done", "snooze15", "snooze60", "tonight", "tomorrow":
 	default:
+		slog.Warn("reminder action rejected", "reason", "unknown action", "action", action, "occurrence_id", id)
 		return out, &domain.Invalid{Field: "action", Message: "Choose Done, Open or a snooze time."}
 	}
+	next := "none"
+	itemID := ""
 	err = s.repository.Transact(func(tx port.Transaction) error {
 		occurrence, err := tx.Occurrence(id)
 		if err != nil {
 			return err
 		}
+		itemID = occurrence.ItemID
 		if occurrence.State == action && occurrence.ResultID != "" {
+			slog.Info("reminder action repeated", "action", action, "occurrence_id", id, "item_id", itemID)
 			out, err = tx.Entry(occurrence.ResultID)
 			return err
 		}
 		if occurrence.State != "active" {
+			slog.Warn("reminder action rejected", "reason", "occurrence is "+occurrence.State, "action", action, "occurrence_id", id, "item_id", itemID)
 			return domain.ErrConflict
 		}
 		schedule, err := tx.Schedule(occurrence.ItemID)
@@ -95,6 +109,7 @@ func (s *Service) Act(id, action string, now time.Time) (out domain.Entry, err e
 			return err
 		}
 		if schedule.Generation != occurrence.Generation {
+			slog.Warn("reminder action rejected", "reason", "schedule changed since the reminder fired", "action", action, "occurrence_id", id, "item_id", itemID, "occurrence_generation", occurrence.Generation, "schedule_generation", schedule.Generation)
 			return domain.ErrConflict
 		}
 		item, err := tx.Item(occurrence.ItemID)
@@ -132,6 +147,7 @@ func (s *Service) Act(id, action string, now time.Time) (out domain.Entry, err e
 				}
 				schedule.State = "active"
 				text = "Snoozed: " + item.Title + "."
+				next = schedule.At.UTC().Format(time.RFC3339)
 			}
 			if err = tx.UpdateSchedule(schedule); err != nil {
 				return err
@@ -153,5 +169,10 @@ func (s *Service) Act(id, action string, now time.Time) (out domain.Entry, err e
 		occurrence.ResultID = out.ID
 		return tx.PutOccurrence(occurrence)
 	})
+	if err != nil {
+		slog.Warn("reminder action failed", "action", action, "occurrence_id", id, "item_id", itemID, "error", err, "error_code", domain.ErrorCode(err))
+		return
+	}
+	slog.Info("reminder action", "action", action, "occurrence_id", id, "item_id", itemID, "entry_id", out.ID, "next", next)
 	return
 }

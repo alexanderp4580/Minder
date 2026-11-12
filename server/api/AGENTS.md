@@ -12,6 +12,7 @@ Depend on query, command, message, reminder and authentication interfaces. Do no
 Only health and the OAuth logo are public. Same-origin checks protect browser writes.
 Unknown API paths return 404. Stream durable cursors with 20-second pings.
 Expose fixed messages for internal/model failures. Serve only named branding files.
+`ServeHTTP` writes one `http request` line per request with status, size, duration, auth outcome and the real error cause. Handlers add inputs and output counts with `note`, never message text or secrets. Health checks log at debug.
 
 # Work Guidance
 

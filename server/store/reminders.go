@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"github.com/alexanderp4580/Minder/server/domain"
@@ -46,6 +47,7 @@ func (t *Tx) CloseReminders(itemID, state string) error {
 // applyReminder replaces the schedule when the effective reminder changed. It cancels open occurrences first.
 func (t *Tx) applyReminder(itemID string, old, now domain.ReminderProjection) error {
 	if old == now {
+		slog.Debug("reminder schedule unchanged", "item_id", itemID, "active", now.Active)
 		return nil
 	}
 	if e := t.CloseReminders(itemID, "cancelled"); e != nil {
@@ -55,41 +57,59 @@ func (t *Tx) applyReminder(itemID string, old, now domain.ReminderProjection) er
 		return e
 	}
 	if !now.Active {
+		slog.Info("reminder schedule cancelled", "item_id", itemID, "was_active", old.Active, "previous_at", old.At)
 		return nil
 	}
 	at, e := time.Parse(time.RFC3339, now.At)
 	if e != nil {
 		return e
 	}
-	_, e = t.tx.Exec("INSERT INTO reminder_schedule VALUES(?,?,?,?,?)", itemID, domain.NewID(), at.Unix(), now.NagMinutes, "active")
+	generation := domain.NewID()
+	_, e = t.tx.Exec("INSERT INTO reminder_schedule VALUES(?,?,?,?,?)", itemID, generation, at.Unix(), now.NagMinutes, "active")
+	if e == nil {
+		slog.Info("reminder schedule set", "item_id", itemID, "generation", generation, "at", now.At, "nag_minutes", now.NagMinutes, "replaced", old.Active)
+	}
 	return e
 }
-func (t *Tx) syncReminder(old *domain.Item, i domain.Item) error {
+func (t *Tx) syncReminder(old *domain.Item, i domain.Item) (domain.ReminderProjection, error) {
 	var before domain.ReminderProjection
 	if old != nil {
 		p, e := t.profileOf(old.ProfileID)
 		if e != nil {
-			return e
+			return before, e
 		}
 		before = domain.ProjectReminder(*old, p)
 	}
 	p, e := t.profileOf(i.ProfileID)
 	if e != nil {
-		return e
+		return before, e
 	}
-	return t.applyReminder(i.ID, before, domain.ProjectReminder(i, p))
+	now := domain.ProjectReminder(i, p)
+	return now, t.applyReminder(i.ID, before, now)
 }
 func (s *Store) RegisterDevice(id, token string) error {
 	return s.Write(func(t *Tx) error {
 		// Reinstallation may assign an existing token to a new local device ID.
-		if _, e := t.tx.Exec("DELETE FROM push_device WHERE token=? AND id<>?", token, id); e != nil {
+		removed, e := t.tx.Exec("DELETE FROM push_device WHERE token=? AND id<>?", token, id)
+		if e != nil {
 			return e
+		}
+		replaced, _ := removed.RowsAffected()
+		if replaced > 0 {
+			slog.Info("push device replaced", "device_id", id, "removed_devices", replaced, "token_fp", domain.Fingerprint(token))
 		}
 		if _, e := t.tx.Exec("INSERT INTO push_device VALUES(?,?) ON CONFLICT(id) DO UPDATE SET token=excluded.token", id, token); e != nil {
 			return e
 		}
-		_, e := t.tx.Exec("INSERT OR IGNORE INTO push_delivery(occurrence_id,device_id,next_at) SELECT id,?,0 FROM reminder_occurrence WHERE state='active'", id)
-		return e
+		queued, e := t.tx.Exec("INSERT OR IGNORE INTO push_delivery(occurrence_id,device_id,next_at) SELECT id,?,0 FROM reminder_occurrence WHERE state='active'", id)
+		if e != nil {
+			return e
+		}
+		backfilled, _ := queued.RowsAffected()
+		var total int
+		t.tx.QueryRow("SELECT COUNT(*) FROM push_device").Scan(&total)
+		slog.Info("push device registered", "device_id", id, "token_len", len(token), "token_fp", domain.Fingerprint(token), "queued_deliveries", backfilled, "devices_total", total)
+		return nil
 	})
 }
 func (s *Store) ActiveReminders() ([]domain.Entry, error) {
@@ -123,6 +143,7 @@ func (s *Store) FinishDelivery(d domain.Delivery, retryAt time.Time, sent, inval
 	return s.Write(func(t *Tx) error {
 		if invalid {
 			_, e := t.tx.Exec("DELETE FROM push_device WHERE id=? AND token=?", d.DeviceID, d.Token)
+			slog.Debug("push device deleted", "device_id", d.DeviceID, "token_fp", domain.Fingerprint(d.Token))
 			return e
 		}
 		// A rotated token must not inherit success for the previous token.

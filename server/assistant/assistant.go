@@ -3,10 +3,13 @@ package assistant
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/alexanderp4580/Minder/server/domain"
 )
@@ -57,16 +60,45 @@ func (a *Service) Preflight() error {
 	return nil
 }
 
+// replyTrace collects what a reply did, for the log line written when it ends.
+type replyTrace struct {
+	stage     string
+	proposals int
+	monthCost float64
+}
+
 func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	started := time.Now()
+	trace := &replyTrace{stage: "start"}
+	out, err := a.reply(ctx, text, trace)
+	duration := time.Since(started).Milliseconds()
+	switch {
+	case errors.Is(err, domain.ErrLimit):
+		slog.Warn("assistant reply blocked", "reason", "monthly_limit", "month_cost_eur", trace.monthCost, "limit_eur", a.limit, "reserve_eur", 0.02*a.rate, "trace_id", domain.TraceID(ctx))
+	case err != nil:
+		slog.Error("assistant reply failed", "stage", trace.stage, "error", err, "error_code", domain.ErrorCode(err), "duration_ms", duration, "trace_id", domain.TraceID(ctx))
+	default:
+		kinds := make([]string, 0, len(out))
+		for _, e := range out {
+			kinds = append(kinds, e.Kind)
+		}
+		slog.Info("assistant reply finished", "entries", len(out), "kinds", strings.Join(kinds, ","), "proposals", trace.proposals, "duration_ms", duration, "trace_id", domain.TraceID(ctx))
+	}
+	return out, err
+}
+func (a *Service) reply(ctx context.Context, text string, trace *replyTrace) ([]domain.Entry, error) {
+	trace.stage = "usage check"
 	cost, e := a.repository.MonthCost()
 	if e != nil {
 		return nil, e
 	}
+	trace.monthCost = cost
 	if cost+0.02*a.rate > a.limit {
 		return nil, domain.ErrLimit
 	}
+	trace.stage = "load items, lists and profiles"
 	items, e := a.repository.Items()
 	if e != nil {
 		return nil, e
@@ -81,6 +113,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 	}
 	zone, _ := time.LoadLocation("Europe/Amsterdam")
 	messages := []Message{{Role: "system", Content: systemPrompt(time.Now().In(zone), lists, profiles, contextItems(items))}}
+	trace.stage = "load history"
 	history, e := a.repository.History(0, 20)
 	if e != nil {
 		return nil, e
@@ -102,25 +135,35 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 		messages = append(messages, Message{Role: "user", Content: text})
 	}
 	encoded, _ := json.Marshal(messages)
+	open := contextItems(items)
+	slog.Info("assistant reply started", "text_len", utf8.RuneCountInString(text), "items_total", len(items), "items_in_context", len(open), "lists", len(lists), "profiles", len(profiles), "history_entries", len(history), "messages", len(messages), "prompt_bytes", len(encoded), "month_cost_eur", cost, "limit_eur", a.limit, "trace_id", domain.TraceID(ctx))
 	if len(encoded) > 60000 {
 		return nil, &domain.Invalid{Field: "request", Message: "The conversation is too large. Try a shorter request."}
 	}
+	trace.stage = "model readiness"
 	if ready, ok := a.model.(interface{ Ready() error }); ok {
 		if e := ready.Ready(); e != nil {
 			return nil, e
 		}
 	}
+	trace.stage = "reserve usage"
 	reservation, e := a.repository.ReserveUsage(a.limit, 0.02*a.rate)
 	if e != nil {
 		return nil, e
 	}
+	slog.Info("usage reserved", "reservation_id", reservation, "amount_eur", 0.02*a.rate, "trace_id", domain.TraceID(ctx))
+	trace.stage = "model call"
 	r, e := a.model.Complete(ctx, messages)
 	if e != nil {
+		slog.Warn("usage reservation kept after model failure", "reservation_id", reservation, "amount_eur", 0.02*a.rate, "trace_id", domain.TraceID(ctx))
 		return nil, e
 	}
+	trace.stage = "settle usage"
 	if e = a.repository.SettleUsage(reservation, r.CostUSD*a.rate, map[string]any{"cost_usd": r.CostUSD, "usd_to_eur": a.rate, "usage": r.RawUsage}); e != nil {
 		return nil, e
 	}
+	slog.Info("usage settled", "reservation_id", reservation, "cost_usd", r.CostUSD, "usd_to_eur", a.rate, "cost_eur", r.CostUSD*a.rate, "trace_id", domain.TraceID(ctx))
+	trace.stage = "interpret model reply"
 	if len(r.Calls) > maxChanges {
 		return nil, &domain.Invalid{Field: "request", Message: "Ask for at most five changes at once."}
 	}
@@ -133,6 +176,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 		return c
 	}
 	for _, call := range r.Calls {
+		slog.Debug("assistant tool call", "tool", call.Name, "call_id", call.ID, "argument_bytes", len(call.Arguments), "trace_id", domain.TraceID(ctx))
 		if call.Name == "list_items" {
 			var filter struct {
 				List string `json:"list"`
@@ -163,6 +207,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 			if len(lines) > 0 {
 				text = heading + "\n" + strings.Join(lines, "\n")
 			}
+			slog.Info("assistant listed items", "list_filter_set", filter.List != "", "lines", len(lines), "trace_id", domain.TraceID(ctx))
 			entry, e := a.repository.AddEntry(domain.Entry{Kind: "minder", Text: text, CostEUR: charge()})
 			if e != nil {
 				return nil, e
@@ -187,11 +232,14 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 				p.Action = "create_profile"
 			}
 		default:
+			slog.Error("model used an unknown tool", "tool", call.Name, "trace_id", domain.TraceID(ctx))
 			return nil, &domain.ModelError{Message: "The model used an unknown tool."}
 		}
 		proposals = append(proposals, p)
 	}
 	if len(proposals) > 0 {
+		trace.stage = "preview proposals"
+		trace.proposals = len(proposals)
 		previews, e := a.commands.PreviewAll(proposals)
 		if e != nil {
 			return nil, e
@@ -205,6 +253,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 	}
 	if len(out) == 0 {
 		if strings.TrimSpace(r.Text) == "" {
+			slog.Error("model sent an empty reply", "trace_id", domain.TraceID(ctx))
 			return nil, &domain.ModelError{Message: "The model sent an empty reply."}
 		}
 		entry, e := a.repository.AddEntry(domain.Entry{Kind: "minder", Text: r.Text, CostEUR: charge()})

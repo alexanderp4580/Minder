@@ -48,9 +48,11 @@ func (s *Server) reminders(w http.ResponseWriter, r *http.Request) {
 		fail(w, e)
 		return
 	}
+	note(w, "reminders", len(entries))
 	write(w, http.StatusOK, entries)
 }
 func (s *Server) pushConfig(w http.ResponseWriter, r *http.Request) {
+	note(w, "push_configured", s.PushConfig != nil)
 	if s.PushConfig == nil {
 		write(w, http.StatusServiceUnavailable, map[string]string{"code": "push_not_configured", "message": "Push setup is not ready on the server."})
 		return
@@ -63,6 +65,7 @@ func (s *Server) registerDevice(w http.ResponseWriter, r *http.Request) {
 		Token    string `json:"token"`
 	}
 	e := decodeBody(w, r, &input)
+	note(w, "device_id", input.DeviceID, "token_len", len(input.Token), "token_fp", domain.Fingerprint(input.Token))
 	if e == nil {
 		e = s.Reminders.RegisterDevice(input.DeviceID, input.Token)
 	}
@@ -73,10 +76,12 @@ func (s *Server) registerDevice(w http.ResponseWriter, r *http.Request) {
 	write(w, http.StatusOK, map[string]bool{"registered": true})
 }
 func (s *Server) reminderAction(w http.ResponseWriter, r *http.Request) {
+	note(w, "reminder_id", r.PathValue("id"), "action", r.PathValue("action"))
 	entry, e := s.Reminders.Act(r.PathValue("id"), r.PathValue("action"), time.Now().UTC())
 	if e != nil {
 		fail(w, e)
 		return
 	}
+	note(w, "entry_id", entry.ID)
 	write(w, http.StatusOK, entry)
 }
