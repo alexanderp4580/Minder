@@ -38,6 +38,27 @@ Steps:
 - Open: "Buy milk tomorrow" gets no due time. The model writes the date into the notes.
 - Open: a weaker model can drop a change from a multi-change message without an error. Free OpenRouter models work for plumbing tests. Rate limits apply.
 
+## In progress: start date, duration, priority and the calendar page
+
+Owner order: add the three fields and a calendar page.
+
+Decisions:
+- `start_at` is when an item begins. `due_at` is the deadline. An appointment has a start and a duration. A task has a deadline.
+- `duration_minutes`: 1 to 10,080. `priority`: 1 (highest) to 5. Zero means not set.
+- The start must not be after the deadline.
+- A profile reminder counts from the deadline, or from the start when there is no deadline.
+- A repeating item needs a deadline or a start. Completing it moves start, deadline and reminder by the same distance. Across a daylight-saving change, the start of an item that also has a deadline can move one hour against the local clock.
+- Calendar page: month grid and a day agenda, read-only, opened from the chat header. Items sit on their start day, else their deadline day. Times show in the device zone.
+- `GET /v1/items?from=&to=` returns the items in a range.
+
+Steps:
+- [ ] Domain: fields, validation, anchor rules, recurrence shift.
+- [ ] Command and assistant: proposals, previews, prompt (events use a start, tasks use a deadline).
+- [ ] API: `GET /v1/items`.
+- [ ] App: item model, repository, use case, calendar controller, calendar screen, navigation, tests.
+- [ ] Docs: `docs/calendar-spec.md`, `docs/screens.md`, `docs/m1-spec.md`, AGENTS files, evidence.
+- [ ] Final checks, deploy, APK, phone check.
+
 ## Checks
 
 Run from the worktree root:
