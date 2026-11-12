@@ -75,7 +75,7 @@ The approved execution plan is `docs/m0-execution.md`. Phone approval still gate
 - `docs/AGENTS.md`: requirements and design docs
 - `brand/AGENTS.md`: brand guide website
 
-Root owns: this file, `README.md`, `PRODUCT.md`, `.gitignore`, `Dockerfile`, `.dockerignore`.
+Root owns: this file, `README.md`, `PRODUCT.md`, `HANDOFF.md`, `.gitignore`, `Dockerfile`, `.dockerignore`.
 
 - `server/AGENTS.md`: Go service and tests
 - `app/AGENTS.md`: Flutter client and tests

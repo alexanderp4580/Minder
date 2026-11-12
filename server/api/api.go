@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/alexanderp4580/Minder/server/command"
-	"github.com/alexanderp4580/Minder/server/domain"
-	"github.com/alexanderp4580/Minder/server/store"
 	"io"
 	"log"
 	"net/http"
@@ -16,7 +13,15 @@ import (
 	"sync"
 	"time"
 	"unicode/utf8"
+
+	"github.com/alexanderp4580/Minder/server/command"
+	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/store"
 )
+
+type Authenticator interface {
+	Authenticate(*http.Request) error
+}
 
 type Replier interface {
 	Reply(context.Context, string) ([]domain.Entry, error)
@@ -29,14 +34,14 @@ type Server struct {
 	store        *store.Store
 	commands     *command.Service
 	assistant    Replier
-	verifier     *Verifier
+	verifier     Authenticator
 	web          http.Handler
 	public       *http.ServeMux // reachable without sign-in
 	private      *http.ServeMux // reachable after sign-in
 	processing   sync.Mutex
 }
 
-func New(s *store.Store, c *command.Service, a Replier, v *Verifier, web string) *Server {
+func New(s *store.Store, c *command.Service, a Replier, v Authenticator, web string) *Server {
 	srv := &Server{store: s, commands: c, assistant: a, verifier: v, PingInterval: 20 * time.Second}
 	if web != "" {
 		srv.web = http.FileServer(http.Dir(web))
@@ -110,7 +115,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // authorized checks the owner's token, and for writes that the request comes from this site.
 func (s *Server) authorized(w http.ResponseWriter, r *http.Request) bool {
 	if s.verifier != nil {
-		if e := s.verifier.Verify(r.Header.Get("Cf-Access-Jwt-Assertion")); e != nil {
+		if e := s.verifier.Authenticate(r); e != nil {
 			write(w, http.StatusUnauthorized, map[string]string{"code": "unauthorized", "message": "Sign in to continue."})
 			return false
 		}

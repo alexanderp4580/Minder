@@ -4,11 +4,15 @@ Flutter Android and web client: the chat screen and a read-only calendar page.
 
 ## Layers
 
-- `domain`: entries, `Change`, `ReminderInfo`, items, the repository interfaces (`ChatRepository`, `PushRepository`, `ItemRepository`) and `ReminderAction`.
-- `data`: implements the interfaces. It alone knows routes and wire names.
+- `domain`: entries, `Change`, `ReminderInfo`, items, the repository interfaces (`ChatRepository`, `PushRepository`, `ItemRepository`) and `ReminderAction`. `push_repository.dart` defines typed push configuration, device registration and notification actions.
+- `data`: implements the interfaces. It alone knows routes and wire names. `wire.dart` decodes JSON; `notification_device.dart` owns Android channel messages.
+- Domain models contain no JSON factories or raw transport maps.
 - `application`: use cases and controllers (`ChatController`, `CalendarController`, `NotificationController`).
 - `ui`: screens and widgets. They call controller methods, read typed models and design tokens, and never build a route or read a raw JSON map.
 - `ui/entry_view.dart` draws one chat entry. `ui/format.dart` owns time, cost and label text.
+
+Calendar loads ignore superseded results and errors. Notification state becomes enabled only after device registration succeeds.
+Notification resume checks permission revocation. Dispose removes the native action callback.
 
 ## Look
 

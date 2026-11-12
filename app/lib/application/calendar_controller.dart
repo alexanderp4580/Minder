@@ -17,6 +17,7 @@ class CalendarController extends ChangeNotifier {
   bool loading = false;
   String? error;
   bool _disposed = false;
+  int _request = 0;
   List<Item> _items = [];
 
   static DateTime _day(DateTime t) => DateTime(t.year, t.month, t.day);
@@ -39,14 +40,19 @@ class CalendarController extends ChangeNotifier {
 
   Future<void> load() async {
     if (_disposed) return;
+    final request = ++_request;
     loading = true;
+    error = null;
     notifyListeners();
     try {
       final start = gridStart;
       final end = DateTime(start.year, start.month, start.day + 42);
-      _items = await _load(start, end);
+      final items = await _load(start, end);
+      if (_disposed || request != _request) return;
+      _items = items;
       error = null;
     } catch (e) {
+      if (_disposed || request != _request) return;
       error = e is ApiException
           ? e.message
           : 'Check your connection. Then try again.';

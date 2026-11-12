@@ -9,6 +9,7 @@ import 'application/chat_controller.dart';
 import 'application/notifications.dart';
 import 'application/use_cases.dart';
 import 'data/chat_api.dart';
+import 'data/notification_device.dart';
 import 'data/access_auth.dart';
 import 'ui/calendar_screen.dart';
 import 'ui/chat_screen.dart';
@@ -49,6 +50,7 @@ final notificationProvider = Provider<NotificationController>((ref) {
   final controller = NotificationController(
     api,
     ActOnReminder(api),
+    device: AndroidNotificationDevice(),
     onSync: () => ref.read(chatProvider).sync(),
   );
   ref.onDispose(controller.dispose);

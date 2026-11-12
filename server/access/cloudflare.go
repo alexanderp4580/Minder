@@ -1,29 +1,20 @@
-package api
+package access
 
 import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
 	"math/big"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-func ValidateMode(mode, env string) error {
-	if mode == "dev" && env == "production" {
-		return errors.New("dev authentication is forbidden in production")
-	}
-	if mode != "dev" && mode != "cloudflare" {
-		return errors.New("AUTH_MODE must be dev or cloudflare")
-	}
-	return nil
-}
-
-type Verifier struct {
+type cloudflareVerifier struct {
 	Issuer, Audience, Email string
 	Keys                    map[string]*rsa.PublicKey
 	mu                      sync.Mutex
@@ -31,12 +22,25 @@ type Verifier struct {
 	Client                  *http.Client
 }
 
-func (v *Verifier) Verify(raw string) error {
+func (v *cloudflareVerifier) Authenticate(r *http.Request) error {
+	return v.Verify(r.Header.Get("Cf-Access-Jwt-Assertion"))
+}
+
+func (v *cloudflareVerifier) Verify(raw string) error {
 	if raw == "" {
 		return errors.New("missing token")
 	}
 	claims := jwt.MapClaims{}
-	token, e := jwt.ParseWithClaims(raw, claims, func(t *jwt.Token) (any, error) { kid, _ := t.Header["kid"].(string); return v.key(kid) }, jwt.WithValidMethods([]string{"RS256"}), jwt.WithIssuer(v.Issuer), jwt.WithAudience(v.Audience), jwt.WithExpirationRequired(), jwt.WithIssuedAt())
+	token, e := jwt.ParseWithClaims(raw, claims, func(t *jwt.Token) (any, error) {
+		kid, _ := t.Header["kid"].(string)
+		return v.key(kid)
+	},
+		jwt.WithValidMethods([]string{"RS256"}),
+		jwt.WithIssuer(v.Issuer),
+		jwt.WithAudience(v.Audience),
+		jwt.WithExpirationRequired(),
+		jwt.WithIssuedAt(),
+	)
 	if e != nil || !token.Valid {
 		return errors.New("invalid token")
 	}
@@ -46,7 +50,7 @@ func (v *Verifier) Verify(raw string) error {
 	}
 	return nil
 }
-func (v *Verifier) key(kid string) (*rsa.PublicKey, error) {
+func (v *cloudflareVerifier) key(kid string) (*rsa.PublicKey, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	if key := v.Keys[kid]; key != nil && (v.fetched.IsZero() || time.Since(v.fetched) < time.Hour) {

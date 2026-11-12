@@ -1,6 +1,7 @@
 # Server
 
-Go HTTP service. `domain` owns values and rules. `store` alone writes SQL. `command` owns item and profile changes: preview, confirm, discard and undo. `assistant` proposes changes only. `api` owns routes, sign-in and event streams. `cmd/minder` wires the process.
+Go HTTP service. `domain` owns values and rules. `store` alone writes SQL. `command` owns item and profile changes: preview, confirm, discard and undo. `assistant` proposes changes only. `api` owns routes and event streams. `access` owns request authentication and identity settings.
+`config` validates process settings. `cmd/minder` wires the process.
 All timestamps use UTC. The default display zone is Europe/Amsterdam.
 
 ## Checks
@@ -35,6 +36,13 @@ Write the failing test first. Use real SQLite files for transaction tests.
 - Reserve model costs before a request; settle them from provider usage. Unknown costs keep the reservation. A reply's cost (`cost_eur`) sits on its first entry.
 - Model context includes preview, result and error entries as structured assistant messages. The latest user message stays last. Confirmed changes must not become new proposals.
 - Error codes: `invalid_field` 400, `conflict` 409, `not_found` 404, `limit_reached` 429, `model_error` 502, `internal_error` 500. Model and internal errors show a fixed message, never their details.
+
+## Runtime boundaries
+
+- `api.Authenticator` accepts a request and returns an identity error. Keep provider headers and JWT logic in `access`.
+- `access.FromEnvironment` requires explicit issuer, audience and owner settings. It returns no authenticator only in development or tests.
+- `config.Load` rejects unknown environments, custom production model endpoints and non-finite budget values.
+- Keep deployment identities out of `cmd/minder`.
 
 ## Routes
 

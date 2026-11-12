@@ -1,89 +1,92 @@
 # Handoff
 
-State on 2026-11-12. Branch `m0-chat`, worktree `Minder-m0-chat`. This file is temporary. Update it at each step. Delete it when the owner merges.
+State on 2026-11-12. Branch `m0-chat`, worktree `Minder-m0-chat`.
+Keep this file current until the owner merges.
 
-## Done
+## Current source
 
-- M0 chat: server, Flutter app, Cloudflare Access, Coolify deploy. The owner approved it on a phone.
-- Reminders and push (`cce3855`): scheduling with catch-up, nagging, FCM, notification actions. The owner confirmed that it works on a phone.
-- The app uses repository interfaces and use cases. Only `data` knows API routes.
-- Production runs `1c0efe9`. Firebase settings are runtime variables on Coolify.
+- Chat, item and profile previews, Confirm, Discard, Undo and open-item queries.
+- Lists, profiles, recurrence, reminders, nagging and Android FCM actions.
+- Start, deadline, duration, priority and location fields.
+- Read-only calendar with a month grid and day agenda.
+- Theme spacing, standard visual density, shared Material styles and golden tests.
+- Private `/branding/` guide and public OAuth logo.
 
-## In progress: M1 remainder (lists, profiles, recurrence)
+The owner approved M0 and reminder delivery on a phone.
+The owner requested completion of M1 and the calendar without questions.
+Execution stays inline, without sub-agents. Phone approval still gates merging to `main`.
 
-Owner order: finish M1 without questions.
+## Review and refactor
 
-Decisions:
-- A list is a name on an item. The server keeps one spelling for each name, ignoring case.
-- A profile has a name, minutes before the due time, and a nag interval. Five built-ins are seeded: Daily task, Chore, Birthday, Day event, Trip. The owner can edit them and add more.
-- An item with a profile and a due time gets its reminder from the profile. A reminder on the item wins. An item with neither stays silent.
-- Recurrence: daily, weekly, monthly, yearly, with an interval. Fixed repeats keep the schedule. "After completion" counts from the day you finish. Completing a recurring item moves its due time forward. Undo restores it.
-- Deferred: reset and clone of lists, subtasks, labels, priority, profile statuses.
+The current review isolates authentication, process settings, JSON decoding and Android channel messages.
+It also fixes calendar request ordering and stale notification permission state.
+Details and checks: [docs/evidence/review-refactor.md](docs/evidence/review-refactor.md).
+Architecture: [docs/architecture.md](docs/architecture.md).
 
-Steps:
-- [x] Domain: recurrence, profile, validation, next due time (tests pass).
-- [x] Store: profile table, seeding, profile edits reschedule reminders, list names (tests pass).
-- [x] Command layer: list, profile and recurrence on items; profile preview, confirm, undo (tests pass).
-- [x] Assistant: new fields, `propose_profile`, lists and profiles in the model context, list filter (tests pass; one real-model run).
-- [x] App: labels for the new preview fields (widget test passes).
-- [x] Docs: `server/AGENTS.md`, `docs/master-plan.md`, `docs/m1-spec.md`, `docs/evidence/m1.md`.
-- [x] Final checks.
-- [x] Commit (`4f8515b`), push, APK 0.3.0 built (arm64, SHA-256 starts `94d444a3`).
-- [x] Deployed `e2ab375` to production without `force`: 28 seconds, `running:healthy`. A forced deploy takes about 5.5 minutes because it rebuilds every layer. Use `force` only when a build input outside the Dockerfile layers changes.
-- [x] APK 0.3.0 sent to Telegram. APK 0.3.1 hides the notification button and text once notifications are on.
-- [x] Location field and follow-up questions (tests pass, real-model run in `docs/evidence/m1.md`).
-- [x] Several changes in one message, cost on each reply (tests pass, Haiku run in `docs/evidence/m1.md`).
-- [x] Deployed `124494d` (76 seconds, healthy). APK 0.3.3 sent to Telegram.
-- [ ] Owner phone check of lists, profiles, recurrence and follow-up questions.
-- Open: date-only requests behave inconsistently. "Buy milk tomorrow" gets no due time and no question. "Call mum on Sunday" gets a question about the time.
-- Open: a weaker model can drop a change from a multi-change message without an error. Free OpenRouter models work for plumbing tests. Rate limits apply.
+Production now requires explicit `CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL` settings.
+Set them in Coolify before deploying this build. The review did not inspect hosted settings.
+`cmd/minder` contains no Cloudflare settings or owner identity.
 
-## In progress: start date, duration, priority and the calendar page
+## Deployment and APK status
 
-Owner order: add the three fields and a calendar page.
+The prior handoff records production commit `1c0efe9`, with calendar fields and `/branding/`.
+This review did not check the live deployment or deploy changes.
+The spacing changes and refactor remain local to `m0-chat`.
 
-Decisions:
-- `start_at` is when an item begins. `due_at` is the deadline. An appointment has a start and a duration. A task has a deadline.
-- `duration_minutes`: 1 to 10,080. `priority`: 1 (highest) to 5. Zero means not set.
-- The start must not be after the deadline.
-- A profile reminder counts from the deadline, or from the start when there is no deadline.
-- A repeating item needs a deadline or a start. Completing it moves start, deadline and reminder by the same distance. Across a daylight-saving change, the start of an item that also has a deadline can move one hour against the local clock.
-- Calendar page: month grid and a day agenda, read-only, opened from the chat header. Items sit on their start day, else their deadline day. Times show in the device zone.
-- `GET /v1/items?from=&to=` returns the items in a range.
+APK 0.3.3 was sent through Telegram. APK 0.4.0 is not built.
+The owner stopped that build. Build it only when the owner asks.
 
-Steps:
-- [x] Domain: fields, validation, anchor rules, recurrence shift (tests pass).
-- [x] Command and assistant: proposals, previews, prompt (tests pass).
-- [x] API: `GET /v1/items` (tests pass).
-- [x] App: item model, repository, use case, calendar controller, calendar screen, navigation, tests (19 Flutter tests pass; web check passes).
-- [x] Docs: `docs/calendar-spec.md`, `docs/screens.md`, `docs/m1-spec.md`, AGENTS files, evidence.
-- [x] Branding hosted at `/branding/` behind sign-in (tests pass). It is private. A public page needs a Cloudflare Access bypass for that path. The owner decides.
-- Docker context: `.dockerignore` lists the folders the image build may read. A new folder needs an entry there. The first branding deploy failed for this reason. Test a new COPY with `podman build` on a small Dockerfile before a deploy.
-- [x] Deployed `1c0efe9` (172 seconds; unhealthy for the first seconds, then `running:healthy`). Production has the calendar, the new fields and `/branding/`. The public address returns 401 without sign-in. The content at `/branding/` is not checked through the live host.
-- [x] UI spacing pass (owner: the app felt tight around headers and did not match the guide). Header without divider, time next to the sender, 44 px buttons, 56 px composer, shared button components, `ui_spec_test.dart`, mockup and `foundation.md` updated. Not deployed. Not on a phone yet.
-- Owner fixes after the spacing pass: the primary button is last in its row; the text field is 44 px and shares its centre line with Send; calendar day cells are 56 px. The field was short in desktop browsers only, because they default to compact `VisualDensity`. The theme now pins standard density. Button, icon button and field styles live in `Tokens.theme`; screens use plain Material widgets. The Snooze menu is a `MenuAnchor`.
-- [x] Code review of the whole branch: fixes and restructuring are listed in `docs/evidence/m1.md`. Not deployed.
-- Open: the Cloudflare issuer, audience and owner email are defaults in `cmd/minder/main.go`. Move them to required settings after setting the variables on Coolify.
-- Known gap: the guide uses Carbon icons and the app uses Material icons.
-- [ ] APK 0.4.0 (calendar and spacing) is not built. The owner stopped the build. Build it only when the owner asks.
-- [ ] Phone check of the calendar.
+The Coolify app is `ciw3jk5gkgiql8kfdomeyys2`.
+A Git push does not deploy. Deployment needs an explicit POST to `/deploy`.
+The prior handoff recommends normal deploys; forced deploys rebuild all layers.
+`.dockerignore` controls the build context. Check a new COPY source before deploying.
 
-## Checks
+## Current behaviour
+
+- List names share one spelling, ignoring case.
+- Five built-in profiles provide editable reminder defaults. An explicit item reminder takes precedence.
+- Recurrence supports daily, weekly, monthly and yearly intervals, including repeats after completion.
+- Completing a repeating item advances its times. Undo restores the prior occurrence.
+- `start_at` marks the start. `due_at` marks the deadline. Start must not follow deadline.
+- Duration accepts 1 to 10,080 minutes. Priority accepts 1 to 5; zero means unset.
+- Reminder and recurrence anchors use the deadline, then the start.
+- Calendar placement uses the start, then the deadline. Times use the device zone.
+- Repeats move start, deadline and reminder by the same elapsed distance.
+- Across daylight-saving changes, a start tied to a deadline can move one hour against the local clock.
+- `GET /v1/items?from=&to=` accepts ranges up to 62 days.
+
+Specs: [docs/m1-spec.md](docs/m1-spec.md), [docs/calendar-spec.md](docs/calendar-spec.md),
+[docs/notifications-spec.md](docs/notifications-spec.md).
+
+## Checks still needed
+
+- Phone checks of lists, profiles, recurrence, follow-up questions and calendar behaviour.
+- Android emulator notification check; the prior handoff records no emulator container.
+- Date-only handling: "Buy milk tomorrow" can omit the due time without a question.
+- Multi-change completeness: a weaker model can omit a change without an error.
+- The app uses Material icons. The guide specifies Carbon icons.
+- Live `/branding/` content after sign-in needs a check. The prior unauthenticated request returned 401.
+- `docs/evidence/m0.md` needs the reminder phone result recorded.
+
+Deferred product work: list reset and clone, subtasks, labels, profile statuses and voice.
+
+## Local verification
 
 Run from the worktree root:
-- `toolchain/run go go test -race ./...` and `toolchain/run go go vet ./...`
-- `toolchain/run flutter flutter test` and `toolchain/run flutter flutter analyze`
-- `toolchain/reminder-local-check` after a web build.
 
-Go race tests, Go vet, Flutter tests and Flutter analyze pass. Both web scenarios pass (`local-check` needs `toolchain/model_fixture.py` running).
+- `toolchain/run go go test -race ./...`
+- `toolchain/run go go vet ./...`
+- `toolchain/run go gofmt -l .`
+- `toolchain/run flutter flutter test`
+- `toolchain/run flutter flutter analyze`
+- `toolchain/run flutter dart format --set-exit-if-changed lib test`
+- Build web, then run chat, reminder and calendar browser checks.
+
+`toolchain/local-check` needs `toolchain/model_fixture.py` on port 8181.
+The reminder and calendar scripts start their own fixture. Run these checks in sequence.
 
 ## Secrets and access
 
-- TokenCrypt grants last 30 minutes and the vault locks again. The owner unlocks it in the website.
-- `firebase_minder_service_account` and `coolify_api_root_token` are the secrets this work uses.
-- The Coolify app is `ciw3jk5gkgiql8kfdomeyys2`. A push to GitHub does not deploy. Deploy needs an explicit POST to `/deploy`.
-
-## Open
-
-- Android emulator check of notifications: no emulator container exists.
-- `docs/evidence/m0.md` does not yet list the reminder phone result.
+Secrets stay in TokenCrypt or process variables.
+TokenCrypt grants last 30 minutes. The vault can require the owner to unlock it on the website.
+Deployment uses `coolify_api_root_token`; Firebase uses `firebase_minder_service_account`.

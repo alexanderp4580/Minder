@@ -25,8 +25,3 @@ abstract interface class ChatRepository {
   Future<Entry> actOnReminder(String reminderId, ReminderAction action);
   void close();
 }
-
-abstract interface class PushRepository {
-  Future<Map<String, dynamic>> pushConfig();
-  Future<void> registerDevice(String id, String token);
-}

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/application/calendar_controller.dart';
 import 'package:minder/application/chat_controller.dart';
 import 'package:minder/application/use_cases.dart';
+import 'package:minder/data/wire.dart';
 import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
 import 'package:minder/domain/item.dart';
@@ -46,7 +47,7 @@ Entry entry(
   Map<String, dynamic>? change,
   Map<String, dynamic>? reminder,
   double cost = 0,
-}) => Entry.fromJson({
+}) => entryFromJson({
   'id': 'e$n',
   'cursor': n,
   'kind': kind,

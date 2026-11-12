@@ -8,11 +8,12 @@ Product requirements and design docs for Minder.
 - `master-plan.md`: architecture, designs to write, milestones, risks and order of work
 - `screens.md`: the chat screen, objects and open decisions
 - `foundation.md`: design rules for the chat screen: colour, type, space, components, states
-- `architecture.md`: Go service and Flutter app architecture, checks done, spikes
+- `architecture.md`: current Go service and Flutter layers, runtime boundaries, routes and checks
 - `m0-spec.md`: scope, interfaces, task plan and acceptance criteria of milestone M0
 - `m1-spec.md`: scope, behaviour, interfaces and acceptance of the lists, profiles and recurrence slice
 - `calendar-spec.md`: the read-only calendar page, its data and the start, duration and priority fields
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
+- `evidence/review-refactor.md`: review scope, refactor checks and release requirements
 - Later design specs, plans and evidence files per slice
 
 - `m0-execution.md`: approved execution order and checks

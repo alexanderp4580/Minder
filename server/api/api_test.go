@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"github.com/alexanderp4580/Minder/server/command"
-	"github.com/alexanderp4580/Minder/server/domain"
-	"github.com/alexanderp4580/Minder/server/store"
+	"errors"
 	"image/png"
 	"io"
 	"net/http"
@@ -16,6 +14,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/alexanderp4580/Minder/server/command"
+	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/store"
 )
 
 type replier struct{ s *store.Store }
@@ -97,13 +99,11 @@ func TestInvalidRequests(t *testing.T) {
 		}
 	}
 }
-func TestDevProductionGuard(t *testing.T) {
-	if ValidateMode("dev", "production") == nil {
-		t.Fatal("production accepted dev")
-	}
-	if ValidateMode("dev", "development") != nil {
-		t.Fatal("local dev refused")
-	}
+
+type rejectingAuthenticator struct{}
+
+func (rejectingAuthenticator) Authenticate(*http.Request) error {
+	return errors.New("invalid identity")
 }
 
 type blockedReplier struct{}
@@ -136,7 +136,7 @@ func TestPublicLogoDoesNotExposePrivateRoutes(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer s.Close()
-	h := New(s, command.New(s), replier{s}, &Verifier{}, "")
+	h := New(s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest("GET", "/brand/minder-icon.png", nil))
 	if w.Code != 200 || w.Header().Get("Content-Type") != "image/png" {
@@ -171,7 +171,7 @@ func TestReminderRoutesNeedAuthAndRejectInvalidBodies(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer s.Close()
-	locked := New(s, command.New(s), replier{s}, &Verifier{}, "")
+	locked := New(s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
 	for _, path := range []string{"/v1/reminders", "/v1/push/config", "/v1/push/devices", "/v1/reminders/id/done"} {
 		w := httptest.NewRecorder()
 		locked.ServeHTTP(w, httptest.NewRequest("POST", path, strings.NewReader(`{}`)))
@@ -233,7 +233,7 @@ func TestItemsRangeReturnsPlacedItemsOnly(t *testing.T) {
 			t.Fatalf("query %q gave %d", q, code)
 		}
 	}
-	locked := New(s, command.New(s), replier{s}, &Verifier{}, "")
+	locked := New(s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
 	w := httptest.NewRecorder()
 	locked.ServeHTTP(w, httptest.NewRequest("GET", "/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z", nil))
 	if w.Code != 401 {
@@ -280,7 +280,7 @@ func TestBrandingServesOnlyTheGuideFilesAfterSignIn(t *testing.T) {
 	if w := get(h, "POST", "/branding/"); w.Code == 200 {
 		t.Fatal("POST accepted")
 	}
-	locked := New(s, command.New(s), replier{s}, &Verifier{}, "")
+	locked := New(s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
 	locked.Branding = dir
 	if w := get(locked, "GET", "/branding/"); w.Code != 401 {
 		t.Fatalf("unauthenticated: %d", w.Code)

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
 import '../domain/chat_repository.dart';
+import '../domain/push_repository.dart';
 import 'use_cases.dart';
 
 class NotificationController extends ChangeNotifier {
@@ -9,35 +9,40 @@ class NotificationController extends ChangeNotifier {
     this.push,
     this.actOnReminder, {
     required this.onSync,
-    MethodChannel? channel,
-  }) : channel = channel ?? const MethodChannel('minder/notifications') {
-    this.channel.setMethodCallHandler((call) async {
-      if (call.method == 'actionAvailable') await resume();
-    });
+    required this.device,
+  }) {
+    device.onActionAvailable(resume);
   }
   final PushRepository push;
   final ActOnReminder actOnReminder;
   final Future<void> Function() onSync;
-  final MethodChannel channel;
+  final NotificationDevice device;
   bool enabled = false, busy = false, _disposed = false;
   String? status;
   void _notify() {
     if (!_disposed) notifyListeners();
   }
 
-  Future<void> _register(Map<dynamic, dynamic>? value) async {
-    enabled = value?['granted'] == true;
-    if (!enabled) {
+  Future<void> _register(DeviceRegistration value) async {
+    enabled = false;
+    if (!value.granted) {
       status = 'Allow notification permission in Android settings.';
       return;
     }
-    final token = value?['token'] as String?;
+    final token = value.token;
     if (token == null || token.isEmpty) {
       enabled = false;
       status = 'The push token is not ready. Try again.';
       return;
     }
-    await push.registerDevice(value!['device_id'] as String, token);
+    final deviceId = value.deviceId;
+    if (deviceId == null || deviceId.isEmpty) {
+      enabled = false;
+      status = 'The device is not ready. Try again.';
+      return;
+    }
+    await push.registerDevice(deviceId, token);
+    enabled = true;
     status = 'Notifications are on.';
   }
 
@@ -47,10 +52,7 @@ class NotificationController extends ChangeNotifier {
     _notify();
     try {
       final config = await push.pushConfig();
-      final result = await channel.invokeMapMethod<String, dynamic>(
-        'enable',
-        config,
-      );
+      final result = await device.enable(config);
       await _register(result);
     } catch (e) {
       enabled = false;
@@ -67,28 +69,18 @@ class NotificationController extends ChangeNotifier {
     if (busy) return;
     busy = true;
     try {
-      final pending = await channel.invokeMapMethod<String, dynamic>(
-        'takeAction',
-      );
+      final pending = await device.takeAction();
       if (pending != null) {
-        final id = pending['id'] as String,
-            action = pending['action'] as String;
-        final parsed = const {
-          'done': ReminderAction.done,
-          'ack': ReminderAction.acknowledge,
-          'snooze15': ReminderAction.snooze15,
-        }[action];
-        if (!RegExp(r'^[a-zA-Z0-9]+$').hasMatch(id) || parsed == null) {
-          throw const ApiException('This notification action is invalid.');
-        }
-        await actOnReminder(id, parsed);
-        await channel.invokeMethod<void>('completeAction', pending);
+        await actOnReminder(pending.reminderId, pending.action);
+        await device.completeAction(pending);
         await onSync();
         status = null;
       }
-      final token = await channel.invokeMapMethod<String, dynamic>('token');
-      if (token?['granted'] == true) {
+      final token = await device.registration();
+      if (token.granted) {
         await _register(token);
+      } else {
+        enabled = false;
       }
     } catch (e) {
       status = e is ApiException
@@ -104,6 +96,7 @@ class NotificationController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    device.onActionAvailable(null);
     super.dispose();
   }
 }

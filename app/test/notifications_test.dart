@@ -4,9 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:minder/application/notifications.dart';
 import 'package:minder/application/use_cases.dart';
 import 'package:minder/data/chat_api.dart';
-import 'package:minder/application/notifications.dart';
+import 'package:minder/data/notification_device.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,12 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
             expect(call.method, 'enable');
+            expect(call.arguments, {
+              'app_id': 'app',
+              'api_key': 'public',
+              'project_id': 'project',
+              'sender_id': 'sender',
+            });
             return {
               'granted': true,
               'device_id': 'phone',
@@ -52,6 +59,7 @@ void main() {
       final c = NotificationController(
         api,
         ActOnReminder(api),
+        device: AndroidNotificationDevice(),
         onSync: () async {},
       );
       await c.enable();
@@ -74,6 +82,7 @@ void main() {
     final c = NotificationController(
       api,
       ActOnReminder(api),
+      device: AndroidNotificationDevice(),
       onSync: () async {},
     );
     await c.enable();
@@ -114,6 +123,7 @@ void main() {
       final c = NotificationController(
         api,
         ActOnReminder(api),
+        device: AndroidNotificationDevice(),
         onSync: () async {
           syncs++;
         },
@@ -129,4 +139,66 @@ void main() {
       api.close();
     },
   );
+  test('failed registration on resume keeps notifications disabled', () async {
+    final api = ChatApi(
+      'https://test',
+      client: MockClient(
+        (r) async => http.Response('{"message":"Sign in to continue."}', 401),
+      ),
+    );
+    addTearDown(api.close);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == 'token') {
+            return {
+              'granted': true,
+              'device_id': 'phone',
+              'token': 'device-token',
+            };
+          }
+          return null;
+        });
+    final c = NotificationController(
+      api,
+      ActOnReminder(api),
+      device: AndroidNotificationDevice(),
+      onSync: () async {},
+    );
+    addTearDown(c.dispose);
+    await c.resume();
+    expect(c.enabled, false);
+    expect(c.status, contains('Sign in'));
+  });
+
+  test('resume detects revoked Android permission', () async {
+    var granted = true;
+    final api = ChatApi(
+      'https://test',
+      client: MockClient((r) async => http.Response('{}', 200)),
+    );
+    addTearDown(api.close);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == 'enable' || call.method == 'token') {
+            return {
+              'granted': granted,
+              'device_id': 'phone',
+              'token': 'device-token',
+            };
+          }
+          return null;
+        });
+    final c = NotificationController(
+      api,
+      ActOnReminder(api),
+      device: AndroidNotificationDevice(),
+      onSync: () async {},
+    );
+    addTearDown(c.dispose);
+    await c.enable();
+    expect(c.enabled, true);
+    granted = false;
+    await c.resume();
+    expect(c.enabled, false);
+  });
 }

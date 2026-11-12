@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/application/calendar_controller.dart';
 import 'package:minder/application/use_cases.dart';
+import 'package:minder/data/wire.dart';
 import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/item.dart';
 import 'package:minder/domain/item_repository.dart';
@@ -21,7 +24,7 @@ Item item(
   int duration = 0,
   int priority = 0,
   String location = '',
-}) => Item.fromJson({
+}) => itemFromJson({
   'id': id,
   'title': title,
   'status': status,
@@ -49,6 +52,16 @@ class FakeItems implements ItemRepository {
 
 CalendarController controller(FakeItems repo) =>
     CalendarController(LoadItems(repo), now: () => DateTime(2026, 11, 12, 10));
+
+class PendingItems implements ItemRepository {
+  final requests = <Completer<List<Item>>>[];
+  @override
+  Future<List<Item>> itemsBetween(DateTime from, DateTime to) {
+    final result = Completer<List<Item>>();
+    requests.add(result);
+    return result.future;
+  }
+}
 
 void main() {
   setUpAll(() async {
@@ -118,6 +131,44 @@ void main() {
     await c.load();
     expect(c.error, 'Check your connection.');
     expect(c.countOn(DateTime(2026, 11, 13)), 1);
+    c.dispose();
+  });
+
+  test('a slow earlier month cannot replace the latest month', () async {
+    final repo = PendingItems();
+    final c = CalendarController(
+      LoadItems(repo),
+      now: () => DateTime(2026, 11, 12),
+    );
+    final november = c.load();
+    final december = c.next();
+    repo.requests[1].complete([
+      item('dec', 'December', start: utc(2026, 12, 13)),
+    ]);
+    await december;
+    repo.requests[0].complete([
+      item('nov', 'November', start: utc(2026, 11, 13)),
+    ]);
+    await november;
+    expect(c.month, DateTime(2026, 12));
+    expect(c.itemsOn(DateTime(2026, 12, 13)).map((i) => i.id), ['dec']);
+    expect(c.loading, false);
+    c.dispose();
+  });
+
+  test('an earlier failure cannot end a newer load or set its error', () async {
+    final repo = PendingItems();
+    final c = CalendarController(LoadItems(repo));
+    final first = c.load();
+    final latest = c.next();
+    repo.requests[0].completeError(const ApiException('Old failure'));
+    await first;
+    expect(c.loading, true);
+    expect(c.error, isNull);
+    repo.requests[1].complete([]);
+    await latest;
+    expect(c.loading, false);
+    expect(c.error, isNull);
     c.dispose();
   });
 

@@ -7,6 +7,8 @@ import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
 import '../domain/item.dart';
 import '../domain/item_repository.dart';
+import '../domain/push_repository.dart';
+import 'wire.dart';
 
 class ChatApi implements ChatRepository, PushRepository, ItemRepository {
   ChatApi(this.base, {http.Client? client, this.authorization})
@@ -45,7 +47,7 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
           j['message'] as String? ?? 'Try again.',
           unauthorized: res.statusCode == 401,
           replacement: j['entry'] is Map<String, dynamic>
-              ? Entry.fromJson(j['entry'] as Map<String, dynamic>)
+              ? entryFromJson(j['entry'] as Map<String, dynamic>)
               : null,
         );
       }
@@ -58,8 +60,9 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> pushConfig() async =>
-      (await _request('GET', '/v1/push/config')) as Map<String, dynamic>;
+  Future<PushConfiguration> pushConfig() async => pushConfigurationFromJson(
+    (await _request('GET', '/v1/push/config')) as Map<String, dynamic>,
+  );
   @override
   Future<void> registerDevice(String id, String token) async {
     await _request(
@@ -72,7 +75,7 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
   @override
   Future<List<Entry>> history(int after) async =>
       ((await _request('GET', '/v1/chat?after=$after&limit=200')) as List)
-          .map((j) => Entry.fromJson(j as Map<String, dynamic>))
+          .map((j) => entryFromJson(j as Map<String, dynamic>))
           .toList();
   @override
   Future<Entry> send(String text) async {
@@ -81,7 +84,7 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
       '/v1/chat/messages',
       body: {'text': text},
     ) as Map<String, dynamic>;
-    return Entry.fromJson(j['entry'] as Map<String, dynamic>);
+    return entryFromJson(j['entry'] as Map<String, dynamic>);
   }
 
   @override
@@ -90,9 +93,9 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
         'GET',
         '/v1/items?from=${from.toUtc().toIso8601String()}'
             '&to=${to.toUtc().toIso8601String()}',
-      )) as List).map((j) => Item.fromJson(j as Map<String, dynamic>)).toList();
+      )) as List).map((j) => itemFromJson(j as Map<String, dynamic>)).toList();
   Future<Entry> _post(String route) async =>
-      Entry.fromJson(await _request('POST', route) as Map<String, dynamic>);
+      entryFromJson(await _request('POST', route) as Map<String, dynamic>);
   @override
   Future<Entry> confirm(String changeId) =>
       _post('/v1/changes/$changeId/confirm');
@@ -140,7 +143,7 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
           final j = jsonDecode(data.join('\n'));
           data.clear();
           if (j is Map<String, dynamic> && j['id'] != null) {
-            yield Entry.fromJson(j);
+            yield entryFromJson(j);
           }
         }
       }

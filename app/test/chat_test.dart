@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/application/chat_controller.dart';
+import 'package:minder/data/wire.dart';
 import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
 import 'package:minder/ui/chat_screen.dart';
@@ -16,7 +17,7 @@ Entry entry(
   String text = '',
   Map<String, dynamic>? change,
   double? cost,
-}) => Entry.fromJson({
+}) => entryFromJson({
   'id': id,
   'cursor': cursor,
   'kind': kind,
@@ -191,7 +192,7 @@ void main() {
     addTearDown(tester.view.reset);
     final repo = FakeRepository();
     repo.saved.add(
-      Entry.fromJson({
+      entryFromJson({
         'id': 'r',
         'cursor': 1,
         'kind': 'minder',
