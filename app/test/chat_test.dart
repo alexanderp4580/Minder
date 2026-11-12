@@ -306,7 +306,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     c.dispose();
   });
-  testWidgets('the header opens the calendar', (tester) async {
+  testWidgets('the bottom bar opens the calendar', (tester) async {
     tester.view.physicalSize = const Size(412, 892);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -321,7 +321,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Calendar'));
+    expect(find.byTooltip('Calendar'), findsNothing);
+    await tester.tap(find.text('Calendar'));
     expect(opened, 1);
     await tester.pumpWidget(const SizedBox());
     c.dispose();
@@ -349,7 +350,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: Tokens.theme,
-        home: ChatScreen(controller: c),
+        home: ChatScreen(controller: c, onCalendar: () {}),
       ),
     );
     await tester.pumpAndSettle();

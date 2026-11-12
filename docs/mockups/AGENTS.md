@@ -15,9 +15,10 @@
 
 - The mockup follows `../screens.md` and `../foundation.md`; no feature appears in it that is not in the spec
 - Mockups use the brand tokens, fonts and Carbon icons of `../../brand/index.html`: square corners, one cut corner on the primary button. Signal red appears only for the focus frame, overdue or urgent state, the primary action, the selected or active state and live recording. No text is below 12 px and every control has a 44 × 44 px hit area
-- Data is illustrative. Each mockup shows one `.demo` tag in its status bar, or above the calendar frame. That tag is the only place the word "illustrative" appears in a mockup. Counts agree on every screen. Unknown details show as "?"
+- Data is illustrative. Each mockup shows one `.demo` tag in its status bar, or above the Chat/Calendar frame. That tag is the only place the word "illustrative" appears in a mockup. Counts agree on every screen. Unknown details show as "?"
 - A file with two states shows two phones side by side (`lists`, `profiles`)
 - `toolchain/export-orbits.py` owns inline orbital SVGs from brand/orbital-*.svg. Regenerate them after source artwork edits.
+- Chat and Calendar share the screen-header styles and fading rule; neither shows a presence/status line or a header button. Both end with the shared `.nav` bar (Chat, Calendar).
 - Chat and Calendar have distinct fixed orbital compositions with travelling highlights. Capture stills with reduced motion; Flutter owns app lifecycle pauses.
 - Every PNG is re-rendered after its HTML or `common.css` changes
 

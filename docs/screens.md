@@ -33,7 +33,7 @@ Fixed orbital artwork sits behind the content, with small highlights travelling 
 Purpose: create and change items, ask about them, and receive reminders, in one conversation.
 
 Content, from top to bottom:
-- Header: title "Chat", status line ("Minder is watching · 5 open") and the gear button.
+- Shared header: title "Chat" and a rule below it that fades left to right. The Calendar screen uses the same treatment. A bottom bar with Chat and Calendar sits below the input field.
 - The conversation, oldest first, newest at the bottom.
 - Composer: text field and microphone button.
 
@@ -71,7 +71,6 @@ Behaviour is in [calendar-spec.md](calendar-spec.md). The mockup is `mockups/cal
 
 ## Open decisions
 
-- ? What the gear opens. M0 builds no Settings.
 - ? How you reach the Inbox, lists and profiles. They appear in chat answers until a screen exists.
 - ? Edit in the preview card. M0 may leave it out (see [m0-spec.md](m0-spec.md)).
 - ? The snooze options and whether Later opens them in a sheet or as chips in the chat.

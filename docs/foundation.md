@@ -56,13 +56,17 @@ Titles use Michroma. All other text uses Chakra Petch.
 
 ## Space and shape
 
-- Phone canvas 412 × 892 px. Side gutter 20 px. Gap between buttons 8 px.
-- Header: 18 px above the title, no divider below. The status line sits 8 px under the title. The first message group starts 38 px under the status line.
+- Phone canvas 412 × 892 px. Chat content has 20 px side gutters. Gap between buttons is 8 px.
+- Chat and Calendar share the Calendar header treatment. Use a 44 px row with the title at the left and no buttons.
+- Header padding: 24 px at the top and sides, 16 px below the row. Add a 1 px rule below it that fades from left to right, from 50 % Text colour to clear, like the background lines. Centre the header at a maximum width of 760 px.
+- Below 360 px, header side padding is 16 px and the title is 20 px. Otherwise the title is 22 px.
+- The header has no presence or connection-status line. Show loading and connection errors in the content area.
+- Chat leaves 32 px from the header rule to its first sender line.
 - Message group: 16 px above the sender line, 6 px between the sender line and the message. The sender line carries the time: "Minder · 07:30" on the left, "You · 07:31" on the right, on the side of its message.
 - Your message: 44 px left margin inside the gutter, so the box starts 64 px from the screen edge. Padding 10 px above and below, 12 px at the sides.
 - Buttons in the chat are 44 px high. Secondary buttons have a Panel fill and a 1 px Edge outline. The brand guide sizes of 54 and 48 px apply to notifications.
 - Buttons that share a row have equal gaps of 8 px. The primary button is always last in its row, so its cut corner sits at the bottom right of the row. Confirm is 1.3 times as wide as Discard. Snooze, Open and Done share one row.
-- The composer is 56 px high including its hairline. The field is a 44 px box with a 1 px Edge border and 14 px side padding. It is exactly as tall as the 44 px Send button, with the text centred. Send is last.
+- The composer is 68 px high: 8 px above the field and 16 px below it, with no hairline. The bottom bar's top line separates it from the bar. The field is a 44 px box with a 1 px Edge border and 14 px side padding. It is exactly as tall as the 44 px Send button, with the text centred. Send is last.
 - Hairlines (Line colour, 1 px) separate regions. Cards use an Edge outline.
 - Corners are square. The primary button has one cut corner at the bottom right (12 px). The mic button has the same cut (10 px).
 - Every control is at least 44 × 44 px.
@@ -73,9 +77,9 @@ Titles use Michroma. All other text uses Chakra Petch.
 The calendar follows the Layout section of the brand guide.
 
 - Use 8 px inside control groups, 16 px between related rows, 24 px between sections and 32 px between major blocks.
-- The calendar column is at most 520 px wide. Side gutters are 24 px at widths of 360 px and above.
+- The calendar content column is at most 520 px wide. Side gutters are 24 px at widths of 360 px and above.
 - At narrower widths, reduce gutters to preserve seven 44 px day targets. The whole page scrolls on short screens.
-- Leave 32 px after the screen header. Show the month at 24 px, with the year below at 14 px.
+- Leave 16 px after the header rule before month navigation. Show the month at 24 px, with the year below at 14 px.
 - Group the two 44 px month arrows with an 8 px gap. Today sits beside the agenda date.
 - Leave 24 px before weekday labels, then 12 px before the date grid.
 - Day targets are 56 px high, with 8 px between weeks. The selected frame is 44 × 44 px at normal text size.
@@ -97,14 +101,13 @@ The calendar follows the Layout section of the brand guide.
 
 ## Icons
 
-Carbon icons, pinned version @carbon/icons 11.92.0, loaded from jsDelivr. 18 to 22 px. They follow the text colour. An icon never stands alone without a label, except the gear and the microphone.
+Carbon icons, pinned version @carbon/icons 11.92.0, loaded from jsDelivr. 18 to 22 px. They follow the text colour. Navigation icons use accessible labels: Calendar and Chat. The Flutter app uses Material icons; HTML mockups use Carbon.
 
 ## Chat components
 
 | component | what it is | colour rule |
 |---|---|---|
-| Header | title "Chat", status line, a 44 px square button on the right (Calendar) | the status square is Text colour |
-| Status line | "Minder is watching · 5 open", upper case, 12 px | Muted |
+| Header | shared title row with a left-to-right fading rule below | title uses Text; rule uses Text at 50 % |
 | Event line | centred text between two hairlines, for example "07:15 · Reminder 2 sent · no reply" | Muted |
 | Sender line | "Minder · 07:30" or "You · 07:31", above a message, on its side | Muted |
 | Your message | Panel fill, Edge outline, right side, 64 px left margin | none |
@@ -112,7 +115,7 @@ Carbon icons, pinned version @carbon/icons 11.92.0, loaded from jsDelivr. 18 to 
 | Nag frame | a Minder message in the focus frame: urgency label, item title, one helpful sentence, buttons Done, Later and Start small, a countdown | Signal brackets, Alert label, Done is primary |
 | Countdown | time to the next reminder in Michroma, next to a row of 12 squares that fill as time passes | Muted fill |
 | Preview card | Panel-less card on Void with an Edge outline: type of change, item title, old value struck through, new value, buttons Confirm, Edit, Discard | Confirm is primary |
-| Composer, text | text field and mic button, 56 px high, hairline above | mic is Signal |
+| Composer, text | text field and mic button, 68 px high, no hairline | mic is Signal |
 | Composer, voice | cancel button, "Recording" label with timer, waveform, send button | Signal outline and waveform |
 
 Only one primary button is Signal on screen at a time (?). On the current mockup the nag frame and the preview card each show one.
@@ -136,7 +139,6 @@ Each state needs a design before the build:
 
 ## Open decisions
 
-- ? How you leave the conversation (settings, lists, board). The gear is the only exit today.
 - ? Escalating nag wording and loudness. Defaults are in requirements §16.
 - ? Whether the nag frame keeps its Done as the primary button when a preview card is also open.
 - Orbital motion follows the background rules above. Countdown and progress motion remain design drafts.

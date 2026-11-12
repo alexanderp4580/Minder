@@ -4,7 +4,7 @@ Status 2026-11-12. The owner asked for a calendar page. The page is read-only. C
 
 ## Behaviour
 
-- The chat header has a Calendar button, a 44 px square on the right. The Calendar page has a matching Chat button at the same place.
+- Chat and Calendar use the same title row, padding and fading rule. The header has no buttons. A shared bottom bar opens the other screen (see [foundation.md](foundation.md)).
 - The page shows one month as a grid. Weeks start on Monday. The grid always shows six weeks, so days of the next and last month show dimmed.
 - Day targets are 56 px high, with 8 px gaps between weeks and an inset 44 px selection frame. Each day shows up to three small squares for its items. Today is underlined. The selected day has a red frame. Opening the page selects today.
 - The month and year have separate lines. Grouped arrows on the right move one month. Today sits beside the agenda date and returns to the current month. Moving the month selects its first day.
@@ -14,7 +14,7 @@ Status 2026-11-12. The owner asked for a calendar page. The page is read-only. C
 - Without a connection, the page keeps its last items and shows the error with a Retry button.
 - Times show in the device time zone.
 - The authored Calendar orbital artwork sits behind the page. Motion and accessibility rules live in the foundation.
-- The page scrolls as one column, at most 520 px wide. Use 24 px gutters at 360 px and above.
+- The page scrolls as one column. Calendar content is at most 520 px wide; the shared header is at most 760 px. Use 24 px content gutters at 360 px and above.
 - Short screens and enlarged text can scroll the agenda into view. Day rows grow to keep dates and markers visible.
 - Agenda cards have 20 px padding and an 18 px title. Shared spacing rules live in the brand guide and foundation.
 

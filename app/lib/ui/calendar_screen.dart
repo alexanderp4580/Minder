@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../application/calendar_controller.dart';
 import '../domain/item.dart';
+import 'bottom_nav.dart';
 import 'format.dart';
 import 'tokens.dart';
+import 'screen_header.dart';
 import 'orbital_background.dart';
 
 const _months = [
@@ -72,6 +74,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    bottomNavigationBar: BottomNav(
+      current: NavDestination.calendar,
+      onSelect: (_) => Navigator.of(context).maybePop(),
+    ),
     body: OrbitalBackground(
       scene: OrbitScene.calendar,
       child: SafeArea(
@@ -86,66 +92,45 @@ class _CalendarScreenState extends State<CalendarScreen> {
               math.max(0.0, (width - 7 * Tokens.minTarget) / 2),
             );
             return SingleChildScrollView(
-              child: Center(
-                child: SizedBox(
-                  width: width,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      gutter,
-                      Tokens.sectionGap,
-                      gutter,
-                      Tokens.blockGap,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _header(),
-                        const SizedBox(height: Tokens.blockGap),
-                        _monthBar(),
-                        const SizedBox(height: Tokens.sectionGap),
-                        _weekdayRow(),
-                        const SizedBox(height: 12),
-                        for (var w = 0; w < 6; w++) ...[
-                          if (w > 0) const SizedBox(height: Tokens.gap),
-                          _week(w),
-                        ],
-                        const SizedBox(height: Tokens.blockGap),
-                        _agenda(),
-                      ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const ScreenHeader(title: 'CALENDAR'),
+                  Center(
+                    child: SizedBox(
+                      width: width,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          gutter,
+                          Tokens.relatedGap,
+                          gutter,
+                          Tokens.blockGap,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _monthBar(),
+                            const SizedBox(height: Tokens.sectionGap),
+                            _weekdayRow(),
+                            const SizedBox(height: 12),
+                            for (var w = 0; w < 6; w++) ...[
+                              if (w > 0) const SizedBox(height: Tokens.gap),
+                              _week(w),
+                            ],
+                            const SizedBox(height: Tokens.blockGap),
+                            _agenda(),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             );
           },
         ),
       ),
     ),
-  );
-
-  Widget _header() => Row(
-    children: [
-      const Expanded(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'CALENDAR',
-            style: TextStyle(
-              fontFamily: 'Michroma',
-              fontSize: 22,
-              letterSpacing: 4.4,
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(width: Tokens.relatedGap),
-      IconButton(
-        tooltip: 'Chat',
-        onPressed: () => Navigator.of(context).maybePop(),
-        icon: const Icon(Icons.chat_bubble_outline),
-      ),
-    ],
   );
 
   Widget _monthBar() => ConstrainedBox(

@@ -117,7 +117,10 @@ class OrbitalArtwork {
     final to = metric.getTangentForOffset(end)?.position;
     if (from == null || to == null || from == to) return;
     final segment = metric.extractPath(start, end);
-    for (final layer in [(width: 3.0, alpha: .035), (width: 1.0, alpha: .32)]) {
+    for (final layer in [
+      (width: 3.0, alpha: .014),
+      (width: 1.0, alpha: .128),
+    ]) {
       canvas.drawPath(
         segment,
         Paint()

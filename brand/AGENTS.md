@@ -12,6 +12,7 @@ This `brand/` folder owns `index.html`, `app-icon.svg`, its PNG preview and the 
 - Colour values, sizes and contrast ratios on the page are the brand source of truth; notification and client designs copy them from here.
 - Signal red has five uses: focus frame, overdue or urgent state, primary action, selected or active state, live recording. Everything else is neutral. No text is below 12 px. Every control has a 44 × 44 px hit area. `--edge` is for outlines only, never text.
 - The Components section mirrors the component rules of `docs/mockups/common.css`; change both in the same edit.
+- Chat and Calendar share the Calendar header treatment, one title row and a rule below it that fades left to right. Both use the same spacing. Headers have no buttons. Keep presence/status copy out of headers. A shared two-item bottom bar (Chat, Calendar) is 56 px high.
 - The calendar example defines 8/16/24/32 px spacing, grouped month arrows, an inset selection frame and a scrolling agenda. Keep it aligned with Flutter and the shared mockup styles.
 - Orbital SVGs own fixed paths, lighting and edge gradients in a 462×868 reference plane. Small highlights travel along paths over 180 seconds. Honour reduced motion.
 - The concept reference is docs/evidence/orbital-concepts.png. SVGs are authoring inputs; the app compiles exported paths and the guide embeds exported SVGs. No runtime asset route is needed.

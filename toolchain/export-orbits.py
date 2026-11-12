@@ -73,7 +73,7 @@ def read_scene(scene):
     travel = ET.SubElement(svg, '{' + NS['s'] + '}g', {'class': 'orbit-travel'})
     for index, path in enumerate(paths):
         item = copy.deepcopy(path)
-        item.attrib.update({'id': f'travel-{scene}-{index}', 'stroke': '#f2f2f2', 'stroke-width': '1.1', 'opacity': '.32', 'pathLength': '1000', 'stroke-dasharray': '35 965', 'style': f'animation-delay:-{index * 36}s'})
+        item.attrib.update({'id': f'travel-{scene}-{index}', 'stroke': '#f2f2f2', 'stroke-width': '1.1', 'opacity': '.128', 'pathLength': '1000', 'stroke-dasharray': '35 965', 'style': f'animation-delay:-{index * 36}s'})
         travel.append(item)
     return dart, ET.tostring(svg, encoding='unicode')
 

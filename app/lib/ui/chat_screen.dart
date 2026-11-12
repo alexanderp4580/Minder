@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../application/chat_controller.dart';
+import 'bottom_nav.dart';
 import 'entry_view.dart';
 import 'tokens.dart';
+import 'screen_header.dart';
 import 'orbital_background.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -76,78 +78,27 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
       return Scaffold(
+        bottomNavigationBar: BottomNav(
+          current: NavDestination.chat,
+          onSelect: (_) => widget.onCalendar?.call(),
+        ),
         body: OrbitalBackground(
           scene: OrbitScene.chat,
           child: SafeArea(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
+                constraints: const BoxConstraints(maxWidth: Tokens.pageWidth),
                 child: Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(
-                        Tokens.gutter,
-                        18,
-                        Tokens.gutter,
-                        0,
+                    const ScreenHeader(title: 'CHAT'),
+                    if (c.loading)
+                      const Padding(
+                        padding: EdgeInsets.only(top: Tokens.relatedGap),
+                        child: SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'CHAT',
-                                  style: TextStyle(
-                                    fontFamily: 'Michroma',
-                                    fontSize: 22,
-                                    letterSpacing: 4.4,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 7,
-                                      height: 7,
-                                      color: c.connected
-                                          ? Tokens.text
-                                          : Tokens.dim,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        c.connected
-                                            ? 'MINDER IS HERE'
-                                            : 'CONNECTING',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Tokens.muted,
-                                          letterSpacing: 1.2,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (widget.onCalendar != null)
-                            IconButton(
-                              tooltip: 'Calendar',
-                              onPressed: widget.onCalendar,
-                              icon: const Icon(Icons.calendar_month),
-                            ),
-                          if (c.loading)
-                            const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                        ],
-                      ),
-                    ),
                     if (widget.enableNotifications != null)
                       Padding(
                         padding: const EdgeInsets.symmetric(
@@ -177,7 +128,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           controller: _scroll,
                           padding: const EdgeInsets.fromLTRB(
                             Tokens.gutter,
-                            22,
+                            Tokens.relatedGap,
                             Tokens.gutter,
                             16,
                           ),
@@ -281,13 +232,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     Container(
                       key: const ValueKey('composer'),
-                      constraints: const BoxConstraints(minHeight: 56),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 5.5,
-                      ),
-                      decoration: const BoxDecoration(
-                        border: Border(top: BorderSide(color: Tokens.line)),
+                      constraints: const BoxConstraints(minHeight: 68),
+                      padding: const EdgeInsets.fromLTRB(
+                        14,
+                        Tokens.gap,
+                        14,
+                        Tokens.relatedGap,
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,

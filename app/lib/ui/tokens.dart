@@ -19,6 +19,7 @@ abstract final class Tokens {
       alert = Color(0xffff4448),
       white = Color(0xffffffff);
   static const gutter = 20.0, gap = 8.0, minTarget = 44.0;
+  static const pageWidth = 760.0;
   static const relatedGap = 16.0, sectionGap = 24.0, blockGap = 32.0;
   static ThemeData get theme => ThemeData(
     brightness: Brightness.dark,

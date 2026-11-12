@@ -8,6 +8,7 @@ import 'package:minder/application/calendar_controller.dart';
 import 'package:minder/domain/item.dart';
 import 'package:minder/domain/item_repository.dart';
 import 'package:minder/ui/calendar_screen.dart';
+import 'package:minder/ui/orbital_artwork_data.dart';
 import 'package:minder/ui/tokens.dart';
 import 'package:minder/ui/orbital_background.dart';
 
@@ -155,5 +156,15 @@ void main() {
     expect(controller.selected.day, 1);
     await tester.pumpWidget(const SizedBox());
     controller.dispose();
+  });
+
+  test('background lines peak at 24 percent opacity, 60 percent below the original 40', () {
+    for (final data in [chatArtwork(), calendarArtwork()]) {
+      final alphas = [
+        for (final edge in data.edges)
+          for (final stop in edge.stops) stop.$2,
+      ];
+      expect(alphas.reduce((a, b) => a > b ? a : b), closeTo(.24, 1e-9));
+    }
   });
 }

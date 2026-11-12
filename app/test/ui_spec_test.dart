@@ -67,6 +67,89 @@ void main() {
     TestWidgetsFlutterBinding.instance.platformDispatcher
         .clearAccessibilityFeaturesTestValue();
   });
+  for (final width in [320.0, 412.0, 1280.0]) {
+    testWidgets(
+      'Chat and Calendar share header geometry at ${width.toInt()} px',
+      (tester) async {
+        tester.view.physicalSize = Size(width, 892);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final chat = ChatController(
+          Repo([]),
+          pollInterval: const Duration(days: 1),
+        );
+        await chat.start();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: Tokens.theme,
+            home: ChatScreen(controller: chat, onCalendar: () {}),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final headerBox = tester.widget<Container>(
+          find.byKey(const ValueKey('screen-header')),
+        );
+        expect((headerBox.decoration as BoxDecoration?)?.border, isNull);
+        final rule = tester.widget<DecoratedBox>(
+          find.byKey(const ValueKey('header-rule')),
+        );
+        final fade = (rule.decoration as BoxDecoration).gradient!;
+        expect(fade.colors.first.a, greaterThan(0));
+        expect(fade.colors.last.a, 0);
+        expect((fade as LinearGradient).begin, Alignment.centerLeft);
+        expect(fade.end, Alignment.centerRight);
+        final ruleBox = tester.getRect(
+          find.byKey(const ValueKey('header-rule')),
+        );
+        expect(ruleBox.height, 1);
+        expect(ruleBox.width, width < 760 ? width : 760);
+        expect(ruleBox.left, (width - ruleBox.width) / 2);
+        expect(find.text('MINDER IS HERE'), findsNothing);
+        expect(find.text('CONNECTING'), findsNothing);
+        final chatHeader = tester.getRect(
+          find.byKey(const ValueKey('screen-header')),
+        );
+        final chatTitle = tester.getRect(find.text('CHAT'));
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('screen-header')),
+            matching: find.byType(IconButton),
+          ),
+          findsNothing,
+        );
+        await tester.pumpWidget(const SizedBox());
+        chat.dispose();
+
+        final calendar = CalendarController(EmptyItems());
+        await calendar.load();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: Tokens.theme,
+            home: CalendarScreen(controller: calendar),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final calendarHeader = tester.getRect(
+          find.byKey(const ValueKey('screen-header')),
+        );
+        final calendarTitle = tester.getRect(find.text('CALENDAR'));
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('screen-header')),
+            matching: find.byType(IconButton),
+          ),
+          findsNothing,
+        );
+        expect(calendarHeader, chatHeader);
+        expect(calendarTitle.topLeft, chatTitle.topLeft);
+        expect(calendarTitle.height, chatTitle.height);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        calendar.dispose();
+      },
+    );
+  }
+
   testWidgets(
     'calendar keeps separate day targets, selection frames and week gaps',
     (tester) async {
@@ -243,11 +326,10 @@ void main() {
     expect(open.left - snooze.right, Tokens.gap);
     expect(done.left - open.right, Tokens.gap);
     expect(done.right, 412 - Tokens.gutter);
-    // The header has no divider. The first sender line sits 38 px under the
-    // status line: 22 px of list padding and 16 px of entry margin.
-    final status = tester.getBottomLeft(find.text('MINDER IS HERE'));
+    // The first sender line sits 32 px below the shared header.
+    final header = tester.getRect(find.byKey(const ValueKey('screen-header')));
     final firstSender = tester.getTopLeft(find.text('YOU · 15:05'));
-    expect(firstSender.dy - status.dy, closeTo(38, 4));
+    expect(firstSender.dy - header.bottom, closeTo(32, 2));
     // Your message pads 10 px above and 12 px at the sides.
     final box = tester.getRect(
       find
@@ -260,8 +342,12 @@ void main() {
     final text = tester.getRect(find.text('Move the dentist to Friday.'));
     expect(text.top - box.top, closeTo(10 + 1, 3));
     expect(text.left - box.left, closeTo(12 + 1, 1));
-    // The composer is 56 px high with a 44 px send button.
-    expect(tester.getSize(find.byKey(const ValueKey('composer'))).height, 56);
+    // The composer is 68 px high: 8 px above the field, 16 px below it.
+    final composer = tester.getRect(find.byKey(const ValueKey('composer')));
+    expect(composer.height, 68);
+    final nav = tester.getRect(find.byKey(const ValueKey('nav-chat')));
+    expect(nav.top - tester.getRect(find.byType(TextField)).bottom, 16);
+    expect(tester.getRect(find.byType(TextField)).top - composer.top, 8);
     expect(tester.getSize(find.byTooltip('Send')).height, 44);
     // The text field is as tall as the Send button and shares its centre line.
     final field = tester.getRect(find.byType(TextField));
@@ -284,5 +370,33 @@ void main() {
     }
     await tester.pumpWidget(const SizedBox());
     c.dispose();
+  });
+
+  testWidgets('a system inset sits below the bar without moving the composer', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(bottom: 24);
+    addTearDown(tester.view.reset);
+    final chat = ChatController(
+      Repo([]),
+      pollInterval: const Duration(days: 1),
+    );
+    await chat.start();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: Tokens.theme,
+        home: ChatScreen(controller: chat, onCalendar: () {}),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final item = tester.getRect(find.byKey(const ValueKey('nav-chat')));
+    expect(item.height, 56);
+    expect(item.bottom, 892 - 24);
+    final field = tester.getRect(find.byType(TextField));
+    expect(item.top - field.bottom, 16);
+    await tester.pumpWidget(const SizedBox());
+    chat.dispose();
   });
 }

@@ -4,13 +4,15 @@ Flutter screens and presentation.
 
 # Ownership
 
-ChatScreen, CalendarScreen, EntryView, OrbitalBackground, time/cost labels and Tokens.theme.
+ChatScreen, CalendarScreen, ScreenHeader, BottomNav, EntryView, OrbitalBackground, time/cost labels and Tokens.theme.
 
 # Local Contracts
 
 Use controllers and typed domain values. Never build API routes or read raw transport maps.
 Theme controls buttons, fields and standard visual density. Preserve 44 px controls and existing goldens.
 Screens use Material icons and bundled fonts.
+ScreenHeader owns title layout, responsive padding and the left-to-right fading rule below it for both screens. It has no buttons.
+BottomNav owns the two-item Chat/Calendar bar: 56 px items, a Signal icon and top bar on the selected item, hidden while the keyboard is open. Each screen passes its own destination and switch action. Do not add presence/status copy to headers. Loading and errors belong in content.
 CalendarTokens owns calendar dimensions. The calendar uses a centered, scrolling column with grouped month arrows and Today beside the agenda date.
 Day targets stay at least 44 px wide; row height expands for enlarged text. Calendar goldens change only with an approved design.
 
