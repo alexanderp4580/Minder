@@ -4,7 +4,7 @@ State and lifecycle orchestration.
 
 # Ownership
 
-ChatController, CalendarController and NotificationController.
+ChatController, CalendarController, NotificationController and `performNotificationAction`, which runs a stored notification action without a screen.
 
 # Local Contracts
 

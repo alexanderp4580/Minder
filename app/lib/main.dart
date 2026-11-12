@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'application/background_action.dart';
 import 'application/calendar_controller.dart';
 import 'application/chat_controller.dart';
 import 'application/notifications.dart';
@@ -42,6 +44,30 @@ final chatProvider = Provider<ChatController>((ref) {
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: MinderApp()));
+}
+
+/// Entry point for a notification button pressed while no screen is open.
+/// Android starts a headless engine here, then reads the result on the same channel.
+@pragma('vm:entry-point')
+Future<void> notificationAction() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final auth = AccessAuth(configuredBase);
+  final api = ChatApi(
+    configuredBase,
+    authorization: localAuth ? null : auth.headers,
+  );
+  var ok = false;
+  try {
+    ok = await performNotificationAction(
+      AndroidNotificationDevice(),
+      api,
+    ).timeout(const Duration(seconds: 8), onTimeout: () => false);
+  } finally {
+    api.close();
+    auth.close();
+    await const MethodChannel('minder/notifications')
+        .invokeMethod<void>('backgroundFinished', {'ok': ok});
+  }
 }
 
 final calendarProvider = Provider<CalendarController>((ref) {

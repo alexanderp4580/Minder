@@ -30,6 +30,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <receiver android:name=".ReminderActionReceiver" android:exported="false"/>
         <activity android:name="com.linusu.flutter_web_auth_2.AuthenticationManagementActivity" android:exported="false" android:launchMode="singleTask"/>
         <activity android:name="com.linusu.flutter_web_auth_2.CallbackActivity" android:exported="true" android:taskAffinity="">
             <intent-filter android:label="Minder sign-in">

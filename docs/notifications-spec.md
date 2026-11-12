@@ -8,7 +8,7 @@ Implement inline. Keep changes isolated from main. Deliver an updated APK throug
 Chat can propose an explicit reminder time and nag interval. Confirm saves it.
 A reminder appears in chat when due. Android receives Firebase data messages with Done, Snooze and Open actions.
 Swiping does not acknowledge. Tapping the notification body does nothing and leaves the app closed. Done completes the item. Snooze postpones its reminder. Open acknowledges the current reminder.
-Notification actions open the authenticated app before changing server data. No public action endpoint or embedded server credential exists.
+Done and Snooze run in the background with the app's own login. A headless Flutter engine runs the action and stops. If it fails or takes more than nine seconds, the notification stays and a message tells the owner to try again or choose Open. Open acknowledges the reminder and opens the app. No public action endpoint or embedded server credential exists.
 
 ## Scheduling
 

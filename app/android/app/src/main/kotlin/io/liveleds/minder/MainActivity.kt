@@ -44,20 +44,7 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "token" -> MinderNotifications.token(this) { result.success(it) }
-                "takeAction" -> {
-                    val raw = MinderNotifications.prefs(this).getString("pending", null)
-                    result.success(raw?.let { val p = JSONObject(it); mapOf("id" to p.getString("id"), "action" to p.getString("action")) })
-                }
-                "completeAction" -> {
-                    val id = call.argument<String>("id") ?: ""
-                    val action = call.argument<String>("action") ?: ""
-                    val prefs = MinderNotifications.prefs(this)
-                    val pending = prefs.getString("pending", null)?.let { JSONObject(it) }
-                    if (pending?.optString("id") == id && pending.optString("action") == action) prefs.edit().remove("pending").apply()
-                    prefs.edit().putBoolean("handled_$id", true).apply()
-                    getSystemService(NotificationManager::class.java).cancel(id, 1)
-                    result.success(null)
-                }
+                "takeAction", "completeAction" -> MinderNotifications.handleAction(this, call, result)
                 "probe" -> {
                     if ((applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) result.notImplemented()
                     else {
