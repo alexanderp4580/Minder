@@ -1,7 +1,7 @@
 name: minder
 description: Personal task assistant.
 publish_to: none
-version: 0.4.0+9
+version: 0.4.1+10
 environment:
   sdk: ^3.13.5
 dependencies:

@@ -26,7 +26,7 @@ Pinned Podman runners, build helpers and verification scripts.
 # Work Guidance
 
 Use standard-library Python and existing pinned tools. Keep checks reproducible and errors specific.
-The owner authorized APK 0.4.0 and Telegram delivery. Preserve the cached signing key. Do not change emulator or hosted services during local checks.
+The owner authorized orbital preview APK builds and Telegram delivery. Preserve the cached signing key. Do not change emulator or hosted services during local checks.
 
 # Verification
 

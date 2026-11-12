@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -83,9 +85,7 @@ class _OrbitalBackgroundState extends State<OrbitalBackground>
                 fit: StackFit.expand,
                 children: [
                   RepaintBoundary(
-                    child: CustomPaint(
-                      painter: _HaloPainter(scene: widget.scene),
-                    ),
+                    child: CustomPaint(painter: const _HaloPainter()),
                   ),
                   RepaintBoundary(
                     child: CustomPaint(
@@ -108,29 +108,37 @@ class _OrbitalBackgroundState extends State<OrbitalBackground>
 }
 
 class _HaloPainter extends CustomPainter {
-  const _HaloPainter({required this.scene});
-  final OrbitScene scene;
+  const _HaloPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    final halo = RadialGradient(
-      center: scene == OrbitScene.calendar
-          ? const Alignment(.85, -.9)
-          : const Alignment(1, -.7),
-      radius: .95,
-      colors: [
-        Tokens.text.withValues(alpha: .075),
-        Tokens.text.withValues(alpha: .015),
-        Colors.transparent,
-      ],
-      stops: const [0, .45, 1],
-    );
-    canvas.drawRect(rect, Paint()..shader = halo.createShader(rect));
+    final width = math.min(size.width, 760.0);
+    final top = Offset(size.width / 2 + width * .48, size.height * .025);
+    final bottom = Offset(size.width / 2 + width * .30, size.height * .98);
+    for (final light in [
+      (center: top, radius: width * .80, alpha: .26),
+      (center: bottom, radius: width * .85, alpha: .16),
+    ]) {
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = ui.Gradient.radial(
+            light.center,
+            light.radius,
+            [
+              Tokens.text.withValues(alpha: light.alpha),
+              Tokens.text.withValues(alpha: light.alpha * .20),
+              Colors.transparent,
+            ],
+            [0, .4, 1],
+          ),
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(_HaloPainter oldDelegate) => oldDelegate.scene != scene;
+  bool shouldRepaint(_HaloPainter oldDelegate) => false;
 }
 
 class _OrbitPainter extends CustomPainter {
@@ -143,27 +151,67 @@ class _OrbitPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final calendar = scene == OrbitScene.calendar;
     final width = math.min(size.width, 760.0);
-    final center = Offset(
-      size.width / 2 + width * .35,
-      size.height * (calendar ? .18 : .08),
-    );
+    final orbits = calendar
+        ? const [
+            (x: .80, y: .20, width: 1.9, height: .58, tilt: -.35),
+            (x: .63, y: .43, width: 1.9, height: .84, tilt: -.12),
+            (x: .69, y: .56, width: 2.0, height: .94, tilt: .11),
+          ]
+        : const [
+            (x: .95, y: .07, width: 1.5, height: .38, tilt: -.45),
+            (x: .80, y: .20, width: 1.8, height: .50, tilt: -.18),
+            (x: .62, y: .37, width: 1.9, height: .66, tilt: .18),
+          ];
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = .7
-      ..color = Tokens.text.withValues(alpha: .12);
-    for (var i = 0; i < 3; i++) {
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      canvas.rotate(-.35 + i * .23 + motion.value * math.pi * 2);
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset.zero,
-          width: width * ((calendar ? 1.5 : .9) + i * .45),
-          height: size.height * ((calendar ? .65 : .35) + i * .2),
+      ..strokeWidth = .85
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Tokens.text.withValues(alpha: .60),
+          Tokens.text.withValues(alpha: .16),
+          Tokens.text.withValues(alpha: .08),
+          Tokens.text.withValues(alpha: .42),
+        ],
+        stops: const [0, .28, .60, 1],
+      ).createShader(Offset.zero & size);
+    for (final orbit in orbits) {
+      final angle = orbit.tilt + motion.value * math.pi * 2;
+      final cos = math.cos(angle);
+      final sin = math.sin(angle);
+      final centerX = size.width / 2 + width * (orbit.x - .5);
+      final path = Path()
+        ..addOval(
+          Rect.fromCenter(
+            center: Offset.zero,
+            width: width * orbit.width,
+            height: size.height * orbit.height,
+          ),
+        );
+      canvas.drawPath(
+        path.transform(
+          Float64List.fromList([
+            cos,
+            sin,
+            0,
+            0,
+            -sin,
+            cos,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            centerX,
+            size.height * orbit.y,
+            0,
+            1,
+          ]),
         ),
         paint,
       );
-      canvas.restore();
     }
   }
 

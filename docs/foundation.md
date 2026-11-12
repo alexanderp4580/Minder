@@ -85,10 +85,11 @@ The calendar follows the Layout section of the brand guide.
 
 ## Orbital background
 
-- Three thin neutral ellipses sit behind the content, over a static white halo on Void.
+- Three neutral ellipses with different centres, sizes and tilts sit behind the content. Static lighting anchors the upper-right and lower edge.
 - Calendar uses broad, offset ellipses. Chat uses tighter arcs near the upper-right header.
-- Lines use Text at 12% opacity, with a 0.7 px stroke. The halo peaks at 7.5% opacity.
-- Rotate the ellipses over 180 seconds. The static halo and foreground have separate repaint boundaries.
+- Lines use a 0.85 px stroke. Text-colour highlights fade from 60% at the top through 16% and 8% in the middle to 42% at the bottom.
+- Static lighting peaks at 26% in the upper-right and 16% at the lower edge. Keep cards opaque.
+- Rotate each ellipse around its own centre over 180 seconds. The static halo and foreground have separate repaint boundaries.
 - Reduced motion keeps the composition still. Hidden routes and backgrounded apps stop animation.
 - Cards stay opaque. Background decoration does not intercept taps or add screen-reader content.
 

@@ -15,7 +15,8 @@ CalendarTokens owns calendar dimensions. The calendar uses a centered, scrolling
 Day targets stay at least 44 px wide; row height expands for enlarged text. Calendar goldens change only with an approved design.
 
 OrbitalBackground owns decorative painting and animation lifecycle. Use distinct OrbitScene values for chat and calendar.
-Keep halo and foreground isolated from animated arc repaints. Stop motion for reduced motion, hidden routes and backgrounded apps.
+Each ellipse has its own centre, size and tilt; edge highlights fade through the middle.
+Keep static edge lighting and foreground isolated from animated arc repaints. Stop motion for reduced motion, hidden routes and backgrounded apps.
 
 # Work Guidance
 

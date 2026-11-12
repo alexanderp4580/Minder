@@ -20,7 +20,7 @@ Preserve the cached debug signing key for installable updates. Native checks use
 # Verification
 
 `toolchain/android-callback-check.py` verifies callback ownership and delivery on a disposable emulator.
-The owner controls when APK 0.4.0 is built and tested on a phone.
+The owner authorized orbital preview APK builds and Telegram delivery. Phone approval still gates merging.
 
 # Child DOX Index
 
