@@ -8,4 +8,8 @@ require (
 	golang.org/x/oauth2 v0.38.0
 )
 
-require cloud.google.com/go/compute/metadata v0.3.0 // indirect
+require (
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
+	github.com/arran4/golang-ical v0.3.6 // indirect
+	golang.org/x/net v0.46.0 // indirect
+)

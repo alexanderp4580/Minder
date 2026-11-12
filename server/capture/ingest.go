@@ -8,7 +8,6 @@ import (
 	"errors"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
-	"net/mail"
 	"time"
 )
 
@@ -48,11 +47,7 @@ func (s *Service) Ingest(ctx context.Context, envelope domain.CaptureEnvelope, r
 		if e != nil {
 			return e
 		}
-		subject := ""
-		if msg, e := mail.ReadMessage(bytes.NewReader(raw)); e == nil {
-			subject = msg.Header.Get("Subject")
-		}
-		c := domain.Capture{ID: id, Status: "received", Revision: 1, Sender: envelope.From, Subject: subject, ReceivedAt: time.Now().UTC().Format(time.RFC3339), Attachments: []domain.CaptureAttachment{{ID: "original", Name: "original.eml", MediaType: "message/rfc822", Size: n, SHA256: id}}, Candidates: []domain.CaptureCandidate{}, Coverage: []domain.CaptureCoverage{}}
+		c := domain.Capture{ID: id, Status: "received", Revision: 1, Sender: envelope.From, ReceivedAt: time.Now().UTC().Format(time.RFC3339), Attachments: []domain.CaptureAttachment{{ID: "original", Name: "original.eml", MediaType: "message/rfc822", Size: n, SHA256: id}}, Candidates: []domain.CaptureCandidate{}, Coverage: []domain.CaptureCoverage{}}
 		c.EntryID = domain.NewID()
 		if _, e = tx.PutEntry(domain.Entry{ID: c.EntryID, Kind: "capture", Text: "Email received. Processing.", Capture: &c}); e != nil {
 			return e

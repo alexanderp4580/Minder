@@ -37,6 +37,7 @@ Formatting must print no paths.
 - `reminder/AGENTS.md`: Reminder scheduling, actions and delivery orchestration.
 - `capture/AGENTS.md`: Email capture orchestration.
 - `mailauth/AGENTS.md`: Machine email authentication.
+- `mailparse/AGENTS.md`: MIME and document conversion.
 - `mailfiles/AGENTS.md`: Private persistent capture files.
 - `store/AGENTS.md`: SQLite persistence adapter.
 - `openrouter/AGENTS.md`: OpenRouter HTTP model adapter.

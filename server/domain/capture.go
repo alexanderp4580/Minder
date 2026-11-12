@@ -67,11 +67,12 @@ type CaptureAnswer struct {
 }
 type CaptureReceipt struct{ ID, Digest, CaptureID string }
 type CapturePart struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	MediaType string `json:"media_type"`
-	Text      string `json:"text,omitempty"`
-	Data      []byte `json:"-"`
+	Attachment bool   `json:"attachment,omitempty"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	MediaType  string `json:"media_type"`
+	Text       string `json:"text,omitempty"`
+	Data       []byte `json:"-"`
 }
 type CaptureDocument struct {
 	Subject      string              `json:"subject"`

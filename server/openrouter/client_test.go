@@ -43,3 +43,17 @@ func TestRequestLeavesRoomForThinkingAndSeveralToolCalls(t *testing.T) {
 		t.Fatalf("max_tokens %v leaves too little room", seen["max_tokens"])
 	}
 }
+
+func TestImagePartsPreserveTextCaller(t *testing.T) {
+	var seen map[string]any
+	m := provider(t, `{"choices":[{"finish_reason":"stop","message":{"content":"Read"}}],"usage":{"cost":0.001}}`, &seen)
+	_, e := m.Complete(context.Background(), []assistant.Message{{Role: "user", Parts: []assistant.ContentPart{{Type: "text", Text: "Read attachment"}, {Type: "image_url", ImageURL: &assistant.ImageURL{URL: "data:image/png;base64,AA=="}}}}})
+	if e != nil {
+		t.Fatal(e)
+	}
+	messages := seen["messages"].([]any)
+	content := messages[0].(map[string]any)["content"].([]any)
+	if len(content) != 2 || content[1].(map[string]any)["image_url"].(map[string]any)["url"] != "data:image/png;base64,AA==" {
+		t.Fatal(content)
+	}
+}
