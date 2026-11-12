@@ -3,6 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 python3 -B -m unittest discover -s toolchain/tests -v
 python3 -B -m unittest discover -s .githooks/tests -v
+node --test email-worker/worker.test.mjs
 toolchain/architecture-check
 toolchain/dox-check
 python3 -B toolchain/export-orbits.py --check

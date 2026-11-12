@@ -1,0 +1,18 @@
+{
+  "raw": "From: Owner <owner@example.com>\r\nTo: assistant@example.net\r\n\r\nBooking",
+  "envelope": {
+    "from": "owner@example.com",
+    "to": "assistant@example.net",
+    "dmarc": "pass"
+  },
+  "timestamp": 1794528000,
+  "requestId": "request1",
+  "keyBase64": "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
+  "headers": {
+    "Content-Type": "message/rfc822",
+    "X-Minder-Email-Time": "1794528000",
+    "X-Minder-Email-ID": "request1",
+    "X-Minder-Email-Envelope": "eyJmcm9tIjoib3duZXJAZXhhbXBsZS5jb20iLCJ0byI6ImFzc2lzdGFudEBleGFtcGxlLm5ldCIsImRtYXJjIjoicGFzcyJ9",
+    "X-Minder-Email-Signature": "1f07e10953beeb0d986a902d9bb4838ede0c710cdb13bde18e6ddc1a54d0f495"
+  }
+}

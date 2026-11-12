@@ -6,7 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -57,5 +59,34 @@ func TestMissingAllowlistClosed(t *testing.T) {
 	v, e := FromEnvironment(func(string) string { return "" })
 	if e != nil || v != nil {
 		t.Fatal("legacy startup changed", e)
+	}
+}
+
+func TestWorkerSignatureFixture(t *testing.T) {
+	raw, e := os.ReadFile("../../toolchain/email-ingress-vectors.json")
+	if e != nil {
+		t.Fatal(e)
+	}
+	var fixture struct {
+		Raw       string
+		Timestamp int64
+		KeyBase64 string
+		Headers   map[string]string
+	}
+	if e = json.Unmarshal(raw, &fixture); e != nil {
+		t.Fatal(e)
+	}
+	values := map[string]string{"EMAIL_CAPTURE_ENABLED": "true", "EMAIL_ALLOWED_SENDERS": "owner@example.com", "EMAIL_RECIPIENT": "assistant@example.net", "EMAIL_INGEST_HMAC_KEY": fixture.KeyBase64, "EMAIL_SOURCE_DIR": t.TempDir()}
+	verifier, e := FromEnvironment(func(k string) string { return values[k] })
+	if e != nil {
+		t.Fatal(e)
+	}
+	request := httptest.NewRequest("POST", "/v1/email/ingest", strings.NewReader(fixture.Raw))
+	for k, v := range fixture.Headers {
+		request.Header.Set(k, v)
+	}
+	envelope, e := verifier.Authenticate(request, []byte(fixture.Raw), time.Unix(fixture.Timestamp, 0))
+	if e != nil || envelope.RequestID != "request1" {
+		t.Fatal(envelope, e)
 	}
 }

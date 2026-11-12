@@ -1,0 +1,6 @@
+name = "minder-email-ingress"
+main = "worker.mjs"
+compatibility_date = "2026-11-12"
+# Configure EMAIL_ALLOWED_SENDERS, EMAIL_RECIPIENT and EMAIL_INGEST_URL privately.
+# Use Worker secrets for EMAIL_INGEST_HMAC_KEY and EMAIL_ACCESS_CLIENT_ID/SECRET.
+# No persistent storage bindings.

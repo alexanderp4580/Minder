@@ -123,5 +123,6 @@ Build release web and run the three local browser scenarios for changes that cro
 - `app/AGENTS.md`: Flutter client, platform assets and tests
 - `brand/AGENTS.md`: branding source and guide
 - `docs/AGENTS.md`: specifications, plans, evidence and mockups
+- `email-worker/AGENTS.md`: Cloudflare email admission and signed handoff
 - `server/AGENTS.md`: Go service and adapters
 - `toolchain/AGENTS.md`: pinned runners and verification scripts

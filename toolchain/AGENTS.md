@@ -5,7 +5,8 @@ Pinned Podman runners, build helpers and verification scripts.
 # Ownership
 
 - `run`: Go and Flutter container runners and shared SDK caches.
-- `check`: dependency/DOX checks, checker tests, hook tests, Go checks and Flutter checks.
+- `check`: dependency/DOX checks, checker tests, hook tests, email Worker tests, Go checks and Flutter checks.
+- `email-ingress-vectors.json`: synthetic cross-language HMAC fixture; no production addresses or secrets.
 - `architecture-check`, `dox-check`, `tests/`: executable structure contracts and their regression tests.
 - Local browser checks, model fixtures, real-model checks, callback probe and icon generation.
 
