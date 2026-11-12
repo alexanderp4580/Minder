@@ -85,13 +85,15 @@ The calendar follows the Layout section of the brand guide.
 
 ## Orbital background
 
-- Three neutral ellipses with different centres, sizes and tilts sit behind the content. Static lighting anchors the upper-right and lower edge.
-- Calendar uses broad, offset ellipses. Chat uses tighter arcs near the upper-right header.
-- Lines use a 0.85 px stroke. Text-colour highlights fade from 60% at the top through 16% and 8% in the middle to 42% at the bottom.
-- Static lighting peaks at 26% in the upper-right and 16% at the lower edge. Keep cards opaque.
-- Rotate each ellipse around its own centre over 180 seconds. The static halo and foreground have separate repaint boundaries.
-- Reduced motion keeps the composition still. Hidden routes and backgrounded apps stop animation.
-- Cards stay opaque. Background decoration does not intercept taps or add screen-reader content.
+- `brand/orbital-calendar.svg` and `brand/orbital-chat.svg` own the artwork in a 462×868 reference plane.
+- Fixed Bézier paths follow the visible reference curves. Calendar uses the reference composition; Chat uses a shifted, tighter variant.
+- The SVGs define atmospheric lighting, local edge gradients and a soft edge glow. Keep these layers still.
+- Move short highlights along the paths over 180 seconds. The geometry does not rotate or change shape.
+- Fit the reference plane with its aspect ratio preserved, aligned at the top and centred horizontally. Clip excess artwork at the viewport edge.
+- Cache path metrics on size changes. Isolate static artwork and foreground from highlight repaints.
+- Reduced motion hides travelling highlights. Hidden routes and backgrounded apps stop animation.
+- Cards stay opaque. Decoration ignores taps and screen readers, and does not use Signal red.
+- Run `python3 toolchain/export-orbits.py` after editing SVG sources; it updates Flutter data and guide/mockup SVGs.
 
 ## Icons
 

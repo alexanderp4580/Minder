@@ -39,10 +39,8 @@ Widget scene({
   ),
 );
 
-Future<Uint8List> pixels(WidgetTester tester) async {
-  final boundary = tester.renderObject<RenderRepaintBoundary>(
-    find.byKey(captureKey),
-  );
+Future<Uint8List> pixels(WidgetTester tester, {Key key = captureKey}) async {
+  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(key));
   return (await tester.runAsync(() async {
     final image = await boundary.toImage();
     final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
@@ -52,7 +50,22 @@ Future<Uint8List> pixels(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('orbits move without rebuilding foreground content', (
+  testWidgets(
+    'moving highlights preserve the authored background composition',
+    (tester) async {
+      await tester.pumpWidget(scene());
+      const artwork = ValueKey('orbital-artwork');
+      expect(find.byKey(artwork), findsOneWidget);
+      final before = await pixels(tester, key: artwork);
+      final fullBefore = await pixels(tester);
+      await tester.pump(const Duration(seconds: 20));
+      expect(await pixels(tester, key: artwork), orderedEquals(before));
+      expect(await pixels(tester), isNot(orderedEquals(fullBefore)));
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets('highlights move without rebuilding foreground content', (
     tester,
   ) async {
     var builds = 0;

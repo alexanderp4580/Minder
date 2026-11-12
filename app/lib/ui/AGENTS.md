@@ -15,8 +15,9 @@ CalendarTokens owns calendar dimensions. The calendar uses a centered, scrolling
 Day targets stay at least 44 px wide; row height expands for enlarged text. Calendar goldens change only with an approved design.
 
 OrbitalBackground owns decorative painting and animation lifecycle. Use distinct OrbitScene values for chat and calendar.
-Each ellipse has its own centre, size and tilt; edge highlights fade through the middle.
-Keep static edge lighting and foreground isolated from animated arc repaints. Stop motion for reduced motion, hidden routes and backgrounded apps.
+`orbital_artwork.dart` owns static painting, layout and cached path metrics. Paths remain fixed while highlights travel along them.
+`orbital_artwork_data.dart` is generated from the canonical SVGs in brand/; run toolchain/export-orbits.py after SVG changes.
+Keep static artwork/glow and foreground isolated from moving highlight repaints. Stop motion for reduced motion, hidden routes and backgrounded apps.
 
 # Work Guidance
 

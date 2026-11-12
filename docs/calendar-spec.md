@@ -13,7 +13,7 @@ Status 2026-11-12. The owner asked for a calendar page. The page is read-only. C
 - An empty day says "Nothing planned."
 - Without a connection, the page keeps its last items and shows the error with a Retry button.
 - Times show in the device time zone.
-- Broad orbital ellipses sit behind the page. Motion and accessibility rules live in the foundation.
+- The authored Calendar orbital artwork sits behind the page. Motion and accessibility rules live in the foundation.
 - The page scrolls as one column, at most 520 px wide. Use 24 px gutters at 360 px and above.
 - Short screens and enlarged text can scroll the agenda into view. Day rows grow to keep dates and markers visible.
 - Agenda cards have 20 px padding and an 18 px title. Shared spacing rules live in the brand guide and foundation.

@@ -11,7 +11,7 @@ Controller tests, HTTP/native boundary tests, auth tests and goldens.
 Use domain values or wire fixtures at the boundary under test. Tests own their repositories.
 Golden files capture the current chat/calendar rendering. Do not update them to hide a regression.
 Calendar spacing tests check the 8 px week gap, inset selection, Today placement and 320 and 360 px scrolling layouts with enlarged text.
-Orbital tests cover visible movement, distinct scenes, stable foreground builds, reduced motion and lifecycle pauses. Screen goldens use reduced motion for deterministic captures.
+Orbital tests cover highlight movement with a pixel-stable artwork layer, distinct scenes, stable foreground builds, reduced motion and lifecycle pauses. Screen goldens use reduced motion for deterministic captures.
 `native_auth_probe.dart` is an emulator-only callback probe.
 
 # Work Guidance

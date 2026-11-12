@@ -28,7 +28,7 @@ M0 builds items only. Lists, labels and profiles come later (see [m0-spec.md](m0
 
 ## Chat
 
-A static halo and three slow orbital arcs sit behind the content. Chat uses a tighter composition than Calendar.
+Fixed orbital artwork sits behind the content, with small highlights travelling along the paths. Chat uses a tighter composition than Calendar.
 
 Purpose: create and change items, ask about them, and receive reminders, in one conversation.
 
@@ -64,7 +64,7 @@ Serves: requirements §1.2, §5.2, §6.2, §7.
 
 ## Calendar
 
-Read-only month grid and agenda, with broad orbital ellipses behind the content. The month heading and year sit beside grouped month arrows.
+Read-only month grid and agenda, with the fixed Calendar orbital artwork behind the content. The month heading and year sit beside grouped month arrows.
 Today sits beside the selected date in the agenda header.
 The whole page scrolls on short screens. Spacing and selection rules are in [foundation.md](foundation.md).
 Behaviour is in [calendar-spec.md](calendar-spec.md). The mockup is `mockups/calendar.html` with `mockups/calendar.png`.

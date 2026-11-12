@@ -19,6 +19,7 @@ Pinned Podman runners, build helpers and verification scripts.
 - `local-check` needs the fixture running. Reminder/calendar scripts start their own fixture; run them in sequence.
 - Real-model checks use temporary databases and provider cost values. `real-model-multi-check.py [runs]` checks two proposals.
 - `android-callback-check.py` uses a disposable emulator and rejects physical device serials.
+- `export-orbits.py` exports canonical brand SVG geometry/lighting to Flutter data and inline guide/mockup artwork. Its --check mode rejects stale exports in toolchain/check.
 - `render-icons.py` exports assets from brand/app-icon.svg and requires rsvg-convert. Do not hand-edit generated icons.
 - `architecture-check` reads Go package imports and Dart directives. Inner code cannot import infrastructure implementations.
 - `dox-check` validates direct child indexes, source ownership, section order and local Markdown links.

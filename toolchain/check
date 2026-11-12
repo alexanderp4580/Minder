@@ -5,6 +5,7 @@ python3 -B -m unittest discover -s toolchain/tests -v
 python3 -B -m unittest discover -s .githooks/tests -v
 toolchain/architecture-check
 toolchain/dox-check
+python3 -B toolchain/export-orbits.py --check
 toolchain/run go go test -race ./...
 toolchain/run go go vet ./...
 formatting=$(toolchain/run go gofmt -l .)

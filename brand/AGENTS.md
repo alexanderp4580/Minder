@@ -4,7 +4,7 @@ Brand guide website for Minder: colour, type, icons, layout, actions, cards, com
 
 # Ownership
 
-This `brand/` folder owns `index.html`, `app-icon.svg` and its PNG preview. The page uses inline CSS and a small script. The script marks the current section in the navigation, places the layout pins and labels table cells on narrow screens.
+This `brand/` folder owns `index.html`, `app-icon.svg`, its PNG preview and the canonical `orbital-calendar.svg` / `orbital-chat.svg` artwork. The page uses inline CSS and a small script. The script marks the current section in the navigation, places the layout pins and labels table cells on narrow screens.
 
 # Local Contracts
 
@@ -13,7 +13,9 @@ This `brand/` folder owns `index.html`, `app-icon.svg` and its PNG preview. The 
 - Signal red has five uses: focus frame, overdue or urgent state, primary action, selected or active state, live recording. Everything else is neutral. No text is below 12 px. Every control has a 44 × 44 px hit area. `--edge` is for outlines only, never text.
 - The Components section mirrors the component rules of `docs/mockups/common.css`; change both in the same edit.
 - The calendar example defines 8/16/24/32 px spacing, grouped month arrows, an inset selection frame and a scrolling agenda. Keep it aligned with Flutter and the shared mockup styles.
-- Orbital surfaces use a static upper/lower edge lighting and three independently centred ellipses rotating over 180 seconds. Calendar and Chat use distinct compositions. Honour reduced motion.
+- Orbital SVGs own fixed paths, lighting and edge gradients in a 462×868 reference plane. Small highlights travel along paths over 180 seconds. Honour reduced motion.
+- The concept reference is docs/evidence/orbital-concepts.png. SVGs are authoring inputs; the app compiles exported paths and the guide embeds exported SVGs. No runtime asset route is needed.
+- Run `python3 toolchain/export-orbits.py` after artwork edits. It exports Flutter geometry/lighting and inline SVGs in the guide and mockups. Do not hand-edit exports.
 - Items not yet verified carry "to check" or "Design pending".
 - Fonts load from Google Fonts. Icons load from jsDelivr (@carbon/icons, pinned version). The primary logo is the word Minder. App launchers and OAuth consent use the M badge in `app-icon.svg`.
 

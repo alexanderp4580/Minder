@@ -194,10 +194,10 @@ html,body{margin:0;background:#000}
 .calendar-example-wrap{max-width:100%;overflow-x:auto;margin-top:24px}
 .calendar-caption{font-size:13px;color:var(--muted);margin:12px 0 0}
 
-/* Orbital surfaces: static edge lighting, independently centred vector ellipses. */
-.orbit-surface{position:relative;overflow:hidden;background-color:var(--void);background-image:radial-gradient(circle at 98% 2.5%,rgba(242,242,242,.26),rgba(242,242,242,.052) 132px,transparent 330px),radial-gradient(circle at 80% 98%,rgba(242,242,242,.16),rgba(242,242,242,.032) 140px,transparent 350px)}
-.orbit-surface > :not(.orbit-lines){position:relative;z-index:1}
-.orbit-surface > .orbit-lines{position:absolute;inset:0;width:100%;height:892px;pointer-events:none;z-index:0;fill:none;stroke-width:.85}
-.orbit-lines ellipse{transform-box:fill-box;transform-origin:center;animation:orbit-drift 180s linear infinite}
-@keyframes orbit-drift{to{rotate:360deg}}
-@media(prefers-reduced-motion:reduce){.orbit-lines ellipse{animation:none}}
+/* Orbital artwork: fixed SVG paths, cached lighting and travelling highlights. */
+.orbit-surface{position:relative;overflow:hidden;background:var(--void)}
+.orbit-surface > :not(.orbit-artwork){position:relative;z-index:1}
+.orbit-surface > .orbit-artwork{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.orbit-travel path{animation:orbit-travel 180s linear infinite}
+@keyframes orbit-travel{to{stroke-dashoffset:-1000}}
+@media(prefers-reduced-motion:reduce){.orbit-travel{display:none}}

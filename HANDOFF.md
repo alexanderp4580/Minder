@@ -51,14 +51,16 @@ Evidence: [docs/evidence/calendar-spacing.md](docs/evidence/calendar-spacing.md)
 ## Orbital backgrounds
 
 The owner chose Orbital and approved animated backgrounds for Chat and Calendar, plus APK delivery.
-`OrbitalBackground` paints three ellipses with separate centres, sizes and tilts. Each screen has its own composition.
-Static light anchors the upper-right and lower edge; highlights fade through the middle.
-The arcs rotate over 180 seconds. Halo and foreground are isolated from animation repaints.
+`OrbitalBackground` displays fixed artwork exported from the canonical SVGs in brand/.
+Calendar follows measured reference curves; Chat uses a shifted, tighter composition.
+Atmosphere, edge gradients and soft glow stay still. Short highlights travel along cached paths over 180 seconds.
+Static artwork and foreground are isolated from highlight repaints.
 Reduced motion keeps the scene still. Hidden routes and backgrounded apps stop ticking.
 Tests verify movement, lifecycle pauses, distinct scenes and stable foreground builds.
 Brand guide, foundation, mockups and goldens follow the approved direction.
 Phone frame timing and battery use remain unmeasured.
-The owner requested a closer match to the generated concept. The refinement restores brighter arcs, varied centres and upper/lower lighting.
+The owner approved reconstructing the artwork and moving highlights along its fixed paths.
+The SVGs own geometry and lighting; toolchain/export-orbits.py keeps Flutter and HTML exports aligned.
 The calendar spacing and opaque cards remain unchanged.
 
 ## Deployment and APK status
@@ -67,11 +69,10 @@ The prior handoff records production commit `1c0efe9`, with calendar fields and 
 This review did not check the live deployment or deploy changes.
 The spacing and architecture changes remain local to `m0-chat`.
 
-APK 0.4.1 restores the brighter Orbital treatment and supersedes the 0.4.0 preview.
-Telegram confirmed delivery through the existing bot and chat. The release arm64 APK and signature checks passed.
-Phone approval remains pending.
-The release arm64 APK built successfully and its signing certificate matches the prior APK.
-Evidence: [docs/evidence/orbital-refinement.md](docs/evidence/orbital-refinement.md).
+APK 0.4.2 uses the authored SVG artwork and travelling highlights, superseding the rotating-ellipse previews.
+The release arm64 build and signature checks passed; its signing certificate matches the prior APK.
+Telegram confirmed delivery through the existing bot and chat after a network retry. Phone approval remains pending.
+Evidence: [docs/evidence/orbital-artwork.md](docs/evidence/orbital-artwork.md).
 
 The Coolify app is `ciw3jk5gkgiql8kfdomeyys2`.
 A Git push does not deploy. Deployment needs an explicit POST to `/deploy`.
