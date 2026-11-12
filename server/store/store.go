@@ -1,6 +1,7 @@
 package store
 
 import (
+	"sort"
 	"crypto/rand"
 	"database/sql"
 	_ "embed"
@@ -185,6 +186,22 @@ func (s *Store) Items() ([]domain.Item, error) {
 		out = append(out, i)
 	}
 	return out, rows.Err()
+}
+// ItemsBetween returns items placed in [from, to), sorted by their placement time.
+func (s *Store) ItemsBetween(from, to time.Time) ([]domain.Item, error) {
+	all, e := s.Items()
+	if e != nil {
+		return nil, e
+	}
+	out := []domain.Item{}
+	for _, i := range all {
+		at, e := time.Parse(time.RFC3339, domain.PlacedAt(i))
+		if e == nil && !at.Before(from) && at.Before(to) {
+			out = append(out, i)
+		}
+	}
+	sort.SliceStable(out, func(a, b int) bool { return domain.PlacedAt(out[a]) < domain.PlacedAt(out[b]) })
+	return out, nil
 }
 func (s *Store) History(after int64, limit int) ([]domain.Entry, error) {
 	if limit < 1 || limit > 200 {

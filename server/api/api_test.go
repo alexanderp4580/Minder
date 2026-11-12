@@ -197,3 +197,45 @@ func TestReminderRoutesNeedAuthAndRejectInvalidBodies(t *testing.T) {
 		t.Fatalf("missing config: %d", w.Code)
 	}
 }
+
+func TestItemsRangeReturnsPlacedItemsOnly(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "items"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	for _, i := range []domain.Item{
+		{ID: "start", Title: "Dentist", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", StartAt: "2026-11-13T09:00:00Z", DueAt: "2026-12-30T09:00:00Z"},
+		{ID: "due", Title: "Taxes", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", DueAt: "2026-11-20T09:00:00Z"},
+		{ID: "edge", Title: "Edge", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", DueAt: "2026-12-01T00:00:00Z"},
+		{ID: "undated", Title: "Someday", Status: "open", Version: 1, Timezone: "Europe/Amsterdam"},
+	} {
+		i := i
+		if e = s.Write(func(tx *store.Tx) error { return tx.PutItem(i) }); e != nil {
+			t.Fatal(e)
+		}
+	}
+	h := New(s, command.New(s), replier{s}, nil, "")
+	get := func(query string) (int, []domain.Item) {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest("GET", "/v1/items"+query, nil))
+		var items []domain.Item
+		json.NewDecoder(w.Body).Decode(&items)
+		return w.Code, items
+	}
+	code, items := get("?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z")
+	if code != 200 || len(items) != 2 || items[0].ID != "start" || items[1].ID != "due" {
+		t.Fatalf("%d %+v", code, items)
+	}
+	for _, q := range []string{"", "?from=x&to=y", "?from=2026-12-01T00:00:00Z&to=2026-11-01T00:00:00Z", "?from=2026-01-01T00:00:00Z&to=2028-01-01T00:00:00Z"} {
+		if code, _ = get(q); code != 400 {
+			t.Fatalf("query %q gave %d", q, code)
+		}
+	}
+	locked := New(s, command.New(s), replier{s}, &Verifier{}, "")
+	w := httptest.NewRecorder()
+	locked.ServeHTTP(w, httptest.NewRequest("GET", "/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z", nil))
+	if w.Code != 401 {
+		t.Fatalf("unauthorized: %d", w.Code)
+	}
+}

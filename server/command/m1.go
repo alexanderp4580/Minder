@@ -6,11 +6,28 @@ import (
 	"github.com/alexanderp4580/Minder/server/store"
 	"regexp"
 	"strings"
-	"time"
 )
 
 // setAttributes applies the list, profile and recurrence parts of a proposal to an item.
 func setAttributes(t *store.Tx, p domain.Proposal, i *domain.Item) error {
+	if p.ClearStart {
+		i.StartAt = ""
+	}
+	if p.StartAt != "" {
+		i.StartAt = p.StartAt
+	}
+	if p.ClearDuration {
+		i.DurationMinutes = 0
+	}
+	if p.DurationMinutes != 0 {
+		i.DurationMinutes = p.DurationMinutes
+	}
+	if p.ClearPriority {
+		i.Priority = 0
+	}
+	if p.Priority != 0 {
+		i.Priority = p.Priority
+	}
 	if p.ClearLocation {
 		i.Location = ""
 	}
@@ -51,22 +68,6 @@ func setAttributes(t *store.Tx, p domain.Proposal, i *domain.Item) error {
 		r := *p.Recurrence
 		i.Recurrence = &r
 	}
-	return nil
-}
-
-// roll moves a recurring item to its next occurrence. A reminder set on the item keeps its distance to the due time.
-func roll(i *domain.Item, now time.Time) error {
-	next, e := domain.NextDue(*i, now)
-	if e != nil {
-		return e
-	}
-	if i.RemindAt != "" {
-		old, _ := time.Parse(time.RFC3339, i.DueAt)
-		remind, _ := time.Parse(time.RFC3339, i.RemindAt)
-		nd, _ := time.Parse(time.RFC3339, next)
-		i.RemindAt = nd.Add(-old.Sub(remind)).UTC().Format(time.RFC3339)
-	}
-	i.DueAt = next
 	return nil
 }
 
@@ -216,4 +217,12 @@ func profileName(t *store.Tx, id string) string {
 		return p.Name
 	}
 	return id
+}
+
+// zeroEmpty shows an unset number as an empty value in previews.
+func zeroEmpty(n int) string {
+	if n == 0 {
+		return ""
+	}
+	return fmt.Sprint(n)
 }

@@ -102,6 +102,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		write(w, 200, entries)
+	case r.Method == "GET" && r.URL.Path == "/v1/items":
+		from, e1 := time.Parse(time.RFC3339, r.URL.Query().Get("from"))
+		to, e2 := time.Parse(time.RFC3339, r.URL.Query().Get("to"))
+		if e1 != nil || e2 != nil || !to.After(from) || to.Sub(from) > 62*24*time.Hour {
+			fail(w, &domain.Invalid{Field: "range", Message: "Send from and to as times, at most 62 days apart."})
+			return
+		}
+		items, e := s.store.ItemsBetween(from, to)
+		if e != nil {
+			fail(w, e)
+			return
+		}
+		write(w, 200, items)
 	case r.Method == "GET" && r.URL.Path == "/v1/events":
 		s.events(w, r)
 	case r.Method == "POST" && r.URL.Path == "/v1/chat/messages":

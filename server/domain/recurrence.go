@@ -50,10 +50,26 @@ func validateRecurrence(i *Item) error {
 	if r.Interval < 1 || r.Interval > 365 {
 		return &Invalid{"recurrence", "Repeat every 1 to 365 periods."}
 	}
-	if i.DueAt == "" {
-		return &Invalid{"recurrence", "Set a due date for a repeating item."}
+	if i.DueAt == "" && i.StartAt == "" {
+		return &Invalid{"recurrence", "Set a start or a deadline for a repeating item."}
 	}
 	return nil
+}
+
+// Anchor is the time that reminders and repeats count from: the deadline, else the start.
+func Anchor(i Item) string {
+	if i.DueAt != "" {
+		return i.DueAt
+	}
+	return i.StartAt
+}
+
+// PlacedAt is the time an item shows on a calendar: the start, else the deadline.
+func PlacedAt(i Item) string {
+	if i.StartAt != "" {
+		return i.StartAt
+	}
+	return i.DueAt
 }
 
 // EffectiveReminder returns the reminder an item uses. A reminder set on the item overrides its profile.
@@ -61,10 +77,11 @@ func EffectiveReminder(i Item, p *Profile) (string, int) {
 	if i.RemindAt != "" {
 		return i.RemindAt, i.NagMinutes
 	}
-	if p == nil || i.ProfileID == "" || i.DueAt == "" {
+	anchor := Anchor(i)
+	if p == nil || i.ProfileID == "" || anchor == "" {
 		return "", 0
 	}
-	due, e := time.Parse(time.RFC3339, i.DueAt)
+	due, e := time.Parse(time.RFC3339, anchor)
 	if e != nil {
 		return "", 0
 	}
@@ -95,15 +112,15 @@ func step(t time.Time, r Recurrence, k int) time.Time {
 	}
 }
 
-// NextDue returns the next due time in UTC. Times keep their wall-clock hour in the item's timezone.
+// NextDue returns the next anchor time in UTC. Times keep their wall-clock hour in the item's timezone.
 func NextDue(i Item, now time.Time) (string, error) {
 	loc, e := time.LoadLocation(i.Timezone)
 	if e != nil {
 		return "", &Invalid{"timezone", "Choose a valid timezone."}
 	}
-	due, e := time.Parse(time.RFC3339, i.DueAt)
+	due, e := time.Parse(time.RFC3339, Anchor(i))
 	if e != nil || i.Recurrence == nil {
-		return "", &Invalid{"recurrence", "Set a due date for a repeating item."}
+		return "", &Invalid{"recurrence", "Set a start or a deadline for a repeating item."}
 	}
 	due = due.In(loc)
 	r := *i.Recurrence
@@ -117,4 +134,26 @@ func NextDue(i Item, now time.Time) (string, error) {
 		next = step(due, r, k)
 	}
 	return next.UTC().Format(time.RFC3339), nil
+}
+
+// Advance moves a repeating item to its next occurrence. The start, the deadline and the reminder move by the same distance.
+func Advance(i *Item, now time.Time) error {
+	next, e := NextDue(*i, now)
+	if e != nil {
+		return e
+	}
+	old, _ := time.Parse(time.RFC3339, Anchor(*i))
+	nt, _ := time.Parse(time.RFC3339, next)
+	delta := nt.Sub(old)
+	for _, field := range []*string{&i.StartAt, &i.DueAt, &i.RemindAt} {
+		if *field == "" {
+			continue
+		}
+		t, e := time.Parse(time.RFC3339, *field)
+		if e != nil {
+			return e
+		}
+		*field = t.Add(delta).UTC().Format(time.RFC3339)
+	}
+	return nil
 }

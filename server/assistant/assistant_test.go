@@ -284,3 +284,24 @@ func TestReplyEntriesCarryTheRequestCost(t *testing.T) {
 		t.Fatalf("stored previews with cost: %d", saved)
 	}
 }
+
+func TestEventsUseStartAndTasksUseDeadline(t *testing.T) {
+	a, _, f := newAssistant(t, Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"Dentist","start_at":"2026-11-13T09:00:00Z","duration_minutes":30,"priority":2}`}}, CostUSD: 0.001})
+	entries, e := a.Reply(context.Background(), "Dentist on Friday at 10 for half an hour, important")
+	if e != nil || len(entries) != 1 {
+		t.Fatal(e)
+	}
+	got := map[string]string{}
+	for _, fl := range entries[0].Change.Fields {
+		got[fl.Name] = fl.New
+	}
+	if got["start_at"] != "2026-11-13T09:00:00Z" || got["duration_minutes"] != "30" || got["priority"] != "2" {
+		t.Fatalf("%v", got)
+	}
+	system := f.messages[0].Content
+	for _, want := range []string{"start_at", "deadline", "duration_minutes", "priority"} {
+		if !strings.Contains(system, want) {
+			t.Errorf("prompt lacks %q", want)
+		}
+	}
+}

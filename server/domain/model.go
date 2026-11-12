@@ -20,6 +20,9 @@ type Invalid struct {
 func (e *Invalid) Error() string { return e.Message }
 
 type Item struct {
+	StartAt         string      `json:"start_at,omitempty"`
+	DurationMinutes int         `json:"duration_minutes,omitempty"`
+	Priority        int         `json:"priority,omitempty"`
 	Location    string      `json:"location,omitempty"`
 	List        string      `json:"list,omitempty"`
 	ProfileID   string      `json:"profile,omitempty"`
@@ -38,6 +41,12 @@ type Item struct {
 	CompletedAt string      `json:"completed_at,omitempty"`
 }
 type Proposal struct {
+	StartAt         string      `json:"start_at,omitempty"`
+	ClearStart      bool        `json:"clear_start,omitempty"`
+	DurationMinutes int         `json:"duration_minutes,omitempty"`
+	ClearDuration   bool        `json:"clear_duration,omitempty"`
+	Priority        int         `json:"priority,omitempty"`
+	ClearPriority   bool        `json:"clear_priority,omitempty"`
 	Location        string      `json:"location,omitempty"`
 	ClearLocation   bool        `json:"clear_location,omitempty"`
 	List                string      `json:"list,omitempty"`
@@ -129,6 +138,22 @@ func Validate(i *Item) error {
 			return &Invalid{"due_at", "Use a date and time with a timezone."}
 		}
 		i.DueAt = t.UTC().Format(time.RFC3339)
+	}
+	if i.StartAt != "" {
+		t, e := time.Parse(time.RFC3339, i.StartAt)
+		if e != nil {
+			return &Invalid{"start_at", "Use a start date and time with a timezone."}
+		}
+		i.StartAt = t.UTC().Format(time.RFC3339)
+	}
+	if i.StartAt != "" && i.DueAt != "" && i.StartAt > i.DueAt {
+		return &Invalid{"start_at", "The start must not be after the deadline."}
+	}
+	if i.DurationMinutes < 0 || i.DurationMinutes > 10080 {
+		return &Invalid{"duration_minutes", "Use a duration from 1 minute to 1 week."}
+	}
+	if i.Priority < 0 || i.Priority > 5 {
+		return &Invalid{"priority", "Use a priority from 1 (highest) to 5."}
 	}
 	if i.NagMinutes < 0 || i.NagMinutes > 1440 || (i.NagMinutes != 0 && i.RemindAt == "") {
 		return &Invalid{"nag_minutes", "Set a reminder and a nag interval from 0 to 1,440 minutes."}

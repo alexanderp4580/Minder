@@ -208,3 +208,46 @@ func TestPreviewAllIsAllOrNothing(t *testing.T) {
 		t.Fatalf("%+v %v", got, e)
 	}
 }
+
+func TestStartDurationAndPriorityRoundTrip(t *testing.T) {
+	c, _ := setup(t)
+	i := create(t, c, domain.Proposal{Title: "Dentist", StartAt: "2026-11-13T10:00:00+01:00", DurationMinutes: 30, Priority: 2})
+	if i.StartAt != "2026-11-13T09:00:00Z" || i.DurationMinutes != 30 || i.Priority != 2 {
+		t.Fatalf("%+v", i)
+	}
+	pv, e := c.Preview(domain.Proposal{Action: "update_item", ItemID: i.ID, ExpectedVersion: i.Version, DurationMinutes: 45, Priority: 1})
+	if e != nil {
+		t.Fatal(e)
+	}
+	got := map[string]string{}
+	for _, f := range pv.Change.Fields {
+		got[f.Name] = f.Old + ">" + f.New
+	}
+	if got["duration_minutes"] != "30>45" || got["priority"] != "2>1" {
+		t.Fatalf("fields %v", got)
+	}
+	c.Confirm(pv.Change.ID)
+	pv, _ = c.Preview(domain.Proposal{Action: "update_item", ItemID: i.ID, ExpectedVersion: i.Version + 1, ClearStart: true, ClearDuration: true, ClearPriority: true})
+	c.Confirm(pv.Change.ID)
+	items, _ := c.Store.Items()
+	if x := items[0]; x.StartAt != "" || x.DurationMinutes != 0 || x.Priority != 0 {
+		t.Fatalf("not cleared: %+v", x)
+	}
+	if _, e = c.Preview(domain.Proposal{Action: "create_item", Title: "x", StartAt: "2026-11-14T10:00:00Z", DueAt: "2026-11-13T10:00:00Z"}); e == nil {
+		t.Fatal("start after deadline accepted")
+	}
+}
+
+func TestEventProfileRemindsBeforeStart(t *testing.T) {
+	c, s := setup(t)
+	start := time.Now().Add(3 * time.Hour).UTC()
+	create(t, c, domain.Proposal{Title: "Dentist", Profile: "day-event", StartAt: start.Format(time.RFC3339)})
+	s.DueReminders(start.Add(-2 * time.Hour))
+	if h, _ := s.History(0, 20); countReminders(h) != 0 {
+		t.Fatal("fired early")
+	}
+	s.DueReminders(start.Add(-59 * time.Minute))
+	if h, _ := s.History(0, 20); countReminders(h) != 1 {
+		t.Fatal("start-based reminder missing")
+	}
+}

@@ -56,7 +56,7 @@ func previewIn(t *store.Tx, p domain.Proposal, out *domain.Entry) error {
 				return domain.ErrConflict
 			}
 			if i.Recurrence != nil {
-				if e := roll(&after, time.Now()); e != nil {
+				if e := domain.Advance(&after, time.Now()); e != nil {
 					return e
 				}
 			} else {
@@ -110,7 +110,7 @@ func previewIn(t *store.Tx, p domain.Proposal, out *domain.Entry) error {
 	if before != nil {
 		old = *before
 	}
-	for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}, {Name: "location", Old: old.Location, New: after.Location}, {Name: "list", Old: old.List, New: after.List}, {Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, after.ProfileID)}, {Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(after.Recurrence)}} {
+	for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}, {Name: "start_at", Old: old.StartAt, New: after.StartAt}, {Name: "duration_minutes", Old: zeroEmpty(old.DurationMinutes), New: zeroEmpty(after.DurationMinutes)}, {Name: "priority", Old: zeroEmpty(old.Priority), New: zeroEmpty(after.Priority)}, {Name: "location", Old: old.Location, New: after.Location}, {Name: "list", Old: old.List, New: after.List}, {Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, after.ProfileID)}, {Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(after.Recurrence)}} {
 		if f.Old != f.New {
 			fields = append(fields, f)
 		}

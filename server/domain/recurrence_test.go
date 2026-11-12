@@ -97,3 +97,53 @@ func TestReminderFromProfile(t *testing.T) {
 		t.Fatal("no due time must give none")
 	}
 }
+
+func TestValidateStartDurationPriority(t *testing.T) {
+	base := func() Item { return Item{Title: "x", Status: "open"} }
+	for n, mutate := range []func(*Item){
+		func(i *Item) { i.StartAt = "tomorrow" },
+		func(i *Item) { i.DurationMinutes = -1 },
+		func(i *Item) { i.DurationMinutes = 10081 },
+		func(i *Item) { i.Priority = 6 },
+		func(i *Item) { i.Priority = -1 },
+		func(i *Item) { i.StartAt, i.DueAt = "2026-11-13T10:00:00Z", "2026-11-13T09:00:00Z" },
+	} {
+		i := base()
+		mutate(&i)
+		if Validate(&i) == nil {
+			t.Errorf("case %d accepted", n)
+		}
+	}
+	i := base()
+	i.StartAt, i.DueAt, i.DurationMinutes, i.Priority = "2026-11-13T10:00:00+01:00", "2026-11-13T12:00:00Z", 30, 1
+	if e := Validate(&i); e != nil || i.StartAt != "2026-11-13T09:00:00Z" {
+		t.Fatalf("%v %q", e, i.StartAt)
+	}
+}
+
+func TestReminderAnchorsOnDeadlineThenStart(t *testing.T) {
+	p := &Profile{ID: "day-event", RemindBeforeMinutes: 60}
+	event := Item{StartAt: "2026-11-13T09:00:00Z", Status: "open", ProfileID: "day-event"}
+	if at, _ := EffectiveReminder(event, p); at != "2026-11-13T08:00:00Z" {
+		t.Fatalf("start anchor: %q", at)
+	}
+	both := event
+	both.DueAt = "2026-11-13T17:00:00Z"
+	if at, _ := EffectiveReminder(both, p); at != "2026-11-13T16:00:00Z" {
+		t.Fatalf("deadline must win: %q", at)
+	}
+}
+
+func TestAdvanceMovesStartDeadlineAndReminderTogether(t *testing.T) {
+	i := Item{StartAt: "2026-11-13T09:00:00Z", DueAt: "2026-11-13T17:00:00Z", RemindAt: "2026-11-13T08:30:00Z", Timezone: "Europe/Amsterdam", Recurrence: &Recurrence{Every: "weekly", Interval: 1}}
+	if e := Advance(&i, at("2026-11-13T07:00:00Z")); e != nil {
+		t.Fatal(e)
+	}
+	if i.StartAt != "2026-11-20T09:00:00Z" || i.DueAt != "2026-11-20T17:00:00Z" || i.RemindAt != "2026-11-20T08:30:00Z" {
+		t.Fatalf("%+v", i)
+	}
+	only := Item{StartAt: "2026-11-13T09:00:00Z", Timezone: "Europe/Amsterdam", Recurrence: &Recurrence{Every: "daily", Interval: 1}}
+	if e := Advance(&only, at("2026-11-13T07:00:00Z")); e != nil || only.StartAt != "2026-11-14T09:00:00Z" || only.DueAt != "" {
+		t.Fatalf("start-only: %+v %v", only, e)
+	}
+}

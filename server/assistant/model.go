@@ -110,7 +110,7 @@ func (m *OpenRouter) Complete(ctx context.Context, messages []Message) (Response
 func tools() []any {
 	str := map[string]string{"type": "string"}
 	flag := map[string]string{"type": "boolean"}
-	props := map[string]any{"title": str, "due_at": map[string]string{"type": "string", "description": "RFC3339 with timezone; omit if unknown"}, "timezone": str, "notes": str, "item_id": str, "expected_version": map[string]string{"type": "integer"}, "clear_due": flag, "clear_notes": flag}
+	props := map[string]any{"title": str, "due_at": map[string]string{"type": "string", "description": "The deadline, RFC3339 with timezone; omit if unknown"}, "timezone": str, "notes": str, "item_id": str, "expected_version": map[string]string{"type": "integer"}, "clear_due": flag, "clear_notes": flag}
 	props["remind_at"] = map[string]string{"type": "string", "description": "Explicit reminder time in RFC3339. Set only when the owner asks for a reminder."}
 	props["nag_minutes"] = map[string]string{"type": "integer", "description": "Minutes between nags, 1 to 1440. Use 15 by default for reminders. Zero disables nagging."}
 	props["clear_reminder"], props["clear_nag"] = flag, flag
@@ -118,6 +118,12 @@ func tools() []any {
 	props["clear_list"] = flag
 	props["location"] = map[string]string{"type": "string", "description": "Where the item happens, for example an address or a place name."}
 	props["clear_location"] = flag
+	props["start_at"] = map[string]string{"type": "string", "description": "When the item begins, RFC3339 with timezone. Use for appointments and meetings."}
+	props["clear_start"] = flag
+	props["duration_minutes"] = map[string]string{"type": "integer", "description": "How long it takes, 1 to 10080 minutes."}
+	props["clear_duration"] = flag
+	props["priority"] = map[string]string{"type": "integer", "description": "1 (highest) to 5. Set only when the owner states importance."}
+	props["clear_priority"] = flag
 	props["profile"] = map[string]string{"type": "string", "description": "Profile id from the profile list."}
 	props["clear_profile"] = flag
 	props["recurrence"] = map[string]any{"type": "object", "description": "Repeat rule. The item needs a due time.", "properties": map[string]any{"every": map[string]any{"type": "string", "enum": []string{"daily", "weekly", "monthly", "yearly"}}, "interval": map[string]string{"type": "integer"}, "after_completion": flag}, "required": []string{"every", "interval"}, "additionalProperties": false}

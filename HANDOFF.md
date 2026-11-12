@@ -52,9 +52,9 @@ Decisions:
 - `GET /v1/items?from=&to=` returns the items in a range.
 
 Steps:
-- [ ] Domain: fields, validation, anchor rules, recurrence shift.
-- [ ] Command and assistant: proposals, previews, prompt (events use a start, tasks use a deadline).
-- [ ] API: `GET /v1/items`.
+- [x] Domain: fields, validation, anchor rules, recurrence shift (tests pass).
+- [x] Command and assistant: proposals, previews, prompt (tests pass).
+- [x] API: `GET /v1/items` (tests pass).
 - [ ] App: item model, repository, use case, calendar controller, calendar screen, navigation, tests.
 - [ ] Docs: `docs/calendar-spec.md`, `docs/screens.md`, `docs/m1-spec.md`, AGENTS files, evidence.
 - [ ] Final checks, deploy, APK, phone check.
