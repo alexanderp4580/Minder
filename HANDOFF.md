@@ -60,7 +60,9 @@ Steps:
 - [x] Branding hosted at `/branding/` behind sign-in (tests pass). It is private. A public page needs a Cloudflare Access bypass for that path. The owner decides.
 - Docker context: `.dockerignore` lists the folders the image build may read. A new folder needs an entry there. The first branding deploy failed for this reason. Test a new COPY with `podman build` on a small Dockerfile before a deploy.
 - [x] Deployed `1c0efe9` (172 seconds; unhealthy for the first seconds, then `running:healthy`). Production has the calendar, the new fields and `/branding/`. The public address returns 401 without sign-in. The content at `/branding/` is not checked through the live host.
-- [ ] APK 0.4.0 (calendar) is not built. The owner stopped the build. Build it only when the owner asks.
+- [x] UI spacing pass (owner: the app felt tight around headers and did not match the guide). Header without divider, time next to the sender, 44 px buttons, 56 px composer, shared button components, `ui_spec_test.dart`, mockup and `foundation.md` updated. Not deployed. Not on a phone yet.
+- Known gap: the guide uses Carbon icons and the app uses Material icons.
+- [ ] APK 0.4.0 (calendar and spacing) is not built. The owner stopped the build. Build it only when the owner asks.
 - [ ] Phone check of the calendar.
 
 ## Checks

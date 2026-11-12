@@ -2,7 +2,7 @@
 
 Status 2026-11-11. This file defines the shared design rules for the chat screen. The values come from `../brand/index.html` and `mockups/common.css`. Where the two differ, the brand guide wins. Items marked "?" are not decided.
 
-Scope: the chat screen only. Other screens are not designed.
+Scope: the chat screen and the calendar page ([calendar-spec.md](calendar-spec.md)). Other screens are not designed.
 
 ## Principles
 
@@ -56,6 +56,12 @@ Rules:
 ## Space and shape
 
 - Phone canvas 412 × 892 px. Side gutter 20 px. Gap between buttons 8 px.
+- Header: 18 px above the title, no divider below. The status line sits 8 px under the title. The first message group starts 38 px under the status line.
+- Message group: 16 px above the sender line, 6 px between the sender line and the message. The sender line carries the time: "Minder · 07:30" on the left, "You · 07:31" on the right, on the side of its message.
+- Your message: 44 px left margin inside the gutter, so the box starts 64 px from the screen edge. Padding 10 px above and below, 12 px at the sides.
+- Buttons in the chat are 44 px high. Secondary buttons have a Panel fill and a 1 px Edge outline. The brand guide sizes of 54 and 48 px apply to notifications.
+- Buttons that share a row have equal gaps of 8 px. Confirm is 1.3 times as wide as Discard. Done, Snooze and Open share one row.
+- The composer is 56 px high including its hairline, with a 44 px field and a 44 px Send button.
 - Hairlines (Line colour, 1 px) separate regions. Cards use an Edge outline.
 - Corners are square. The primary button has one cut corner at the bottom right (12 px). The mic button has the same cut (10 px).
 - Every control is at least 44 × 44 px.
@@ -69,10 +75,10 @@ Carbon icons, pinned version @carbon/icons 11.92.0, loaded from jsDelivr. 18 to 
 
 | component | what it is | colour rule |
 |---|---|---|
-| Header | title "Chat", status line, gear button | the status square is Text colour |
+| Header | title "Chat", status line, a 44 px square button on the right (Calendar) | the status square is Text colour |
 | Status line | "Minder is watching · 5 open", upper case, 12 px | Muted |
 | Event line | centred text between two hairlines, for example "07:15 · Reminder 2 sent · no reply" | Muted |
-| Sender line | "Minder" or "You" with a time, above a message | Muted |
+| Sender line | "Minder · 07:30" or "You · 07:31", above a message, on its side | Muted |
 | Your message | Panel fill, Edge outline, right side, 64 px left margin | none |
 | Minder message | plain text on Void, no outline | none |
 | Nag frame | a Minder message in the focus frame: urgency label, item title, one helpful sentence, buttons Done, Later and Start small, a countdown | Signal brackets, Alert label, Done is primary |

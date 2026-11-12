@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../application/calendar_controller.dart';
 import '../domain/item.dart';
+import 'components.dart';
+import 'format.dart';
 import 'tokens.dart';
 
 const _months = [
@@ -20,13 +22,13 @@ const _months = [
 ];
 const _weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
-String _two(int n) => n.toString().padLeft(2, '0');
-String _clock(DateTime t) => '${_two(t.hour)}:${_two(t.minute)}';
 String _duration(int minutes) {
   if (minutes < 60) return '$minutes min';
   final h = minutes ~/ 60, m = minutes % 60;
   return m == 0 ? '$h h' : '$h h $m min';
 }
+
+String two(int n) => n.toString().padLeft(2, '0');
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key, required this.controller});
@@ -59,28 +61,36 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 12, Tokens.gutter, 4),
+          Container(
+            padding: const EdgeInsets.fromLTRB(
+              Tokens.gutter,
+              18,
+              Tokens.gutter,
+              0,
+            ),
             child: Row(
               children: [
-                IconButton(
+                const Expanded(
+                  child: Text(
+                    'CALENDAR',
+                    style: TextStyle(
+                      fontFamily: 'Michroma',
+                      fontSize: 22,
+                      letterSpacing: 4.4,
+                    ),
+                  ),
+                ),
+                SquareIconButton(
                   tooltip: 'Chat',
                   onPressed: () => Navigator.of(context).maybePop(),
-                  icon: const Icon(Icons.arrow_back),
-                ),
-                const Text(
-                  'CALENDAR',
-                  style: TextStyle(
-                    fontFamily: 'Michroma',
-                    fontSize: 22,
-                    letterSpacing: 4.4,
-                  ),
+                  icon: Icons.chat_bubble_outline,
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
+          const SizedBox(height: 16),
           _monthBar(),
+          const SizedBox(height: 8),
           _weekdayRow(),
           for (var w = 0; w < 6; w++) _week(w),
           const Divider(height: 1),
@@ -91,13 +101,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   );
 
   Widget _monthBar() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
+    padding: const EdgeInsets.symmetric(horizontal: Tokens.gutter),
     child: Row(
       children: [
-        IconButton(
+        SquareIconButton(
           tooltip: 'Previous month',
           onPressed: c.previous,
-          icon: const Icon(Icons.chevron_left),
+          icon: Icons.chevron_left,
         ),
         Expanded(
           child: Text(
@@ -110,18 +120,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
         ),
-        IconButton(
+        SquareIconButton(
           tooltip: 'Next month',
           onPressed: c.next,
-          icon: const Icon(Icons.chevron_right),
+          icon: Icons.chevron_right,
         ),
-        TextButton(onPressed: c.goToday, child: const Text('Today')),
+        const SizedBox(width: Tokens.gap),
+        SecondaryButton(onPressed: c.goToday, label: 'Today'),
       ],
     ),
   );
 
   Widget _weekdayRow() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4),
+    padding: const EdgeInsets.symmetric(horizontal: Tokens.gutter - 4),
     child: Row(
       children: [
         for (final d in _weekdays)
@@ -142,7 +153,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   );
 
   Widget _week(int w) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4),
+    padding: const EdgeInsets.symmetric(horizontal: Tokens.gutter - 4),
     child: Row(
       children: [
         for (var d = 0; d < 7; d++)
@@ -171,7 +182,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           '$count ${count == 1 ? 'item' : 'items'}',
       excludeSemantics: true,
       child: InkWell(
-        key: ValueKey('day-${day.year}-${_two(day.month)}-${_two(day.day)}'),
+        key: ValueKey('day-${day.year}-${two(day.month)}-${two(day.day)}'),
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
         onTap: () => c.select(day),
         child: Container(
           height: 48,
@@ -233,14 +245,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
         if (c.error != null) ...[
           Text(c.error!, style: const TextStyle(color: Tokens.alert)),
           const SizedBox(height: 8),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Tokens.text,
-              side: const BorderSide(color: Tokens.edge),
-              shape: const RoundedRectangleBorder(),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SecondaryButton(
+              onPressed: c.loading ? null : c.load,
+              label: 'Retry',
             ),
-            onPressed: c.loading ? null : c.load,
-            child: const Text('Retry'),
           ),
           const SizedBox(height: 12),
         ],
@@ -253,7 +263,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Widget _entry(Item item) {
     final at = item.placedAt!;
-    final time = item.startAt != null ? _clock(at) : 'Due ${_clock(at)}';
+    final time = item.startAt != null ? clock(at) : 'Due ${clock(at)}';
     final chips = [
       if (item.durationMinutes > 0) _duration(item.durationMinutes),
       if (item.priority > 0) 'P${item.priority}',

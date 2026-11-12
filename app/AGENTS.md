@@ -3,6 +3,7 @@
 Flutter Android and web chat client. `domain` owns entries, the `ChatRepository` and `PushRepository` interfaces and `ReminderAction`.
 `data` implements them and alone knows routes and wire names. `application` owns use cases and conversation state.
 `ItemRepository` and the `LoadItems` use case feed the `CalendarController`; `CalendarScreen` is read-only and opens from the chat header.
+`ui/components.dart` owns the shared buttons (`PrimaryButton`, `SecondaryButton`, `SquareIconButton`); `ui/format.dart` owns time and cost text. `test/ui_spec_test.dart` checks the spacing numbers of `docs/foundation.md`.
 `ui` calls controller methods and reads design tokens. It never builds a route.
 Business rules stay on the server. Never embed server secrets in the client.
 Run `../toolchain/run flutter flutter test` and `../toolchain/run flutter flutter analyze`.

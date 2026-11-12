@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../application/chat_controller.dart';
 import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
+import 'components.dart';
+import 'format.dart';
 import 'tokens.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -24,6 +26,8 @@ class ChatScreen extends StatefulWidget {
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
+
+const _meta = TextStyle(fontSize: 12, color: Tokens.muted, letterSpacing: 1.2);
 
 class _ChatScreenState extends State<ChatScreen> {
   final _text = TextEditingController();
@@ -84,12 +88,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   Container(
                     padding: const EdgeInsets.fromLTRB(
                       Tokens.gutter,
-                      22,
-                      Tokens.gutter,
                       18,
-                    ),
-                    decoration: const BoxDecoration(
-                      border: Border(bottom: BorderSide(color: Tokens.line)),
+                      Tokens.gutter,
+                      0,
                     ),
                     child: Row(
                       children: [
@@ -105,7 +106,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   letterSpacing: 4.4,
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 8),
                               Row(
                                 children: [
                                   Container(
@@ -134,10 +135,10 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                         ),
                         if (widget.onCalendar != null)
-                          IconButton(
+                          SquareIconButton(
                             tooltip: 'Calendar',
                             onPressed: widget.onCalendar,
-                            icon: const Icon(Icons.calendar_month),
+                            icon: Icons.calendar_month,
                           ),
                         if (c.loading)
                           const SizedBox(
@@ -156,11 +157,12 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          TextButton(
+                          const SizedBox(height: 12),
+                          SecondaryButton(
                             onPressed: widget.notificationsBusy
                                 ? null
                                 : widget.enableNotifications,
-                            child: const Text('Enable notifications'),
+                            label: 'Enable notifications',
                           ),
                           if (widget.notificationStatus != null)
                             Text(
@@ -174,9 +176,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: SelectionArea(
                       child: ListView(
                         controller: _scroll,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Tokens.gutter,
-                          vertical: 16,
+                        padding: const EdgeInsets.fromLTRB(
+                          Tokens.gutter,
+                          22,
+                          Tokens.gutter,
+                          16,
                         ),
                         children: [
                           if (c.entries.isEmpty && !c.loading)
@@ -242,18 +246,24 @@ class _ChatScreenState extends State<ChatScreen> {
                                 children: [
                                   Text(c.error!),
                                   if (c.needsSignIn && widget.signIn != null)
-                                    FilledButton(
-                                      onPressed: _signingIn ? null : _login,
-                                      child: Text(
-                                        _signingIn ? 'Signing in…' : 'Sign in',
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: PrimaryButton(
+                                        onPressed: _signingIn ? null : _login,
+                                        label: _signingIn
+                                            ? 'Signing in…'
+                                            : 'Sign in',
                                       ),
                                     )
                                   else
-                                    TextButton(
-                                      onPressed: c.acting || c.waiting
-                                          ? null
-                                          : () => c.retry(),
-                                      child: const Text('Retry'),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: SecondaryButton(
+                                        onPressed: c.acting || c.waiting
+                                            ? null
+                                            : () => c.retry(),
+                                        label: 'Retry',
+                                      ),
                                     ),
                                 ],
                               ),
@@ -263,17 +273,17 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.fromLTRB(
-                      Tokens.gutter,
-                      14,
-                      Tokens.gutter,
-                      14,
+                    key: const ValueKey('composer'),
+                    constraints: const BoxConstraints(minHeight: 56),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 5.5,
                     ),
                     decoration: const BoxDecoration(
                       border: Border(top: BorderSide(color: Tokens.line)),
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: TextField(
@@ -286,24 +296,27 @@ class _ChatScreenState extends State<ChatScreen> {
                             decoration: const InputDecoration(
                               hintText: 'Tell Minder…',
                               counterText: '',
+                              isDense: true,
+                              constraints: BoxConstraints(
+                                minHeight: Tokens.minTarget,
+                              ),
                               contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 15,
+                                horizontal: 14,
+                                vertical: 10,
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: Tokens.gap),
-                        SizedBox(
-                          height: 54,
-                          child: Tooltip(
-                            message: 'Send',
-                            child: FilledButton(
-                              onPressed: c.waiting || c.needsSignIn
-                                  ? null
-                                  : _send,
-                              child: const Text('Send'),
-                            ),
+                        Tooltip(
+                          message: 'Send',
+                          child: PrimaryButton(
+                            height: Tokens.minTarget,
+                            cut: 10,
+                            onPressed: c.waiting || c.needsSignIn
+                                ? null
+                                : _send,
+                            label: 'Send',
                           ),
                         ),
                       ],
@@ -323,20 +336,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final ch = e.change;
     final reminder = e.reminder;
     final pending = e.kind == 'preview' && ch?['state'] == 'pending';
-    final time = TimeOfDay.fromDateTime(e.createdAt.toLocal()).format(context);
+    final time =
+        clock(e.createdAt.toLocal()) +
+        (e.costEur > 0 ? ' · ${cost(e.costEur)}' : '');
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '${mine ? 'YOU' : 'MINDER'} · $time'
-          '${e.costEur > 0 ? ' · €${e.costEur.toStringAsFixed(4)}' : ''}',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Tokens.muted,
-            letterSpacing: 1.0,
-          ),
-        ),
-        const SizedBox(height: 7),
         if (ch != null && e.kind == 'preview') ...[
           Text(
             'PREVIEW · ${_action(ch['action'] as String)}',
@@ -376,21 +381,27 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           if (pending)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Wrap(
-                spacing: Tokens.gap,
+              padding: const EdgeInsets.only(top: 12),
+              child: Row(
                 children: [
-                  FilledButton(
-                    onPressed: c.acting
-                        ? null
-                        : () => c.confirm(ch['id'] as String),
-                    child: const Text('Confirm'),
+                  Expanded(
+                    flex: 13,
+                    child: PrimaryButton(
+                      onPressed: c.acting
+                          ? null
+                          : () => c.confirm(ch['id'] as String),
+                      label: 'Confirm',
+                    ),
                   ),
-                  TextButton(
-                    onPressed: c.acting
-                        ? null
-                        : () => c.discard(ch['id'] as String),
-                    child: const Text('Discard'),
+                  const SizedBox(width: Tokens.gap),
+                  Expanded(
+                    flex: 10,
+                    child: SecondaryButton(
+                      onPressed: c.acting
+                          ? null
+                          : () => c.discard(ch['id'] as String),
+                      label: 'Discard',
+                    ),
                   ),
                 ],
               ),
@@ -413,54 +424,62 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         if (reminder != null && reminder['state'] == 'active')
           Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Wrap(
-              spacing: 8,
+            padding: const EdgeInsets.only(top: 12),
+            child: Row(
               children: [
-                FilledButton(
-                  onPressed: c.acting
-                      ? null
-                      : () => c.remind(
-                          reminder['id'] as String,
-                          ReminderAction.done,
-                        ),
-                  child: const Text('Done'),
-                ),
-                PopupMenuButton<ReminderAction>(
-                  enabled: !c.acting,
-                  onSelected: (action) =>
-                      c.remind(reminder['id'] as String, action),
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(
-                      value: ReminderAction.snooze15,
-                      child: Text('15 minutes'),
-                    ),
-                    const PopupMenuItem(
-                      value: ReminderAction.snooze60,
-                      child: Text('1 hour'),
-                    ),
-                    const PopupMenuItem(
-                      value: ReminderAction.tonight,
-                      child: Text('Tonight'),
-                    ),
-                    const PopupMenuItem(
-                      value: ReminderAction.tomorrow,
-                      child: Text('Tomorrow'),
-                    ),
-                  ],
-                  child: const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: Text('Snooze'),
+                Expanded(
+                  flex: 11,
+                  child: PrimaryButton(
+                    onPressed: c.acting
+                        ? null
+                        : () => c.remind(
+                            reminder['id'] as String,
+                            ReminderAction.done,
+                          ),
+                    label: 'Done',
                   ),
                 ),
-                TextButton(
-                  onPressed: c.acting
-                      ? null
-                      : () => c.remind(
-                          reminder['id'] as String,
-                          ReminderAction.acknowledge,
-                        ),
-                  child: const Text('Open'),
+                const SizedBox(width: Tokens.gap),
+                Expanded(
+                  flex: 10,
+                  child: PopupMenuButton<ReminderAction>(
+                    enabled: !c.acting,
+                    tooltip: 'Snooze',
+                    onSelected: (action) =>
+                        c.remind(reminder['id'] as String, action),
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: ReminderAction.snooze15,
+                        child: Text('15 minutes'),
+                      ),
+                      const PopupMenuItem(
+                        value: ReminderAction.snooze60,
+                        child: Text('1 hour'),
+                      ),
+                      const PopupMenuItem(
+                        value: ReminderAction.tonight,
+                        child: Text('Tonight'),
+                      ),
+                      const PopupMenuItem(
+                        value: ReminderAction.tomorrow,
+                        child: Text('Tomorrow'),
+                      ),
+                    ],
+                    child: SecondaryFace(label: 'Snooze', enabled: !c.acting),
+                  ),
+                ),
+                const SizedBox(width: Tokens.gap),
+                Expanded(
+                  flex: 10,
+                  child: SecondaryButton(
+                    onPressed: c.acting
+                        ? null
+                        : () => c.remind(
+                            reminder['id'] as String,
+                            ReminderAction.acknowledge,
+                          ),
+                    label: 'Open',
+                  ),
                 ),
               ],
             ),
@@ -476,47 +495,59 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         if (e.kind == 'result' && ch?['undo_id'] != null)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Tokens.text,
-                side: const BorderSide(color: Tokens.edge),
-                shape: const RoundedRectangleBorder(),
+            padding: const EdgeInsets.only(top: 12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SecondaryButton(
+                onPressed: c.acting
+                    ? null
+                    : () => c.undo(ch!['undo_id'] as String),
+                label: 'Undo',
               ),
-              onPressed: c.acting
-                  ? null
-                  : () => c.undo(ch!['undo_id'] as String),
-              child: const Text('Undo'),
             ),
           ),
         if (e.kind == 'error')
           Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Tokens.text,
-                side: const BorderSide(color: Tokens.edge),
-                shape: const RoundedRectangleBorder(),
+            padding: const EdgeInsets.only(top: 12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SecondaryButton(
+                onPressed: c.waiting ? null : () => c.retry(text: c.retryText(e)),
+                label: 'Retry',
               ),
-              onPressed: c.waiting ? null : () => c.retry(text: c.retryText(e)),
-              child: const Text('Retry'),
             ),
           ),
       ],
     );
+    final boxed = mine || e.kind == 'preview';
     return Container(
       key: ValueKey(e.id),
-      margin: EdgeInsets.only(left: mine ? 44 : 0, bottom: 18),
-      padding: mine || e.kind == 'preview'
-          ? const EdgeInsets.all(12)
-          : EdgeInsets.zero,
-      decoration: mine || e.kind == 'preview'
-          ? BoxDecoration(
-              color: mine ? Tokens.panel : Tokens.voidColor,
-              border: Border.all(color: Tokens.edge),
-            )
-          : null,
-      child: body,
+      margin: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+            child: Text('${mine ? 'YOU' : 'MINDER'} · $time', style: _meta),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            margin: EdgeInsets.only(left: mine ? 44 : 0),
+            padding: !boxed
+                ? EdgeInsets.zero
+                : mine
+                ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+                : const EdgeInsets.all(12),
+            decoration: boxed
+                ? BoxDecoration(
+                    color: mine ? Tokens.panel : Tokens.voidColor,
+                    border: Border.all(color: Tokens.edge),
+                  )
+                : null,
+            child: body,
+          ),
+        ],
+      ),
     );
   }
 
@@ -551,7 +582,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (value.isEmpty) return 'None';
     final date = DateTime.tryParse(value);
     if (date == null || !value.contains('T')) return value;
-    final d = date.toLocal();
-    return '${d.day}/${d.month}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    return dateTime(date.toLocal());
   }
 }
