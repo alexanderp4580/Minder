@@ -16,6 +16,8 @@ Expose fixed messages for internal/model failures. Serve only named branding fil
 
 The calendar items route accepts an optional validated IANA timezone for date-only overlap selection.
 
+Email ingress is a separate machine-authenticated POST route with signed envelope/body verification; machine credentials never authorize owner routes. Ingestion acknowledges only durable sources/jobs.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

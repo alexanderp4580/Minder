@@ -40,6 +40,8 @@ type ReminderActions interface {
 	RegisterDevice(string, string) error
 }
 type Server struct {
+	EmailVerifier EmailVerifier
+	EmailIngestor CaptureIngestor
 	// Branding is the folder that holds the brand guide. Empty turns /branding off.
 	Branding     string
 	Reminders    ReminderActions
@@ -120,6 +122,10 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	if h, pattern := s.public.Handler(r); pattern != "" {
 		noteAuth(w, "public")
 		h.ServeHTTP(w, r)
+		return
+	}
+	if r.URL.Path == "/v1/email/ingest" && r.Method == http.MethodPost {
+		s.ingestEmail(w, r)
 		return
 	}
 	if !s.authorized(w, r) {

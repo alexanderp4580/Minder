@@ -8,6 +8,7 @@ import (
 )
 
 type Settings struct {
+	Email                                         EmailSettings
 	DatabasePath, WebDir, BrandDir, ListenAddr    string
 	ModelKey, Model, ModelEndpoint                string
 	MonthlyLimitEUR, USDToEUR                     float64
@@ -47,6 +48,10 @@ func Load(getenv func(string) string) (Settings, error) {
 		return Settings{}, err
 	}
 	cfg.USDToEUR, err = positiveNumber(value("USD_TO_EUR", "1"), "USD_TO_EUR")
+	if err != nil {
+		return Settings{}, err
+	}
+	cfg.Email, err = LoadEmail(getenv)
 	if err != nil {
 		return Settings{}, err
 	}
