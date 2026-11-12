@@ -57,7 +57,9 @@ Steps:
 - [x] API: `GET /v1/items` (tests pass).
 - [x] App: item model, repository, use case, calendar controller, calendar screen, navigation, tests (19 Flutter tests pass; web check passes).
 - [x] Docs: `docs/calendar-spec.md`, `docs/screens.md`, `docs/m1-spec.md`, AGENTS files, evidence.
-- [ ] Final checks, deploy, APK, phone check.
+- [x] Branding hosted at `/branding/` behind sign-in (tests pass). It is private. A public page needs a Cloudflare Access bypass for that path. The owner decides.
+- [ ] Deploy `HEAD`, then the APK 0.4.0 after the owner agrees to a build. The owner stopped the APK build.
+- [ ] Phone check of the calendar.
 
 ## Checks
 

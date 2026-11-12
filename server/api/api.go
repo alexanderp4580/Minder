@@ -21,6 +21,8 @@ type Replier interface {
 	Reply(context.Context, string) ([]domain.Entry, error)
 }
 type Server struct {
+	// Branding is the folder that holds the brand guide. Empty turns /branding off.
+	Branding     string
 	PushConfig   *PushConfig
 	store        *store.Store
 	commands     *command.Service
@@ -88,6 +90,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+	}
+	if s.Branding != "" && (r.URL.Path == "/branding" || strings.HasPrefix(r.URL.Path, "/branding/")) {
+		s.serveBranding(w, r)
+		return
 	}
 	if s.reminderRoutes(w, r) {
 		return

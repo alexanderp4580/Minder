@@ -19,6 +19,10 @@ This `brand/` folder owns `index.html`, `app-icon.svg` and its PNG preview. The 
 
 Describe only what exists. Write page copy at about 80% of ASD-STE100 (see root AGENTS.md) and use stop-slop. Re-read the whole page after editing and check desktop (1280 px) and mobile (390 px) renders.
 
+# Hosting
+
+The Go service serves `index.html`, `app-icon.svg` and `app-icon.png` at `/branding/`, behind the same sign-in as the app. Add a file to the guide in `server/api/branding.go` and the Dockerfile, or it stays unreachable. The public grant logo at `/brand/minder-icon.png` is separate.
+
 # Verification
 
 Serve locally with `python3 -I -m http.server 8899 --directory brand` and open `http://127.0.0.1:8899/`.

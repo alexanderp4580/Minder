@@ -56,6 +56,7 @@ func main() {
 		verifier = &api.Verifier{Issuer: env("CF_ISSUER", "https://liveleds.cloudflareaccess.com"), Audience: env("CF_AUDIENCE", "11f11785388ae33f2f78007aa26db1bf047457ff7f19758eddd797ef4c151c54"), Email: env("OWNER_EMAIL", "alexanderp4580@gmail.com")}
 	}
 	handler := api.New(s, c, a, verifier, env("WEB_DIR", "../app/build/web"))
+	handler.Branding = os.Getenv("BRAND_DIR")
 	srv := &http.Server{Addr: env("LISTEN_ADDR", "127.0.0.1:8080"), Handler: handler, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 1 << 16}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

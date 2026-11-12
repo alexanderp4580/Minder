@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -237,5 +238,55 @@ func TestItemsRangeReturnsPlacedItemsOnly(t *testing.T) {
 	locked.ServeHTTP(w, httptest.NewRequest("GET", "/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z", nil))
 	if w.Code != 401 {
 		t.Fatalf("unauthorized: %d", w.Code)
+	}
+}
+
+func TestBrandingServesOnlyTheGuideFilesAfterSignIn(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "brand"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	dir := t.TempDir()
+	for name, body := range map[string]string{"index.html": "<h1>Guide</h1>", "app-icon.svg": "<svg/>", "app-icon.png": "png", "AGENTS.md": "private notes"} {
+		if e = os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); e != nil {
+			t.Fatal(e)
+		}
+	}
+	h := New(s, command.New(s), replier{s}, nil, "")
+	h.Branding = dir
+	get := func(h *Server, method, path string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(method, path, nil))
+		return w
+	}
+	if w := get(h, "GET", "/branding"); w.Code != 301 || w.Header().Get("Location") != "/branding/" {
+		t.Fatalf("redirect: %d %q", w.Code, w.Header().Get("Location"))
+	}
+	if w := get(h, "GET", "/branding/"); w.Code != 200 || !strings.Contains(w.Body.String(), "Guide") || !strings.HasPrefix(w.Header().Get("Content-Type"), "text/html") {
+		t.Fatalf("index: %d %q", w.Code, w.Header().Get("Content-Type"))
+	}
+	if w := get(h, "GET", "/branding/app-icon.svg"); w.Code != 200 || w.Header().Get("Content-Type") != "image/svg+xml" {
+		t.Fatalf("svg: %d %q", w.Code, w.Header().Get("Content-Type"))
+	}
+	if w := get(h, "HEAD", "/branding/app-icon.png"); w.Code != 200 {
+		t.Fatalf("png head: %d", w.Code)
+	}
+	for _, path := range []string{"/branding/AGENTS.md", "/branding/../AGENTS.md", "/branding/%2e%2e/AGENTS.md", "/branding/index.html/x", "/branding/other"} {
+		if w := get(h, "GET", path); w.Code != 404 && w.Code != 301 || strings.Contains(w.Body.String(), "private notes") {
+			t.Fatalf("%s: %d", path, w.Code)
+		}
+	}
+	if w := get(h, "POST", "/branding/"); w.Code == 200 {
+		t.Fatal("POST accepted")
+	}
+	locked := New(s, command.New(s), replier{s}, &Verifier{}, "")
+	locked.Branding = dir
+	if w := get(locked, "GET", "/branding/"); w.Code != 401 {
+		t.Fatalf("unauthenticated: %d", w.Code)
+	}
+	off := New(s, command.New(s), replier{s}, nil, "")
+	if w := get(off, "GET", "/branding/"); w.Code != 404 {
+		t.Fatalf("disabled: %d", w.Code)
 	}
 }

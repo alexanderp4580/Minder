@@ -19,7 +19,8 @@ FROM docker.io/library/debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/* && useradd -u 10001 -m minder && mkdir -p /data /srv && chown minder:minder /data /srv
 COPY --from=server /minder /usr/local/bin/minder
 COPY --from=flutter /build/app/build/web /srv/web
-ENV ENV=production AUTH_MODE=cloudflare DATABASE_PATH=/data/minder.db WEB_DIR=/srv/web LISTEN_ADDR=0.0.0.0:8080
+COPY brand/index.html brand/app-icon.svg brand/app-icon.png /srv/branding/
+ENV ENV=production AUTH_MODE=cloudflare DATABASE_PATH=/data/minder.db WEB_DIR=/srv/web BRAND_DIR=/srv/branding LISTEN_ADDR=0.0.0.0:8080
 USER minder
 WORKDIR /srv
 EXPOSE 8080
