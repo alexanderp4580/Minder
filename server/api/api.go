@@ -1,48 +1,59 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
-	"unicode/utf8"
 
-	"github.com/alexanderp4580/Minder/server/command"
+	"github.com/alexanderp4580/Minder/server/conversation"
 	"github.com/alexanderp4580/Minder/server/domain"
-	"github.com/alexanderp4580/Minder/server/store"
 )
 
 type Authenticator interface {
 	Authenticate(*http.Request) error
 }
 
-type Replier interface {
-	Reply(context.Context, string) ([]domain.Entry, error)
+type Queries interface {
+	History(int64, int) ([]domain.Entry, error)
+	Events(int64, int) ([]domain.Entry, error)
+	ItemsBetween(time.Time, time.Time) ([]domain.Item, error)
+}
+type Commands interface {
+	Confirm(string) (domain.Entry, error)
+	Refresh(string) (domain.Entry, error)
+	Discard(string) (domain.Entry, error)
+	Undo(string) (domain.Entry, error)
+}
+type Messages interface {
+	Accept(string) (conversation.Accepted, error)
+}
+type ReminderActions interface {
+	Act(string, string, time.Time) (domain.Entry, error)
+	Active() ([]domain.Entry, error)
+	RegisterDevice(string, string) error
 }
 type Server struct {
 	// Branding is the folder that holds the brand guide. Empty turns /branding off.
 	Branding     string
+	Reminders    ReminderActions
 	PushConfig   *PushConfig
 	PingInterval time.Duration
-	store        *store.Store
-	commands     *command.Service
-	assistant    Replier
+	queries      Queries
+	commands     Commands
+	messages     Messages
 	verifier     Authenticator
 	web          http.Handler
 	public       *http.ServeMux // reachable without sign-in
 	private      *http.ServeMux // reachable after sign-in
-	processing   sync.Mutex
 }
 
-func New(s *store.Store, c *command.Service, a Replier, v Authenticator, web string) *Server {
-	srv := &Server{store: s, commands: c, assistant: a, verifier: v, PingInterval: 20 * time.Second}
+func New(s Queries, c Commands, messages Messages, reminders ReminderActions, v Authenticator, web string) *Server {
+	srv := &Server{queries: s, commands: c, messages: messages, Reminders: reminders, verifier: v, PingInterval: 20 * time.Second}
 	if web != "" {
 		srv.web = http.FileServer(http.Dir(web))
 	}
@@ -79,7 +90,7 @@ func write(w http.ResponseWriter, status int, v any) {
 }
 func fail(w http.ResponseWriter, err error) {
 	status := 500
-	code := command.ErrorCode(err)
+	code := domain.ErrorCode(err)
 	switch code {
 	case "invalid_field":
 		status = 400
@@ -87,12 +98,12 @@ func fail(w http.ResponseWriter, err error) {
 		status = 409
 	case "not_found":
 		status = 404
-	case "limit_reached":
+	case "limit_reached", "busy":
 		status = 429
 	case "model_error":
 		status = 502
 	}
-	body := map[string]any{"code": code, "message": command.Describe(err)}
+	body := map[string]any{"code": code, "message": domain.Describe(err)}
 	var invalid *domain.Invalid
 	if errors.As(err, &invalid) {
 		body["field"] = invalid.Field
@@ -144,7 +155,7 @@ func (s *Server) serveWeb(w http.ResponseWriter, r *http.Request) {
 func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	after, _ := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	entries, e := s.store.History(after, limit)
+	entries, e := s.queries.History(after, limit)
 	if e != nil {
 		fail(w, e)
 		return
@@ -158,7 +169,7 @@ func (s *Server) items(w http.ResponseWriter, r *http.Request) {
 		fail(w, &domain.Invalid{Field: "range", Message: "Send from and to as times, at most 62 days apart."})
 		return
 	}
-	items, e := s.store.ItemsBetween(from, to)
+	items, e := s.queries.ItemsBetween(from, to)
 	if e != nil {
 		fail(w, e)
 		return
@@ -213,45 +224,14 @@ func (s *Server) message(w http.ResponseWriter, r *http.Request) {
 		fail(w, &domain.Invalid{Field: "text", Message: "Send one text message."})
 		return
 	}
-	input.Text = strings.TrimSpace(input.Text)
-	if n := utf8.RuneCountInString(input.Text); n < 1 || n > 4000 {
-		fail(w, &domain.Invalid{Field: "text", Message: "Use 1 to 4,000 characters."})
+	accepted, err := s.messages.Accept(input.Text)
+	if err != nil {
+		fail(w, err)
 		return
 	}
-	if ready, ok := s.assistant.(interface{ Preflight() error }); ok {
-		if e := ready.Preflight(); e != nil {
-			fail(w, e)
-			return
-		}
-	}
-	if !s.processing.TryLock() {
-		write(w, 429, map[string]string{"code": "busy", "message": "Wait for Minder to finish."})
-		return
-	}
-	entry, e := s.store.AddEntry(domain.Entry{Kind: "user", Text: input.Text})
-	if e != nil {
-		s.processing.Unlock()
-		fail(w, e)
-		return
-	}
-	replyID := store.ID()
-	write(w, 202, map[string]any{"entry": entry, "reply_id": replyID})
-	go func() {
-		defer s.processing.Unlock()
-		defer func() {
-			if recover() != nil {
-				log.Print("The assistant stopped with an internal error")
-				s.store.AddEntry(domain.Entry{ID: replyID, Kind: "error", Text: command.Describe(errors.New("assistant panic"))})
-			}
-		}()
-		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		defer cancel()
-		_, err := s.assistant.Reply(ctx, input.Text)
-		if err != nil {
-			s.store.AddEntry(domain.Entry{ID: replyID, Kind: "error", Text: command.Describe(err)})
-		}
-	}()
+	write(w, http.StatusAccepted, accepted)
 }
+
 func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	f, ok := w.(http.Flusher)
 	if !ok {
@@ -274,7 +254,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	ping := time.NewTicker(s.PingInterval)
 	defer ping.Stop()
 	send := func() bool {
-		entries, e := s.store.Events(after, 200)
+		entries, e := s.queries.Events(after, 200)
 		if e != nil {
 			return false
 		}

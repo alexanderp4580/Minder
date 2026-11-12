@@ -4,23 +4,14 @@ import 'package:flutter/foundation.dart';
 
 import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
-import 'use_cases.dart';
+import '../domain/failure.dart';
 
 class ChatController extends ChangeNotifier {
   ChatController(
     this.repository, {
     this.pollInterval = const Duration(seconds: 5),
-  }) : _send = SendMessage(repository),
-       _confirm = ConfirmChange(repository),
-       _discard = DiscardChange(repository),
-       _undo = UndoChange(repository),
-       _remind = ActOnReminder(repository);
+  });
   final ChatRepository repository;
-  final SendMessage _send;
-  final ConfirmChange _confirm;
-  final DiscardChange _discard;
-  final UndoChange _undo;
-  final ActOnReminder _remind;
   final Duration pollInterval;
   final List<Entry> _entries = [];
   List<Entry> get entries => List.unmodifiable(_entries);
@@ -57,10 +48,10 @@ class ChatController extends ChangeNotifier {
   }
 
   void _failed(Object e) {
-    error = e is ApiException
+    error = e is RepositoryFailure
         ? e.message
         : 'Check your connection. Then try again.';
-    if (e is ApiException) {
+    if (e is RepositoryFailure) {
       if (e.replacement != null) _merge(e.replacement!);
       needsSignIn = e.unauthorized;
     }
@@ -133,7 +124,7 @@ class ChatController extends ChangeNotifier {
     waiting = true;
     _notify();
     try {
-      final e = await _send(_lastText);
+      final e = await repository.send(_lastText);
       _merge(e);
     } catch (e) {
       _failed(e);
@@ -141,11 +132,13 @@ class ChatController extends ChangeNotifier {
     _notify();
   }
 
-  Future<void> confirm(String changeId) => _act(() => _confirm(changeId));
-  Future<void> discard(String changeId) => _act(() => _discard(changeId));
-  Future<void> undo(String undoId) => _act(() => _undo(undoId));
+  Future<void> confirm(String changeId) =>
+      _act(() => repository.confirm(changeId));
+  Future<void> discard(String changeId) =>
+      _act(() => repository.discard(changeId));
+  Future<void> undo(String undoId) => _act(() => repository.undo(undoId));
   Future<void> remind(String reminderId, ReminderAction action) =>
-      _act(() => _remind(reminderId, action));
+      _act(() => repository.actOnReminder(reminderId, action));
 
   Future<void> _act(Future<Entry> Function() action) async {
     if (_disposed || acting) return;
@@ -203,7 +196,6 @@ class ChatController extends ChangeNotifier {
     _poll?.cancel();
     _reconnect?.cancel();
     _subscription?.cancel();
-    repository.close();
     super.dispose();
   }
 }

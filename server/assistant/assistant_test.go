@@ -3,12 +3,13 @@ package assistant
 import (
 	"context"
 	"fmt"
-	"github.com/alexanderp4580/Minder/server/command"
-	"github.com/alexanderp4580/Minder/server/domain"
-	"github.com/alexanderp4580/Minder/server/store"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/alexanderp4580/Minder/server/command"
+	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/store"
 )
 
 type fakeModel struct {
@@ -91,7 +92,7 @@ func TestMissingKeyDoesNotSpendBudget(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer s.Close()
-	a := New(s, command.New(s), &OpenRouter{}, 5, 1)
+	a := New(s, command.New(s), &unavailableModel{}, 5, 1)
 	if _, e = a.Reply(context.Background(), "Hello"); e == nil {
 		t.Fatal("missing key accepted")
 	}
@@ -347,3 +348,7 @@ func TestPromptTellsTheModelHowToMoveAnItem(t *testing.T) {
 		}
 	}
 }
+
+type unavailableModel struct{ fakeModel }
+
+func (*unavailableModel) Ready() error { return &domain.ModelError{Message: "No model key"} }

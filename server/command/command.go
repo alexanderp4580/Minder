@@ -2,23 +2,28 @@ package command
 
 import (
 	"errors"
-	"fmt"
-	"github.com/alexanderp4580/Minder/server/domain"
-	"github.com/alexanderp4580/Minder/server/store"
 	"time"
+
+	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/port"
 )
 
-type Service struct{ Store *store.Store }
+type Repository interface {
+	port.UnitOfWork
+	Items() ([]domain.Item, error)
+	Profiles() ([]domain.Profile, error)
+}
+type Service struct{ repository Repository }
 
-func New(s *store.Store) *Service { return &Service{s} }
+func New(s Repository) *Service { return &Service{s} }
 func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
-	err = c.Store.Write(func(t *store.Tx) error { return previewIn(t, p, &out) })
+	err = c.repository.Transact(func(t port.Transaction) error { return previewIn(t, p, &out) })
 	return
 }
 
 // PreviewAll previews several proposals in one transaction. One invalid proposal leaves no preview behind.
 func (c *Service) PreviewAll(ps []domain.Proposal) (out []domain.Entry, err error) {
-	err = c.Store.Write(func(t *store.Tx) error {
+	err = c.repository.Transact(func(t port.Transaction) error {
 		for _, p := range ps {
 			var entry domain.Entry
 			if e := previewIn(t, p, &entry); e != nil {
@@ -30,12 +35,12 @@ func (c *Service) PreviewAll(ps []domain.Proposal) (out []domain.Entry, err erro
 	})
 	return
 }
-func previewIn(t *store.Tx, p domain.Proposal, out *domain.Entry) error {
+func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 	var before *domain.Item
 	var after domain.Item
 	switch p.Action {
 	case "create_item":
-		after = domain.Item{ID: store.ID(), Title: p.Title, DueAt: p.DueAt, Timezone: p.Timezone, Notes: p.Notes, RemindAt: p.RemindAt, NagMinutes: p.NagMinutes, Status: "open", Version: 1, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}
+		after = domain.Item{ID: domain.NewID(), Title: p.Title, DueAt: p.DueAt, Timezone: p.Timezone, Notes: p.Notes, RemindAt: p.RemindAt, NagMinutes: p.NagMinutes, Status: "open", Version: 1, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}
 		if e := setAttributes(t, p, &after); e != nil {
 			return e
 		}
@@ -96,7 +101,7 @@ func previewIn(t *store.Tx, p domain.Proposal, out *domain.Entry) error {
 	if e := domain.Validate(&after); e != nil {
 		return e
 	}
-	id := store.ID()
+	id := domain.NewID()
 	old := domain.Item{}
 	if before != nil {
 		old = *before
@@ -110,7 +115,7 @@ func previewIn(t *store.Tx, p domain.Proposal, out *domain.Entry) error {
 	return t.PutPending(domain.Pending{ID: id, Proposal: p, Before: before, After: after, State: "pending", EntryID: out.ID})
 }
 func (c *Service) Confirm(id string) (out domain.Entry, err error) {
-	err = c.Store.Write(func(t *store.Tx) error {
+	err = c.repository.Transact(func(t port.Transaction) error {
 		p, e := t.Pending(id)
 		if e != nil {
 			return e
@@ -127,14 +132,20 @@ func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 		}
 		if p.Before != nil {
 			i, e := t.Item(p.Before.ID)
-			if e != nil || i.Version != p.Before.Version {
+			if e != nil {
+				if errors.Is(e, domain.ErrNotFound) {
+					return domain.ErrConflict
+				}
+				return e
+			}
+			if i.Version != p.Before.Version {
 				return domain.ErrConflict
 			}
 		}
 		if e = t.PutItem(p.After); e != nil {
 			return e
 		}
-		audit := domain.Audit{ID: store.ID(), Before: p.Before, After: p.After, Actor: "agent"}
+		audit := domain.Audit{ID: domain.NewID(), Before: p.Before, After: p.After, Actor: "agent"}
 		if e = t.PutAudit(audit); e != nil {
 			return e
 		}
@@ -157,7 +168,7 @@ func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 	return
 }
 func (c *Service) Discard(id string) (out domain.Entry, err error) {
-	err = c.Store.Write(func(t *store.Tx) error {
+	err = c.repository.Transact(func(t port.Transaction) error {
 		p, e := t.Pending(id)
 		if e != nil {
 			return e
@@ -184,7 +195,7 @@ func (c *Service) Discard(id string) (out domain.Entry, err error) {
 	return
 }
 func (c *Service) Undo(id string) (out domain.Entry, err error) {
-	err = c.Store.Write(func(t *store.Tx) error {
+	err = c.repository.Transact(func(t port.Transaction) error {
 		a, e := t.Audit(id)
 		if e != nil {
 			return e
@@ -196,7 +207,13 @@ func (c *Service) Undo(id string) (out domain.Entry, err error) {
 			return undoProfile(t, &a, &out)
 		}
 		current, e := t.Item(a.After.ID)
-		if e != nil || current.Version != a.After.Version {
+		if e != nil {
+			if errors.Is(e, domain.ErrNotFound) {
+				return domain.ErrConflict
+			}
+			return e
+		}
+		if current.Version != a.After.Version {
 			return domain.ErrConflict
 		}
 		if a.Before == nil {
@@ -214,7 +231,7 @@ func (c *Service) Undo(id string) (out domain.Entry, err error) {
 		if e = t.PutAudit(a); e != nil {
 			return e
 		}
-		undoAudit := domain.Audit{ID: store.ID(), Before: &current, After: current, Actor: "owner", Undone: true}
+		undoAudit := domain.Audit{ID: domain.NewID(), Before: &current, After: current, Actor: "owner", Undone: true}
 		if e = t.PutAudit(undoAudit); e != nil {
 			return e
 		}
@@ -225,7 +242,7 @@ func (c *Service) Undo(id string) (out domain.Entry, err error) {
 }
 func (c *Service) Refresh(id string) (domain.Entry, error) {
 	var p domain.Pending
-	err := c.Store.Write(func(t *store.Tx) error {
+	err := c.repository.Transact(func(t port.Transaction) error {
 		var e error
 		p, e = t.Pending(id)
 		if e != nil {
@@ -249,7 +266,7 @@ func (c *Service) Refresh(id string) (domain.Entry, error) {
 		return domain.Entry{}, err
 	}
 	if p.BeforeProfile != nil {
-		profiles, e := c.Store.Profiles()
+		profiles, e := c.repository.Profiles()
 		if e != nil {
 			return domain.Entry{}, e
 		}
@@ -265,7 +282,7 @@ func (c *Service) Refresh(id string) (domain.Entry, error) {
 		}
 	}
 	if p.Before != nil {
-		items, e := c.Store.Items()
+		items, e := c.repository.Items()
 		if e != nil {
 			return domain.Entry{}, e
 		}
@@ -281,31 +298,4 @@ func (c *Service) Refresh(id string) (domain.Entry, error) {
 		}
 	}
 	return c.Preview(p.Proposal)
-}
-func ErrorCode(e error) string {
-	var invalid *domain.Invalid
-	var model *domain.ModelError
-	switch {
-	case errors.As(e, &invalid):
-		return "invalid_field"
-	case errors.Is(e, domain.ErrConflict):
-		return "conflict"
-	case errors.Is(e, domain.ErrNotFound):
-		return "not_found"
-	case errors.Is(e, domain.ErrLimit):
-		return "limit_reached"
-	case errors.As(e, &model):
-		return "model_error"
-	default:
-		return "internal_error"
-	}
-}
-
-// Describe gives the owner a short message. Model and internal failures show a fixed text, never their details.
-func Describe(e error) string {
-	switch ErrorCode(e) {
-	case "model_error", "internal_error":
-		return "Minder could not finish. Try again."
-	}
-	return fmt.Sprint(e)
 }

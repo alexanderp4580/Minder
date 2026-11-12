@@ -1,32 +1,39 @@
-# Toolchain
+# Purpose
 
-Owns pinned Podman runners and local verification scripts. Run commands from the repository root.
-`run go` mounts `server/`. `run flutter` mounts `app/`. Named volumes cache dependencies.
-Secrets come from process environment and never enter tracked files.
-Verify runners by building and testing both projects. Use `git diff --check` for scripts.
+Pinned Podman runners, build helpers and verification scripts.
 
-`model_fixture.py` provides the test-only OpenRouter boundary on loopback port 8181.
-`local-check` uses a temporary database and random free port. `browser-check.cjs` drives compiled Flutter web.
-The Flutter cache holds NDK 28.2.13676358. Android builds use Java 17 and at most two Gradle workers.
+# Ownership
 
-The debug signing key lives in the named cache at `/cache/android/debug.keystore`.
-Keep that cache for APK updates. Do not add the key to Git.
+- `run`: Go and Flutter container runners and shared SDK caches.
+- `check`: dependency/DOX checks, checker tests, hook tests, Go checks and Flutter checks.
+- `architecture-check`, `dox-check`, `tests/`: executable structure contracts and their regression tests.
+- Local browser checks, model fixtures, real-model checks, callback probe and icon generation.
 
-`real-model-check.py` starts a temporary local server with a real OpenRouter key from the environment.
-`real-model-browser.cjs` checks preview, Confirm, query and Undo through compiled Flutter web.
-The check requires real provider costs for each call and leaves no item in its temporary database.
-The browser process receives no model key.
+# Local Contracts
 
-`android-callback-check.py` checks the browser-to-app callback on a disposable emulator.
-It clears only the emulator installation of Minder and rejects physical device serials.
-`app/test/native_auth_probe.dart` is its emulator-only entrypoint. The loopback fixture redirects from Firefox to the app.
-The check asserts foreground ownership and callback delivery. It creates no account or authenticated session.
+- Run commands from the repository root. `run go` starts in server/. `run flutter` starts in app/.
+- Secrets come from process variables and never enter tracked files or browser processes.
+- Named volumes cache dependencies, Android tools and the debug signing key. Preserve them for installable APK updates.
+- Flutter uses Java 17, at most two Gradle workers and cached NDK 28.2.13676358.
+- `model_fixture.py` supplies the test OpenRouter endpoint on loopback port 8181. Never run it in production.
+- `local-check` needs the fixture running. Reminder/calendar scripts start their own fixture; run them in sequence.
+- Real-model checks use temporary databases and provider cost values. `real-model-multi-check.py [runs]` checks two proposals.
+- `android-callback-check.py` uses a disposable emulator and rejects physical device serials.
+- `render-icons.py` exports assets from brand/app-icon.svg and requires rsvg-convert. Do not hand-edit generated icons.
+- `architecture-check` reads Go package imports and Dart directives. Inner code cannot import infrastructure implementations.
+- `dox-check` validates direct child indexes, source ownership, section order and local Markdown links.
 
-`real-model-multi-check.py [runs]` sends one message with two changes to the real model and checks for two previews with the right times. Run it after any change to the prompt, the tools or the context.
+# Work Guidance
 
-`render-icons.py` exports launcher, web, favicon and public-logo assets from `brand/app-icon.svg`. It requires `rsvg-convert`.
-Do not edit generated icon files by hand. Rebuild exports after changing the SVG.
+Use standard-library Python and existing pinned tools. Keep checks reproducible and errors specific.
+Do not build the stopped APK unless the owner asks. Do not change emulator or hosted services during local checks.
 
-`reminder-local-check` and `calendar-local-check` start the model fixture and a server on a free port, then run `reminder-check.cjs` or `calendar-check.cjs` in compiled Flutter web.
-`reminder-check.cjs` waits for a due reminder and presses Done. `calendar-check.cjs` opens the calendar page and checks that a confirmed item shows on its day.
-`local-check` needs the fixture running on port 8181 before it starts.
+# Verification
+
+`toolchain/check` runs the complete local static/unit suite. Release web and the three browser scenarios verify rendered integration.
+Structure checker regressions run with `python3 -B -m unittest discover -s toolchain/tests -v`.
+The callback check and phone notification checks remain separate from Flutter unit tests.
+
+# Child DOX Index
+
+None.

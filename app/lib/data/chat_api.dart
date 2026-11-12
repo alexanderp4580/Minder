@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
+import '../domain/failure.dart';
 import '../domain/item.dart';
 import '../domain/item_repository.dart';
 import '../domain/push_repository.dart';
@@ -37,13 +38,18 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
         data = jsonDecode(res.body);
       } catch (_) {
         if (res.statusCode == 401 || res.statusCode == 403) {
-          throw const ApiException('Sign in to continue.', unauthorized: true);
+          throw const RepositoryFailure(
+            'Sign in to continue.',
+            unauthorized: true,
+          );
         }
-        throw const ApiException('The server reply was unreadable. Try again.');
+        throw const RepositoryFailure(
+          'The server reply was unreadable. Try again.',
+        );
       }
       if (res.statusCode >= 400) {
         final j = data as Map<String, dynamic>;
-        throw ApiException(
+        throw RepositoryFailure(
           j['message'] as String? ?? 'Try again.',
           unauthorized: res.statusCode == 401,
           replacement: j['entry'] is Map<String, dynamic>
@@ -52,10 +58,10 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
         );
       }
       return data;
-    } on ApiException {
+    } on RepositoryFailure {
       rethrow;
     } catch (_) {
-      throw const ApiException('Check your connection. Then try again.');
+      throw const RepositoryFailure('Check your connection. Then try again.');
     }
   }
 
@@ -125,7 +131,7 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
       req.headers['Accept'] = 'text/event-stream';
       final res = await client.send(req).timeout(const Duration(seconds: 20));
       if (res.statusCode != 200) {
-        throw ApiException(
+        throw RepositoryFailure(
           'Sign in to continue.',
           unauthorized: res.statusCode == 401,
         );
@@ -153,7 +159,6 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
     }
   }
 
-  @override
   void close() {
     for (final client in _streamClients.toList()) {
       client.close();

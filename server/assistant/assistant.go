@@ -3,13 +3,12 @@ package assistant
 import (
 	"context"
 	"encoding/json"
-	"github.com/alexanderp4580/Minder/server/command"
-	"github.com/alexanderp4580/Minder/server/domain"
-	"github.com/alexanderp4580/Minder/server/store"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/alexanderp4580/Minder/server/domain"
 )
 
 const (
@@ -18,19 +17,34 @@ const (
 	maxContextItems = 200
 )
 
+type Repository interface {
+	MonthCost() (float64, error)
+	Items() ([]domain.Item, error)
+	Lists() ([]string, error)
+	Profiles() ([]domain.Profile, error)
+	History(int64, int) ([]domain.Entry, error)
+	ReserveUsage(float64, float64) (string, error)
+	SettleUsage(string, float64, any) error
+	AddEntry(domain.Entry) (domain.Entry, error)
+	AttachCost(string, float64) (domain.Entry, error)
+}
+type Proposer interface {
+	PreviewAll([]domain.Proposal) ([]domain.Entry, error)
+}
+
 type Service struct {
-	store       *store.Store
-	commands    *command.Service
+	repository  Repository
+	commands    Proposer
 	model       Model
 	limit, rate float64
 	mu          sync.Mutex
 }
 
-func New(s *store.Store, c *command.Service, m Model, limit, rate float64) *Service {
-	return &Service{store: s, commands: c, model: m, limit: limit, rate: rate}
+func New(s Repository, c Proposer, m Model, limit, rate float64) *Service {
+	return &Service{repository: s, commands: c, model: m, limit: limit, rate: rate}
 }
 func (a *Service) Preflight() error {
-	cost, e := a.store.MonthCost()
+	cost, e := a.repository.MonthCost()
 	if e != nil {
 		return e
 	}
@@ -46,28 +60,28 @@ func (a *Service) Preflight() error {
 func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	cost, e := a.store.MonthCost()
+	cost, e := a.repository.MonthCost()
 	if e != nil {
 		return nil, e
 	}
 	if cost+0.02*a.rate > a.limit {
 		return nil, domain.ErrLimit
 	}
-	items, e := a.store.Items()
+	items, e := a.repository.Items()
 	if e != nil {
 		return nil, e
 	}
-	lists, e := a.store.Lists()
+	lists, e := a.repository.Lists()
 	if e != nil {
 		return nil, e
 	}
-	profiles, e := a.store.Profiles()
+	profiles, e := a.repository.Profiles()
 	if e != nil {
 		return nil, e
 	}
 	zone, _ := time.LoadLocation("Europe/Amsterdam")
 	messages := []Message{{Role: "system", Content: systemPrompt(time.Now().In(zone), lists, profiles, contextItems(items))}}
-	history, e := a.store.History(0, 20)
+	history, e := a.repository.History(0, 20)
 	if e != nil {
 		return nil, e
 	}
@@ -96,7 +110,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 			return nil, e
 		}
 	}
-	reservation, e := a.store.ReserveUsage(a.limit, 0.02*a.rate)
+	reservation, e := a.repository.ReserveUsage(a.limit, 0.02*a.rate)
 	if e != nil {
 		return nil, e
 	}
@@ -104,7 +118,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 	if e != nil {
 		return nil, e
 	}
-	if e = a.store.SettleUsage(reservation, r.CostUSD*a.rate, map[string]any{"cost_usd": r.CostUSD, "usd_to_eur": a.rate, "usage": r.RawUsage}); e != nil {
+	if e = a.repository.SettleUsage(reservation, r.CostUSD*a.rate, map[string]any{"cost_usd": r.CostUSD, "usd_to_eur": a.rate, "usage": r.RawUsage}); e != nil {
 		return nil, e
 	}
 	if len(r.Calls) > maxChanges {
@@ -149,7 +163,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 			if len(lines) > 0 {
 				text = heading + "\n" + strings.Join(lines, "\n")
 			}
-			entry, e := a.store.AddEntry(domain.Entry{Kind: "minder", Text: text, CostEUR: charge()})
+			entry, e := a.repository.AddEntry(domain.Entry{Kind: "minder", Text: text, CostEUR: charge()})
 			if e != nil {
 				return nil, e
 			}
@@ -183,7 +197,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 			return nil, e
 		}
 		if c := charge(); c > 0 && len(previews) > 0 {
-			if previews[0], e = a.store.AttachCost(previews[0].ID, c); e != nil {
+			if previews[0], e = a.repository.AttachCost(previews[0].ID, c); e != nil {
 				return nil, e
 			}
 		}
@@ -193,7 +207,7 @@ func (a *Service) Reply(ctx context.Context, text string) ([]domain.Entry, error
 		if strings.TrimSpace(r.Text) == "" {
 			return nil, &domain.ModelError{Message: "The model sent an empty reply."}
 		}
-		entry, e := a.store.AddEntry(domain.Entry{Kind: "minder", Text: r.Text, CostEUR: charge()})
+		entry, e := a.repository.AddEntry(domain.Entry{Kind: "minder", Text: r.Text, CostEUR: charge()})
 		if e != nil {
 			return nil, e
 		}

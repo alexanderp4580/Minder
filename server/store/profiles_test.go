@@ -1,15 +1,18 @@
-package store
+package store_test
 
 import (
-	"github.com/alexanderp4580/Minder/server/domain"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/reminder"
+	"github.com/alexanderp4580/Minder/server/store"
 )
 
 func TestBuiltInProfilesSeedOnceAndKeepEdits(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "db")
-	s, e := Open(path)
+	s, e := store.Open(path)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -23,7 +26,7 @@ func TestBuiltInProfilesSeedOnceAndKeepEdits(t *testing.T) {
 			t.Errorf("missing built-in %q in %v", n, names)
 		}
 	}
-	e = s.Write(func(tx *Tx) error {
+	e = s.Write(func(tx *store.Tx) error {
 		p, e := tx.Profile("chore")
 		if e != nil {
 			return e
@@ -35,7 +38,7 @@ func TestBuiltInProfilesSeedOnceAndKeepEdits(t *testing.T) {
 		t.Fatal(e)
 	}
 	s.Close()
-	s, e = Open(path)
+	s, e = store.Open(path)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -54,12 +57,12 @@ func TestBuiltInProfilesSeedOnceAndKeepEdits(t *testing.T) {
 func profileItem(offsetDue time.Time) domain.Item {
 	return domain.Item{ID: "item", Title: "Bins", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", ProfileID: "daily-task", DueAt: offsetDue.Format(time.RFC3339)}
 }
-func entries(s *Store) int { h, _ := s.History(0, 50); return len(h) }
+func entries(s *store.Store) int { h, _ := s.History(0, 50); return len(h) }
 
 func TestProfileDerivesReminderAndEditsReschedule(t *testing.T) {
 	s, now, _ := reminderStore(t)
 	due := now.Add(2 * time.Hour)
-	e := s.Write(func(tx *Tx) error {
+	e := s.Write(func(tx *store.Tx) error {
 		p, e := tx.Profile("daily-task")
 		if e != nil {
 			return e
@@ -73,11 +76,11 @@ func TestProfileDerivesReminderAndEditsReschedule(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	s.DueReminders(due.Add(-31 * time.Minute))
+	reminder.New(s).ScheduleDue(due.Add(-31 * time.Minute))
 	if entries(s) != 0 {
 		t.Fatal("reminder before the profile time")
 	}
-	e = s.Write(func(tx *Tx) error {
+	e = s.Write(func(tx *store.Tx) error {
 		p, _ := tx.Profile("daily-task")
 		p.RemindBeforeMinutes, p.Version = 10, p.Version+1
 		return tx.PutProfile(p)
@@ -85,11 +88,11 @@ func TestProfileDerivesReminderAndEditsReschedule(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	s.DueReminders(due.Add(-20 * time.Minute))
+	reminder.New(s).ScheduleDue(due.Add(-20 * time.Minute))
 	if entries(s) != 0 {
 		t.Fatal("old profile time still fired")
 	}
-	s.DueReminders(due.Add(-9 * time.Minute))
+	reminder.New(s).ScheduleDue(due.Add(-9 * time.Minute))
 	if entries(s) != 1 {
 		t.Fatal("edited profile time did not fire")
 	}
@@ -100,7 +103,7 @@ func TestItemWithoutProfileOrReminderStaysSilent(t *testing.T) {
 	i := profileItem(now.Add(time.Hour))
 	i.ProfileID = ""
 	putReminder(t, s, i)
-	s.DueReminders(now.Add(24 * time.Hour))
+	reminder.New(s).ScheduleDue(now.Add(24 * time.Hour))
 	if entries(s) != 0 {
 		t.Fatal("old due date created a surprise reminder")
 	}

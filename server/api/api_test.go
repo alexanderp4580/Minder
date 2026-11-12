@@ -16,7 +16,9 @@ import (
 	"time"
 
 	"github.com/alexanderp4580/Minder/server/command"
+	"github.com/alexanderp4580/Minder/server/conversation"
 	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/reminder"
 	"github.com/alexanderp4580/Minder/server/store"
 )
 
@@ -31,8 +33,8 @@ func TestChatHistoryAndStreamReconnect(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer s.Close()
-	h := New(s, command.New(s), replier{s}, nil, "")
+	t.Cleanup(func() { s.Close() })
+	h := testServer(t, s, command.New(s), replier{s}, nil, "")
 	h.PingInterval = 20 * time.Millisecond
 	srv := httptest.NewServer(h)
 	defer srv.Close()
@@ -88,8 +90,8 @@ func TestChatHistoryAndStreamReconnect(t *testing.T) {
 }
 func TestInvalidRequests(t *testing.T) {
 	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
-	defer s.Close()
-	h := New(s, command.New(s), replier{s}, nil, "")
+	t.Cleanup(func() { s.Close() })
+	h := testServer(t, s, command.New(s), replier{s}, nil, "")
 	for _, input := range []string{`{`, `{"text":""}`, `{"text":"ok","unknown":true}`} {
 		r := httptest.NewRequest("POST", "/v1/chat/messages", strings.NewReader(input))
 		w := httptest.NewRecorder()
@@ -117,8 +119,8 @@ func TestBudgetErrorIsReturnedBeforeAcceptingMessage(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer s.Close()
-	h := New(s, command.New(s), blockedReplier{}, nil, "")
+	t.Cleanup(func() { s.Close() })
+	h := testServer(t, s, command.New(s), blockedReplier{}, nil, "")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/chat/messages", strings.NewReader(`{"text":"Call plumber"}`)))
 	if w.Code != 429 || !strings.Contains(w.Body.String(), "limit_reached") {
@@ -135,8 +137,8 @@ func TestPublicLogoDoesNotExposePrivateRoutes(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer s.Close()
-	h := New(s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
+	t.Cleanup(func() { s.Close() })
+	h := testServer(t, s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest("GET", "/brand/minder-icon.png", nil))
 	if w.Code != 200 || w.Header().Get("Content-Type") != "image/png" {
@@ -170,8 +172,8 @@ func TestReminderRoutesNeedAuthAndRejectInvalidBodies(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer s.Close()
-	locked := New(s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
+	t.Cleanup(func() { s.Close() })
+	locked := testServer(t, s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
 	for _, path := range []string{"/v1/reminders", "/v1/push/config", "/v1/push/devices", "/v1/reminders/id/done"} {
 		w := httptest.NewRecorder()
 		locked.ServeHTTP(w, httptest.NewRequest("POST", path, strings.NewReader(`{}`)))
@@ -179,7 +181,7 @@ func TestReminderRoutesNeedAuthAndRejectInvalidBodies(t *testing.T) {
 			t.Fatalf("unauthorized %s: %d", path, w.Code)
 		}
 	}
-	h := New(s, command.New(s), replier{s}, nil, "")
+	h := testServer(t, s, command.New(s), replier{s}, nil, "")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/push/devices", strings.NewReader(`{"device_id":"phone","token":"test-token"}`)))
 	if w.Code != 200 {
@@ -204,7 +206,7 @@ func TestItemsRangeReturnsPlacedItemsOnly(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer s.Close()
+	t.Cleanup(func() { s.Close() })
 	for _, i := range []domain.Item{
 		{ID: "start", Title: "Dentist", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", StartAt: "2026-11-13T09:00:00Z", DueAt: "2026-12-30T09:00:00Z"},
 		{ID: "due", Title: "Taxes", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", DueAt: "2026-11-20T09:00:00Z"},
@@ -216,7 +218,7 @@ func TestItemsRangeReturnsPlacedItemsOnly(t *testing.T) {
 			t.Fatal(e)
 		}
 	}
-	h := New(s, command.New(s), replier{s}, nil, "")
+	h := testServer(t, s, command.New(s), replier{s}, nil, "")
 	get := func(query string) (int, []domain.Item) {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, httptest.NewRequest("GET", "/v1/items"+query, nil))
@@ -233,7 +235,7 @@ func TestItemsRangeReturnsPlacedItemsOnly(t *testing.T) {
 			t.Fatalf("query %q gave %d", q, code)
 		}
 	}
-	locked := New(s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
+	locked := testServer(t, s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
 	w := httptest.NewRecorder()
 	locked.ServeHTTP(w, httptest.NewRequest("GET", "/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z", nil))
 	if w.Code != 401 {
@@ -246,14 +248,14 @@ func TestBrandingServesOnlyTheGuideFilesAfterSignIn(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer s.Close()
+	t.Cleanup(func() { s.Close() })
 	dir := t.TempDir()
 	for name, body := range map[string]string{"index.html": "<h1>Guide</h1>", "app-icon.svg": "<svg/>", "app-icon.png": "png", "AGENTS.md": "private notes"} {
 		if e = os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); e != nil {
 			t.Fatal(e)
 		}
 	}
-	h := New(s, command.New(s), replier{s}, nil, "")
+	h := testServer(t, s, command.New(s), replier{s}, nil, "")
 	h.Branding = dir
 	get := func(h *Server, method, path string) *httptest.ResponseRecorder {
 		w := httptest.NewRecorder()
@@ -280,12 +282,12 @@ func TestBrandingServesOnlyTheGuideFilesAfterSignIn(t *testing.T) {
 	if w := get(h, "POST", "/branding/"); w.Code == 200 {
 		t.Fatal("POST accepted")
 	}
-	locked := New(s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
+	locked := testServer(t, s, command.New(s), replier{s}, rejectingAuthenticator{}, "")
 	locked.Branding = dir
 	if w := get(locked, "GET", "/branding/"); w.Code != 401 {
 		t.Fatalf("unauthenticated: %d", w.Code)
 	}
-	off := New(s, command.New(s), replier{s}, nil, "")
+	off := testServer(t, s, command.New(s), replier{s}, nil, "")
 	if w := get(off, "GET", "/branding/"); w.Code != 404 {
 		t.Fatalf("disabled: %d", w.Code)
 	}
@@ -300,8 +302,8 @@ func TestAssistantPanicBecomesAnErrorEntryAndFreesTheServer(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer s.Close()
-	h := New(s, command.New(s), panicReplier{}, nil, "")
+	t.Cleanup(func() { s.Close() })
+	h := testServer(t, s, command.New(s), panicReplier{}, nil, "")
 	for range 2 {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/chat/messages", strings.NewReader(`{"text":"Hello"}`)))
@@ -315,10 +317,7 @@ func TestAssistantPanicBecomesAnErrorEntryAndFreesTheServer(t *testing.T) {
 			}
 			time.Sleep(20 * time.Millisecond)
 		}
-		for !h.processing.TryLock() {
-			time.Sleep(10 * time.Millisecond)
-		}
-		h.processing.Unlock()
+
 	}
 	entries, _ := s.History(0, 50)
 	errs := 0
@@ -330,4 +329,11 @@ func TestAssistantPanicBecomesAnErrorEntryAndFreesTheServer(t *testing.T) {
 	if errs != 2 {
 		t.Fatalf("want two error entries, got %d in %+v", errs, entries)
 	}
+}
+
+func testServer(t *testing.T, database *store.Store, commands Commands, replier conversation.Replier, auth Authenticator, web string) *Server {
+	t.Helper()
+	messages := conversation.New(context.Background(), database, replier)
+	t.Cleanup(messages.Close)
+	return New(database, commands, messages, reminder.New(database), auth, web)
 }

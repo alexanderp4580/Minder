@@ -1,17 +1,17 @@
 import 'package:flutter/foundation.dart';
 
-import '../domain/chat_repository.dart';
+import '../domain/failure.dart';
 import '../domain/item.dart';
-import 'use_cases.dart';
+import '../domain/item_repository.dart';
 
 class CalendarController extends ChangeNotifier {
-  CalendarController(this._load, {DateTime Function()? now})
+  CalendarController(this._repository, {DateTime Function()? now})
     : _now = now ?? DateTime.now {
     final today = _day(_now());
     selected = today;
     month = DateTime(today.year, today.month);
   }
-  final LoadItems _load;
+  final ItemRepository _repository;
   final DateTime Function() _now;
   late DateTime month, selected;
   bool loading = false;
@@ -47,13 +47,13 @@ class CalendarController extends ChangeNotifier {
     try {
       final start = gridStart;
       final end = DateTime(start.year, start.month, start.day + 42);
-      final items = await _load(start, end);
+      final items = await _repository.itemsBetween(start, end);
       if (_disposed || request != _request) return;
       _items = items;
       error = null;
     } catch (e) {
       if (_disposed || request != _request) return;
-      error = e is ApiException
+      error = e is RepositoryFailure
           ? e.message
           : 'Check your connection. Then try again.';
     }

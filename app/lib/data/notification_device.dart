@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 
 import '../domain/chat_repository.dart';
+import '../domain/failure.dart';
 import '../domain/push_repository.dart';
 
 class AndroidNotificationDevice implements NotificationDevice {
@@ -59,7 +60,7 @@ class AndroidNotificationDevice implements NotificationDevice {
     if (id is! String ||
         !RegExp(r'^[a-zA-Z0-9]+$').hasMatch(id) ||
         action == null) {
-      throw const ApiException('This notification action is invalid.');
+      throw const RepositoryFailure('This notification action is invalid.');
     }
     return NotificationAction(id, action);
   }

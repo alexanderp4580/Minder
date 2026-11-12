@@ -2,9 +2,12 @@ package command
 
 import (
 	"errors"
-	"github.com/alexanderp4580/Minder/server/domain"
 	"testing"
 	"time"
+
+	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/port"
+	"github.com/alexanderp4580/Minder/server/reminder"
 )
 
 func create(t *testing.T, c *Service, p domain.Proposal) domain.Item {
@@ -17,13 +20,20 @@ func create(t *testing.T, c *Service, p domain.Proposal) domain.Item {
 	if _, e = c.Confirm(pv.Change.ID); e != nil {
 		t.Fatal(e)
 	}
-	items, _ := c.Store.Items()
-	return items[len(items)-1]
+	var item domain.Item
+	if err := c.repository.Transact(func(tx port.Transaction) error {
+		pending, err := tx.Pending(pv.Change.ID)
+		item = pending.After
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return item
 }
 func ptr(n int) *int { return &n }
 
 func TestListNamesKeepOneSpelling(t *testing.T) {
-	c, _ := setup(t)
+	c, database := setup(t)
 	create(t, c, domain.Proposal{Title: "Milk", List: "Groceries"})
 	second := create(t, c, domain.Proposal{Title: "Eggs", List: "  groceries "})
 	if second.List != "Groceries" {
@@ -35,13 +45,13 @@ func TestListNamesKeepOneSpelling(t *testing.T) {
 		t.Fatal(e)
 	}
 	c.Confirm(pv.Change.ID)
-	lists, _ := c.Store.Lists()
+	lists, _ := database.Lists()
 	if len(lists) != 1 || lists[0] != "Groceries" {
 		t.Fatalf("lists %v", lists)
 	}
 	pv, _ = c.Preview(domain.Proposal{Action: "update_item", ItemID: third.ID, ExpectedVersion: third.Version + 1, ClearList: true})
 	c.Confirm(pv.Change.ID)
-	items, _ := c.Store.Items()
+	items, _ := c.repository.Items()
 	for _, i := range items {
 		if i.ID == third.ID && i.List != "" {
 			t.Fatal("list not cleared")
@@ -62,11 +72,11 @@ func TestProfileGivesReminderAfterConfirm(t *testing.T) {
 	c, s := setup(t)
 	due := time.Now().Add(3 * time.Hour).UTC()
 	create(t, c, domain.Proposal{Title: "Bins", Profile: "day-event", DueAt: due.Format(time.RFC3339)})
-	s.DueReminders(due.Add(-2 * time.Hour))
+	reminder.New(s).ScheduleDue(due.Add(-2 * time.Hour))
 	if h, _ := s.History(0, 20); countReminders(h) != 0 {
 		t.Fatal("fired before the profile time")
 	}
-	s.DueReminders(due.Add(-59 * time.Minute))
+	reminder.New(s).ScheduleDue(due.Add(-59 * time.Minute))
 	if h, _ := s.History(0, 20); countReminders(h) != 1 {
 		t.Fatal("profile reminder missing")
 	}
@@ -182,7 +192,7 @@ func TestLocationIsStoredShownAndLimited(t *testing.T) {
 	c.Confirm(pv.Change.ID)
 	pv, _ = c.Preview(domain.Proposal{Action: "update_item", ItemID: i.ID, ExpectedVersion: i.Version + 1, ClearLocation: true})
 	c.Confirm(pv.Change.ID)
-	items, _ := c.Store.Items()
+	items, _ := c.repository.Items()
 	if items[0].Location != "" {
 		t.Fatal("location not cleared")
 	}
@@ -228,7 +238,7 @@ func TestStartDurationAndPriorityRoundTrip(t *testing.T) {
 	c.Confirm(pv.Change.ID)
 	pv, _ = c.Preview(domain.Proposal{Action: "update_item", ItemID: i.ID, ExpectedVersion: i.Version + 1, ClearStart: true, ClearDuration: true, ClearPriority: true})
 	c.Confirm(pv.Change.ID)
-	items, _ := c.Store.Items()
+	items, _ := c.repository.Items()
 	if x := items[0]; x.StartAt != "" || x.DurationMinutes != 0 || x.Priority != 0 {
 		t.Fatalf("not cleared: %+v", x)
 	}
@@ -241,33 +251,12 @@ func TestEventProfileRemindsBeforeStart(t *testing.T) {
 	c, s := setup(t)
 	start := time.Now().Add(3 * time.Hour).UTC()
 	create(t, c, domain.Proposal{Title: "Dentist", Profile: "day-event", StartAt: start.Format(time.RFC3339)})
-	s.DueReminders(start.Add(-2 * time.Hour))
+	reminder.New(s).ScheduleDue(start.Add(-2 * time.Hour))
 	if h, _ := s.History(0, 20); countReminders(h) != 0 {
 		t.Fatal("fired early")
 	}
-	s.DueReminders(start.Add(-59 * time.Minute))
+	reminder.New(s).ScheduleDue(start.Add(-59 * time.Minute))
 	if h, _ := s.History(0, 20); countReminders(h) != 1 {
 		t.Fatal("start-based reminder missing")
-	}
-}
-
-func TestErrorCodesNameTheRealCause(t *testing.T) {
-	for _, c := range []struct {
-		err  error
-		code string
-	}{
-		{&domain.Invalid{Field: "title", Message: "x"}, "invalid_field"},
-		{domain.ErrConflict, "conflict"},
-		{domain.ErrNotFound, "not_found"},
-		{domain.ErrLimit, "limit_reached"},
-		{&domain.ModelError{Message: "The model could not connect."}, "model_error"},
-		{errors.New("database is locked"), "internal_error"},
-	} {
-		if got := ErrorCode(c.err); got != c.code {
-			t.Errorf("%v: got %q, want %q", c.err, got, c.code)
-		}
-	}
-	if Describe(errors.New("database is locked")) != "Minder could not finish. Try again." {
-		t.Fatal("an internal error must not leak its text")
 	}
 }

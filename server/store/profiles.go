@@ -4,18 +4,9 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 )
 
-var builtinProfiles = []domain.Profile{
-	{ID: "daily-task", Name: "Daily task", RemindBeforeMinutes: 0, NagMinutes: 15},
-	{ID: "chore", Name: "Chore", RemindBeforeMinutes: 0, NagMinutes: 0},
-	{ID: "birthday", Name: "Birthday", RemindBeforeMinutes: 1440, NagMinutes: 0},
-	{ID: "day-event", Name: "Day event", RemindBeforeMinutes: 60, NagMinutes: 0},
-	{ID: "trip", Name: "Trip", RemindBeforeMinutes: 2880, NagMinutes: 0},
-}
-
 // seedProfiles adds missing built-in profiles. It never overwrites an edited one.
 func (s *Store) seedProfiles() error {
-	for _, p := range builtinProfiles {
-		p.Builtin, p.Version = true, 1
+	for _, p := range domain.BuiltinProfiles() {
 		if _, e := s.db.Exec("INSERT OR IGNORE INTO profile(id,body) VALUES(?,?)", p.ID, body(p)); e != nil {
 			return e
 		}
@@ -55,7 +46,7 @@ func (t *Tx) PutProfile(p domain.Profile) error {
 		return e
 	}
 	for _, i := range items {
-		if e = t.applyReminder(i.ID, specOf(i, previous), specOf(i, &p)); e != nil {
+		if e = t.applyReminder(i.ID, domain.ProjectReminder(i, previous), domain.ProjectReminder(i, &p)); e != nil {
 			return e
 		}
 	}

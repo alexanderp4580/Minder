@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -5,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:minder/application/notifications.dart';
-import 'package:minder/application/use_cases.dart';
 import 'package:minder/data/chat_api.dart';
 import 'package:minder/data/notification_device.dart';
 
@@ -58,7 +58,7 @@ void main() {
           });
       final c = NotificationController(
         api,
-        ActOnReminder(api),
+        api,
         device: AndroidNotificationDevice(),
         onSync: () async {},
       );
@@ -81,7 +81,7 @@ void main() {
         .setMockMethodCallHandler(channel, (call) async => {'granted': false});
     final c = NotificationController(
       api,
-      ActOnReminder(api),
+      api,
       device: AndroidNotificationDevice(),
       onSync: () async {},
     );
@@ -122,7 +122,7 @@ void main() {
           });
       final c = NotificationController(
         api,
-        ActOnReminder(api),
+        api,
         device: AndroidNotificationDevice(),
         onSync: () async {
           syncs++;
@@ -160,7 +160,7 @@ void main() {
         });
     final c = NotificationController(
       api,
-      ActOnReminder(api),
+      api,
       device: AndroidNotificationDevice(),
       onSync: () async {},
     );
@@ -190,7 +190,7 @@ void main() {
         });
     final c = NotificationController(
       api,
-      ActOnReminder(api),
+      api,
       device: AndroidNotificationDevice(),
       onSync: () async {},
     );
@@ -201,4 +201,81 @@ void main() {
     await c.resume();
     expect(c.enabled, false);
   });
+  test('dispose during native enable stops device registration', () async {
+    final started = Completer<void>();
+    final native = Completer<Map<String, Object?>>();
+    var registrations = 0;
+    final api = ChatApi(
+      'https://test',
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('/devices')) registrations++;
+        return http.Response('{}', 200);
+      }),
+    );
+    addTearDown(api.close);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          started.complete();
+          return native.future;
+        });
+    final controller = NotificationController(
+      api,
+      api,
+      device: AndroidNotificationDevice(),
+      onSync: () async {},
+    );
+    final enabling = controller.enable();
+    await started.future;
+    controller.dispose();
+    native.complete({
+      'granted': true,
+      'device_id': 'phone',
+      'token': 'device-token',
+    });
+    await enabling;
+    expect(registrations, 0);
+  });
+
+  test(
+    'dispose during resume leaves the pending action for the next controller',
+    () async {
+      final started = Completer<void>();
+      final pending = Completer<Map<String, Object?>>();
+      var actions = 0, syncs = 0;
+      final api = ChatApi(
+        'https://test',
+        client: MockClient((request) async {
+          actions++;
+          return http.Response(
+            '{"id":"result","cursor":2,"kind":"result","created_at":"2026-11-12T10:00:00Z"}',
+            200,
+          );
+        }),
+      );
+      addTearDown(api.close);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            if (call.method == 'takeAction') {
+              started.complete();
+              return pending.future;
+            }
+            return {'granted': false};
+          });
+      final controller = NotificationController(
+        api,
+        api,
+        device: AndroidNotificationDevice(),
+        onSync: () async {
+          syncs++;
+        },
+      );
+      final resuming = controller.resume();
+      await started.future;
+      controller.dispose();
+      pending.complete({'id': 'reminder', 'action': 'done'});
+      await resuming;
+      expect(actions, 0);
+      expect(syncs, 0);
+    },
+  );
 }

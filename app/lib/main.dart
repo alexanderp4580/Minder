@@ -7,10 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'application/calendar_controller.dart';
 import 'application/chat_controller.dart';
 import 'application/notifications.dart';
-import 'application/use_cases.dart';
+import 'data/access_auth.dart';
 import 'data/chat_api.dart';
 import 'data/notification_device.dart';
-import 'data/access_auth.dart';
 import 'ui/calendar_screen.dart';
 import 'ui/chat_screen.dart';
 import 'ui/tokens.dart';
@@ -20,13 +19,18 @@ const configuredBase = String.fromEnvironment(
   defaultValue: 'https://minder.liveleds.io',
 );
 const localAuth = bool.fromEnvironment('LOCAL_AUTH', defaultValue: false);
-final authProvider = Provider<AccessAuth>((ref) => AccessAuth(configuredBase));
+final authProvider = Provider<AccessAuth>((ref) {
+  final auth = AccessAuth(configuredBase);
+  ref.onDispose(auth.close);
+  return auth;
+});
 final apiProvider = Provider<ChatApi>((ref) {
   final auth = ref.watch(authProvider);
   final api = ChatApi(
     kIsWeb ? '' : configuredBase,
     authorization: kIsWeb || localAuth ? null : auth.headers,
   );
+  ref.onDispose(api.close);
   return api;
 });
 final chatProvider = Provider<ChatController>((ref) {
@@ -41,7 +45,7 @@ void main() {
 }
 
 final calendarProvider = Provider<CalendarController>((ref) {
-  final controller = CalendarController(LoadItems(ref.watch(apiProvider)));
+  final controller = CalendarController(ref.watch(apiProvider));
   ref.onDispose(controller.dispose);
   return controller;
 });
@@ -49,7 +53,7 @@ final notificationProvider = Provider<NotificationController>((ref) {
   final api = ref.watch(apiProvider);
   final controller = NotificationController(
     api,
-    ActOnReminder(api),
+    api,
     device: AndroidNotificationDevice(),
     onSync: () => ref.read(chatProvider).sync(),
   );

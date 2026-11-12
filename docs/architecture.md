@@ -18,20 +18,28 @@ Coolify runs the container with a persistent database volume.
 
 | Package | Responsibility | Project dependencies |
 |---|---|---|
-| `domain` | Values, validation, recurrence, reminder anchors and completion rules | None |
-| `store` | SQLite, schema migrations, transactions, reminder state and usage | `domain` |
-| `command` | Preview, Confirm, Discard, Undo and conflict refresh | `domain`, `store` |
-| `assistant` | Model calls, context, proposals and cost reservations | `domain`, `store`, `command` |
-| `reminder` | Worker and FCM delivery adapter | `store` |
-| `access` | Request authentication, identity settings and Cloudflare JWT verification | None |
+| `domain` | Values, validation, recurrence, reminders, identifiers and profile defaults | None |
+| `port` | Atomic transaction and persistence contracts | `domain` |
+| `store` | SQLite adapter, migrations, transactions and projections | `domain`, `port` |
+| `command` | Preview, Confirm, Discard, Undo and conflict refresh | `domain`, `port` |
+| `assistant` | Context, proposals, cost reservations and model contract | `domain` |
+| `conversation` | Message acceptance, concurrency, replies and cancellation | `domain` |
+| `reminder` | Scheduling, actions, device validation and delivery worker | `domain`, `port` |
+| `openrouter` | HTTP model adapter and tool schema | `domain`, `assistant` |
+| `push` | FCM adapter and token classification | None |
+| `access` | Owner authentication and Cloudflare JWT adapter | None |
 | `config` | Process settings and startup validation | None |
-| `api` | Routes, request validation, response encoding and event streams | `domain`, `store`, `command` |
-| `cmd/minder` | Dependency wiring, process signals and HTTP lifecycle | Packages above |
+| `api` | HTTP routes, responses, event stream and static files | `domain`, `conversation` |
+| `cmd/minder` | Composition, signals and shutdown | Application services and adapters |
 
-Only `store` executes SQL. Services use concrete store transactions for atomic changes.
-`domain` depends on Go's standard library.
-The API accepts interfaces for authentication and assistant replies.
-The assistant accepts a model interface. The reminder worker accepts a sender interface.
+Only `store` executes SQL. Application services use repository interfaces and `port.Transaction`.
+The SQLite adapter implements these contracts and rolls back all writes if a transaction callback fails.
+Domain and application packages have no SQLite, HTTP client or provider SDK imports.
+
+The API accepts query, command, message, reminder and authentication interfaces.
+`conversation` validates and accepts messages, runs one reply at a time and records safe errors.
+`Close` cancels and waits for active replies. Process shutdown also waits for the reminder worker before closing SQLite.
+`openrouter` implements the assistant model interface. `push` implements the reminder sender interface.
 
 ### Changes and storage
 
@@ -65,10 +73,11 @@ Production rejects a custom model endpoint.
 
 ### Reminders
 
-The worker checks reminder schedules every 15 seconds and catches up after a restart.
+The application reminder service processes due schedules. The worker runs it every 15 seconds and catches up after a restart.
 A due reminder creates a chat entry and queues device deliveries.
 Nag intervals repeat the reminder until the owner acts.
 The worker checks that each delivery is current before sending it.
+The worker chooses retry times. The SQLite adapter records delivery state.
 FCM delivery failures retain retry state. An unregistered FCM token disables that device.
 
 ## HTTP and authentication
@@ -114,14 +123,15 @@ The client reconnects from its cursor and polls every five seconds as a fallback
 |---|---|
 | `domain` | Typed models and repository/device interfaces |
 | `data` | HTTP, JSON decoding, OAuth and the Android notification channel |
-| `application` | Use cases and chat, calendar and notification controllers |
+| `application` | Chat, calendar and notification state controllers |
 | `ui` | Screens, entry widgets, display formatting and design tokens |
 | `main.dart` | Riverpod wiring, navigation and app lifecycle |
 
 Domain models contain no JSON factories or transport maps.
 `data/wire.dart` maps server responses to domain values.
 `data/notification_device.dart` maps native channel messages to typed registration and reminder actions.
-The notification controller uses these interfaces without reading platform message maps.
+Controllers use domain repositories directly. The notification controller reads typed device values.
+ProviderScope closes shared API/auth clients; controllers close only their own subscriptions and callbacks.
 The calendar controller ignores results from superseded requests.
 
 `Tokens.theme` defines Material styles and standard visual density.
@@ -136,6 +146,7 @@ The Dockerfile builds Flutter web and Go, then copies both into one runtime imag
 Local browser checks use compiled Flutter web, the Go service and temporary SQLite databases.
 They cover chat changes, Undo, reminders and calendar navigation.
 
-Current review evidence: [evidence/review-refactor.md](evidence/review-refactor.md).
+Architecture cleanup evidence: [evidence/architecture-cleanup.md](evidence/architecture-cleanup.md).
+`toolchain/architecture-check` enforces package and layer imports. `toolchain/dox-check` validates documentation ownership.
 Product verification: [evidence/m0.md](evidence/m0.md) and [evidence/m1.md](evidence/m1.md).
 Phone approval gates merging. The handoff records deployment and APK status.

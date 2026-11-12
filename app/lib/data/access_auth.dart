@@ -6,9 +6,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:http/http.dart' as http;
 
+import '../domain/failure.dart';
 import 'web_redirect_stub.dart'
     if (dart.library.js_interop) 'web_redirect_web.dart';
-import '../domain/chat_repository.dart';
 
 class AccessAuth {
   AccessAuth(
@@ -50,7 +50,7 @@ class AccessAuth {
 
   Future<Map<String, dynamic>> _json(http.Response r) {
     if (r.statusCode < 200 || r.statusCode >= 300) {
-      throw const ApiException('Sign in to continue.', unauthorized: true);
+      throw const RepositoryFailure('Sign in to continue.', unauthorized: true);
     }
     return Future.value(jsonDecode(r.body) as Map<String, dynamic>);
   }
@@ -58,7 +58,7 @@ class AccessAuth {
   Uri _endpoint(String value) {
     final u = Uri.parse(value);
     if (u.scheme != 'https' || u.host != 'liveleds.cloudflareaccess.com') {
-      throw const ApiException('Sign-in server is not trusted.');
+      throw const RepositoryFailure('Sign-in server is not trusted.');
     }
     return u;
   }
@@ -107,7 +107,7 @@ class AccessAuth {
         result.path != '/oauth/callback' ||
         result.queryParameters['state'] != state ||
         result.queryParameters['code'] == null) {
-      throw const ApiException('Sign-in did not finish. Try again.');
+      throw const RepositoryFailure('Sign-in did not finish. Try again.');
     }
     final endpoint = _endpoint(meta['token_endpoint'] as String);
     final token = await _json(
@@ -134,7 +134,7 @@ class AccessAuth {
 
   Future<void> _save(Map<String, dynamic> data) async {
     if (data['access_token'] is! String) {
-      throw const ApiException('Sign-in returned no token.');
+      throw const RepositoryFailure('Sign-in returned no token.');
     }
     data['expires_at'] =
         DateTime.now().millisecondsSinceEpoch +
@@ -145,7 +145,7 @@ class AccessAuth {
   Future<Map<String, dynamic>> _refresh(Map<String, dynamic> data) async {
     final endpoint = _endpoint(data['token_endpoint'] as String);
     if (data['refresh_token'] == null) {
-      throw const ApiException('Sign in to continue.', unauthorized: true);
+      throw const RepositoryFailure('Sign in to continue.', unauthorized: true);
     }
     final fresh = await _json(
       await _client
@@ -168,7 +168,7 @@ class AccessAuth {
   Future<Map<String, String>> headers() async {
     final raw = await _read();
     if (raw == null) {
-      throw const ApiException('Sign in to continue.', unauthorized: true);
+      throw const RepositoryFailure('Sign in to continue.', unauthorized: true);
     }
     var data = jsonDecode(raw) as Map<String, dynamic>;
     if ((data['expires_at'] as num).toInt() <
@@ -182,6 +182,8 @@ class AccessAuth {
     }
     return {'Authorization': 'Bearer ${data['access_token']}'};
   }
+
+  void close() => _client.close();
 
   Future<void> webSignIn() async => redirectWeb(base);
 }

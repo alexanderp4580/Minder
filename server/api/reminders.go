@@ -2,10 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/alexanderp4580/Minder/server/domain"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/alexanderp4580/Minder/server/domain"
 )
 
 // PushConfig contains Android public identifiers only, never the service account.
@@ -42,7 +43,7 @@ func decodeBody(w http.ResponseWriter, r *http.Request, v any) error {
 	return nil
 }
 func (s *Server) reminders(w http.ResponseWriter, r *http.Request) {
-	entries, e := s.store.ActiveReminders()
+	entries, e := s.Reminders.Active()
 	if e != nil {
 		fail(w, e)
 		return
@@ -63,7 +64,7 @@ func (s *Server) registerDevice(w http.ResponseWriter, r *http.Request) {
 	}
 	e := decodeBody(w, r, &input)
 	if e == nil {
-		e = s.store.RegisterDevice(input.DeviceID, input.Token)
+		e = s.Reminders.RegisterDevice(input.DeviceID, input.Token)
 	}
 	if e != nil {
 		fail(w, e)
@@ -72,7 +73,7 @@ func (s *Server) registerDevice(w http.ResponseWriter, r *http.Request) {
 	write(w, http.StatusOK, map[string]bool{"registered": true})
 }
 func (s *Server) reminderAction(w http.ResponseWriter, r *http.Request) {
-	entry, e := s.store.ReminderAction(r.PathValue("id"), r.PathValue("action"), time.Now().UTC())
+	entry, e := s.Reminders.Act(r.PathValue("id"), r.PathValue("action"), time.Now().UTC())
 	if e != nil {
 		fail(w, e)
 		return

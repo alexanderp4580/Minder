@@ -1,17 +1,18 @@
-package reminder
+package push
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"io"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 type FCM struct {

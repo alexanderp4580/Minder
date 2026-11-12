@@ -1,15 +1,17 @@
 package command
 
 import (
+	"errors"
 	"fmt"
-	"github.com/alexanderp4580/Minder/server/domain"
-	"github.com/alexanderp4580/Minder/server/store"
 	"regexp"
 	"strings"
+
+	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/port"
 )
 
-// setAttributes applies the list, profile and recurrence parts of a proposal to an item.
-func setAttributes(t *store.Tx, p domain.Proposal, i *domain.Item) error {
+// setAttributes applies optional item fields to a proposal preview.
+func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error {
 	if p.ClearStart {
 		i.StartAt = ""
 	}
@@ -87,7 +89,7 @@ func recurrenceText(r *domain.Recurrence) string {
 }
 
 // itemFields lists what differs between two versions of an item, for the preview.
-func itemFields(t *store.Tx, old, now domain.Item) []domain.Field {
+func itemFields(t port.Transaction, old, now domain.Item) []domain.Field {
 	all := []domain.Field{
 		{Name: "title", Old: old.Title, New: now.Title},
 		{Name: "start_at", Old: old.StartAt, New: now.StartAt},
@@ -129,7 +131,7 @@ func profileFields(old, now domain.Profile) []domain.Field {
 	return out
 }
 
-func previewProfile(t *store.Tx, p domain.Proposal) (domain.Entry, error) {
+func previewProfile(t port.Transaction, p domain.Proposal) (domain.Entry, error) {
 	var before *domain.Profile
 	var after domain.Profile
 	if p.Action == "create_profile" {
@@ -167,7 +169,7 @@ func previewProfile(t *store.Tx, p domain.Proposal) (domain.Entry, error) {
 	if e := domain.ValidateProfile(&after); e != nil {
 		return domain.Entry{}, e
 	}
-	id := store.ID()
+	id := domain.NewID()
 	old := domain.Profile{}
 	if before != nil {
 		old = *before
@@ -179,19 +181,27 @@ func previewProfile(t *store.Tx, p domain.Proposal) (domain.Entry, error) {
 	return entry, t.PutPending(domain.Pending{ID: id, Proposal: p, BeforeProfile: before, AfterProfile: &after, State: "pending", EntryID: entry.ID})
 }
 
-func confirmProfile(t *store.Tx, p *domain.Pending, out *domain.Entry) error {
+func confirmProfile(t port.Transaction, p *domain.Pending, out *domain.Entry) error {
 	if p.BeforeProfile != nil {
 		current, e := t.Profile(p.BeforeProfile.ID)
-		if e != nil || current.Version != p.BeforeProfile.Version {
+		if e != nil {
+			if errors.Is(e, domain.ErrNotFound) {
+				return domain.ErrConflict
+			}
+			return e
+		}
+		if current.Version != p.BeforeProfile.Version {
 			return domain.ErrConflict
 		}
 	} else if _, e := t.Profile(p.AfterProfile.ID); e == nil {
 		return domain.ErrConflict
+	} else if !errors.Is(e, domain.ErrNotFound) {
+		return e
 	}
 	if e := t.PutProfile(*p.AfterProfile); e != nil {
 		return e
 	}
-	audit := domain.Audit{ID: store.ID(), BeforeProfile: p.BeforeProfile, AfterProfile: p.AfterProfile, Actor: "agent"}
+	audit := domain.Audit{ID: domain.NewID(), BeforeProfile: p.BeforeProfile, AfterProfile: p.AfterProfile, Actor: "agent"}
 	if e := t.PutAudit(audit); e != nil {
 		return e
 	}
@@ -212,9 +222,15 @@ func confirmProfile(t *store.Tx, p *domain.Pending, out *domain.Entry) error {
 	return t.PutPending(*p)
 }
 
-func undoProfile(t *store.Tx, a *domain.Audit, out *domain.Entry) error {
+func undoProfile(t port.Transaction, a *domain.Audit, out *domain.Entry) error {
 	current, e := t.Profile(a.AfterProfile.ID)
-	if e != nil || current.Version != a.AfterProfile.Version {
+	if e != nil {
+		if errors.Is(e, domain.ErrNotFound) {
+			return domain.ErrConflict
+		}
+		return e
+	}
+	if current.Version != a.AfterProfile.Version {
 		return domain.ErrConflict
 	}
 	if a.BeforeProfile == nil {
@@ -236,7 +252,7 @@ func undoProfile(t *store.Tx, a *domain.Audit, out *domain.Entry) error {
 }
 
 // profileName shows the profile name in previews and falls back to the id.
-func profileName(t *store.Tx, id string) string {
+func profileName(t port.Transaction, id string) string {
 	if id == "" {
 		return ""
 	}

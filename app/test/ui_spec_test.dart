@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/application/calendar_controller.dart';
 import 'package:minder/application/chat_controller.dart';
-import 'package:minder/application/use_cases.dart';
 import 'package:minder/data/wire.dart';
 import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
@@ -36,8 +35,6 @@ class Repo implements ChatRepository {
   Future<Entry> undo(String id) async => saved.first;
   @override
   Future<Entry> actOnReminder(String id, ReminderAction a) async => saved.first;
-  @override
-  void close() {}
 }
 
 Entry entry(
@@ -64,7 +61,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final c = CalendarController(
-      LoadItems(EmptyItems()),
+      EmptyItems(),
       now: () => DateTime(2026, 11, 12, 10),
     );
     await c.load();

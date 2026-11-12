@@ -1,18 +1,5 @@
 import 'entry.dart';
 
-class ApiException implements Exception {
-  const ApiException(
-    this.message, {
-    this.unauthorized = false,
-    this.replacement,
-  });
-  final String message;
-  final bool unauthorized;
-  final Entry? replacement;
-  @override
-  String toString() => message;
-}
-
 enum ReminderAction { done, acknowledge, snooze15, snooze60, tonight, tomorrow }
 
 abstract interface class ChatRepository {
@@ -23,5 +10,4 @@ abstract interface class ChatRepository {
   Future<Entry> discard(String changeId);
   Future<Entry> undo(String undoId);
   Future<Entry> actOnReminder(String reminderId, ReminderAction action);
-  void close();
 }

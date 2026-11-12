@@ -16,32 +16,33 @@ The owner approved M0 and reminder delivery on a phone.
 The owner requested completion of M1 and the calendar without questions.
 Execution stays inline, without sub-agents. Phone approval still gates merging to `main`.
 
-## Review and refactor
+## Architecture and DOX
 
-The current review isolates authentication, process settings, JSON decoding and Android channel messages.
-It also fixes calendar request ordering and stale notification permission state.
-Details and checks: [docs/evidence/review-refactor.md](docs/evidence/review-refactor.md).
+All six approved architecture cleanup steps are complete. The local checks passed; source and deployment status remain separate.
+
+The Go domain and application services depend on interfaces, not SQLite or provider adapters.
+`port.Transaction` preserves atomic item, reminder, event and audit changes.
+Reminder scheduling and actions run in `reminder`; domain rules choose snooze times and recurrence.
+`conversation` owns message acceptance, busy state, replies and cancellation.
+`openrouter`, `push`, `access`, `store` and `api` are adapters. Main composes them and waits for shutdown.
+
+Flutter controllers use domain repositories directly. Data adapters own HTTP, JSON, OAuth and Android messages.
+ProviderScope owns shared API/auth clients. Disposed controllers stop their own work without closing shared repositories.
+
+Agent0ai DOX now covers Go packages, Flutter layers, platform folders, documentation and tooling.
+`toolchain/check` enforces dependencies and DOX ownership, then runs the local suites.
 Architecture: [docs/architecture.md](docs/architecture.md).
+Evidence: [docs/evidence/architecture-cleanup.md](docs/evidence/architecture-cleanup.md).
 
-Production now requires explicit `CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL` settings.
-All three are configured in Coolify as runtime-only variables. Read-back matched the live Cloudflare app and owner policy.
-The service was `running:healthy` after the update. These settings apply when Coolify starts the next deployment.
-`cmd/minder` contains no Cloudflare settings or owner identity.
-
-## Architecture assessment
-
-Flutter separates domain values, data adapters, application controllers and UI.
-Application controllers depend on domain interfaces. JSON and Android messages stay in data adapters.
-
-Go separates packages and keeps SQL inside `store`, but services still depend on concrete store types.
-`store.ReminderAction` also chooses snooze times and coordinates completion, audit and chat results.
-Full dependency inversion and moving reminder action policy out of storage remain unfinished.
+`CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL` are configured in Coolify as runtime-only variables.
+Read-back matched the live Cloudflare app and owner policy. They apply on the next deployment.
+`cmd/minder` contains no Cloudflare identity settings.
 
 ## Deployment and APK status
 
 The prior handoff records production commit `1c0efe9`, with calendar fields and `/branding/`.
 This review did not check the live deployment or deploy changes.
-The spacing changes and refactor remain local to `m0-chat`.
+The spacing and architecture changes remain local to `m0-chat`.
 
 APK 0.3.3 was sent through Telegram. APK 0.4.0 is not built.
 The owner stopped that build. Build it only when the owner asks.
@@ -68,7 +69,7 @@ The prior handoff recommends normal deploys; forced deploys rebuild all layers.
 Specs: [docs/m1-spec.md](docs/m1-spec.md), [docs/calendar-spec.md](docs/calendar-spec.md),
 [docs/notifications-spec.md](docs/notifications-spec.md).
 
-## Checks still needed
+## Product and owner follow-ups
 
 - Phone checks of lists, profiles, recurrence, follow-up questions and calendar behaviour.
 - Android emulator notification check; the prior handoff records no emulator container.
@@ -82,7 +83,7 @@ Deferred product work: list reset and clone, subtasks, labels, profile statuses 
 
 ## Local verification
 
-Run from the worktree root:
+Run `toolchain/check` from the worktree root. Individual checks include:
 
 - `toolchain/run go go test -race ./...`
 - `toolchain/run go go vet ./...`

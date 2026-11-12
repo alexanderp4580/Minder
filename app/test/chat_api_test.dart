@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:minder/data/chat_api.dart';
-import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
+import 'package:minder/domain/failure.dart';
 
 const preview = {
   'id': 'preview',
@@ -67,7 +67,7 @@ void main() {
     await expectLater(
       api.confirm('change'),
       throwsA(
-        isA<ApiException>().having(
+        isA<RepositoryFailure>().having(
           (e) => e.replacement?.id,
           'replacement',
           'preview',

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+python3 -B -m unittest discover -s toolchain/tests -v
+python3 -B -m unittest discover -s .githooks/tests -v
+toolchain/architecture-check
+toolchain/dox-check
+toolchain/run go go test -race ./...
+toolchain/run go go vet ./...
+formatting=$(toolchain/run go gofmt -l .)
+if [[ -n "$formatting" ]]; then
+  echo "$formatting" >&2
+  exit 1
+fi
+toolchain/run flutter flutter test
+toolchain/run flutter flutter analyze
+toolchain/run flutter dart format --set-exit-if-changed lib test
+git diff --check

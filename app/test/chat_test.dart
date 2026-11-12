@@ -7,6 +7,7 @@ import 'package:minder/application/chat_controller.dart';
 import 'package:minder/data/wire.dart';
 import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
+import 'package:minder/domain/failure.dart';
 import 'package:minder/ui/chat_screen.dart';
 import 'package:minder/ui/tokens.dart';
 
@@ -44,7 +45,7 @@ class FakeRepository implements ChatRepository {
   int sends = 0;
   @override
   Future<List<Entry>> history(int after) async {
-    if (offline) throw const ApiException('Check your connection.');
+    if (offline) throw const RepositoryFailure('Check your connection.');
     return List.of(saved.where((e) => e.cursor > after));
   }
 
@@ -52,7 +53,7 @@ class FakeRepository implements ChatRepository {
   Stream<Entry> watch(int after) => events.stream;
   @override
   Future<Entry> send(String text) async {
-    if (offline) throw const ApiException('Check your connection.');
+    if (offline) throw const RepositoryFailure('Check your connection.');
     sends++;
     return entry('u$sends', sends, 'user', text: text);
   }
@@ -80,13 +81,30 @@ class FakeRepository implements ChatRepository {
   Future<Entry> actOnReminder(String reminderId, ReminderAction action) async =>
       confirm(reminderId);
 
-  @override
   void close() {
     events.close();
   }
 }
 
 void main() {
+  test(
+    'disposing chat preserves a repository shared with other controllers',
+    () async {
+      final repository = FakeRepository();
+      final controller = ChatController(
+        repository,
+        pollInterval: const Duration(days: 1),
+      );
+      await controller.start();
+      controller.dispose();
+      expect(
+        () => repository.events.add(entry('later', 99, 'result')),
+        returnsNormally,
+      );
+      repository.close();
+    },
+  );
+
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     for (final name in ['Michroma', 'Chakra Petch']) {

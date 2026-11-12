@@ -2,9 +2,10 @@ package store
 
 import (
 	"database/sql"
-	"github.com/alexanderp4580/Minder/server/domain"
 	"path/filepath"
 	"testing"
+
+	"github.com/alexanderp4580/Minder/server/domain"
 )
 
 func TestMigrationAndDurableHistory(t *testing.T) {
@@ -40,7 +41,7 @@ func TestSchemaRejectsInvalidItemState(t *testing.T) {
 	}
 	defer s.Close()
 	for _, b := range []string{`{"title":"Bad","status":"typo","version":1}`, `{"title":"Bad","status":"open","version":0}`, `{"title":"","status":"open","version":1}`} {
-		if _, e = s.db.Exec("INSERT INTO item(id,body) VALUES(?,?)", ID(), b); e == nil {
+		if _, e = s.db.Exec("INSERT INTO item(id,body) VALUES(?,?)", domain.NewID(), b); e == nil {
 			t.Fatalf("invalid item accepted: %s", b)
 		}
 	}

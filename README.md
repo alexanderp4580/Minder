@@ -10,12 +10,11 @@ The assistant uses Claude Haiku 5.5 through OpenRouter. Its key stays on the ser
 Podman runners pin Go 1.27.2 and Flutter 3.47.6. No host SDK is needed.
 
 ```sh
-toolchain/run go go test -race ./...
-toolchain/run go go vet ./...
-toolchain/run flutter flutter test
-toolchain/run flutter flutter analyze
+toolchain/check
 toolchain/run flutter flutter build web --release --no-wasm-dry-run
 ```
+
+`toolchain/check` enforces Go package boundaries, Flutter layers and the Agent0ai DOX tree, then runs the local suites.
 
 Run the server with `ENV=development AUTH_MODE=dev`. Use `ENV=test AUTH_MODE=dev` for test fixtures. Production requires authentication.
 Set `DATABASE_PATH`, `WEB_DIR` and `LISTEN_ADDR` to the local database, web build and listener.
@@ -30,7 +29,7 @@ For controlled browser checks, run `python3 toolchain/model_fixture.py`, then `t
 The fixture listens on loopback port 8181. It never runs in production.
 `local-check` starts a temporary SQLite-backed server and drives the compiled Flutter web app with Playwright.
 
-Build an installable arm64 test APK with:
+Build an installable arm64 test APK only when the owner authorizes the stopped build:
 
 ```sh
 toolchain/run flutter flutter build apk --release --target-platform android-arm64 --split-per-abi
@@ -43,5 +42,5 @@ Scope: [docs/m0-spec.md](docs/m0-spec.md).
 Execution: [docs/m0-execution.md](docs/m0-execution.md).
 Evidence: [docs/evidence/m0.md](docs/evidence/m0.md).
 Architecture: [docs/architecture.md](docs/architecture.md).
-Review: [docs/evidence/review-refactor.md](docs/evidence/review-refactor.md).
+Architecture checks: [docs/evidence/architecture-cleanup.md](docs/evidence/architecture-cleanup.md).
 Brand: [brand/index.html](brand/index.html).

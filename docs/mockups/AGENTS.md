@@ -6,8 +6,8 @@
 
 ## Ownership
 
-- `chat.html` and `chat.png`: the chat screen, the only current design (spec in `../screens.md`)
-- `today`, `today-states`, `board`, `calendar`, `lists`, `item`, `profiles`, `assistant`, `settings`: earlier drafts for screens that are not designed now. They follow no current spec and are not maintained
+- `chat.html` and `chat.png`: the chat design draft (spec in `../screens.md`); Flutter goldens record current rendering
+- `today`, `today-states`, `board`, `calendar`, `lists`, `item`, `profiles`, `assistant`, `settings`: design drafts that do not define current app behaviour. Use `../screens.md` and the Flutter calendar golden for the implemented calendar
 - `common.css`: shared tokens and components for every mockup
 
 ## Local Contracts

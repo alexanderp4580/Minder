@@ -13,8 +13,9 @@ Product requirements and design docs for Minder.
 - `m1-spec.md`: scope, behaviour, interfaces and acceptance of the lists, profiles and recurrence slice
 - `calendar-spec.md`: the read-only calendar page, its data and the start, duration and priority fields
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
-- `evidence/review-refactor.md`: review scope, refactor checks, architecture assessment and deployment setting verification
-- Later design specs, plans and evidence files per slice
+- `evidence/`: local and hosted verification results; architecture-cleanup.md records the current architecture checks
+- `dox-license.txt`: Agent0ai DOX MIT notice
+- `superpowers/`: approved architecture designs and execution plans
 
 - `m0-execution.md`: approved execution order and checks
 - `evidence/`: M0 and M1 verification results, real model costs, hosted access checks, Firefox callback proof and app/consent branding checks
@@ -39,3 +40,5 @@ Re-read a whole doc after editing and fix contradictions. Use stop-slop for pros
 # Child DOX Index
 
 - `mockups/AGENTS.md`: phone mockups, shared styles and rendering
+- `evidence/AGENTS.md`: observed verification results and screenshots
+- `superpowers/AGENTS.md`: approved designs and implementation plans

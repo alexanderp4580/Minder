@@ -2,28 +2,37 @@ package reminder
 
 import (
 	"context"
-	"github.com/alexanderp4580/Minder/server/store"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/alexanderp4580/Minder/server/domain"
 )
 
 type Sender interface {
 	Send(context.Context, string, map[string]string) (bool, error)
 }
+type DeliveryRepository interface {
+	Deliveries(time.Time) ([]domain.Delivery, error)
+	DeliveryCurrent(domain.Delivery) (bool, error)
+	FinishDelivery(domain.Delivery, time.Time, bool, bool) error
+}
+type Scheduler interface{ ScheduleDue(time.Time) error }
+
 type Worker struct {
-	Store  *store.Store
-	Sender Sender
+	Repository DeliveryRepository
+	Scheduler  Scheduler
+	Sender     Sender
 }
 
 func (w *Worker) Tick(ctx context.Context, now time.Time) error {
-	if e := w.Store.DueReminders(now); e != nil {
+	if e := w.Scheduler.ScheduleDue(now); e != nil {
 		return e
 	}
 	if w.Sender == nil {
 		return nil
 	}
-	deliveries, e := w.Store.Deliveries(now)
+	deliveries, e := w.Repository.Deliveries(now)
 	if e != nil {
 		return e
 	}
@@ -31,7 +40,7 @@ func (w *Worker) Tick(ctx context.Context, now time.Time) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		current, e := w.Store.DeliveryCurrent(d)
+		current, e := w.Repository.DeliveryCurrent(d)
 		if e != nil {
 			return e
 		}
@@ -41,7 +50,7 @@ func (w *Worker) Tick(ctx context.Context, now time.Time) error {
 		timeout, cancel := context.WithTimeout(ctx, 15*time.Second)
 		invalid, sendError := w.Sender.Send(timeout, d.Token, map[string]string{"reminder_id": d.OccurrenceID, "title": d.Title, "scheduled_at": d.ScheduledAt, "late": strconv.FormatBool(d.Late)})
 		cancel()
-		if e = w.Store.FinishDelivery(d, now, sendError == nil, invalid); e != nil {
+		if e = w.Repository.FinishDelivery(d, now.Add(time.Minute), sendError == nil, invalid); e != nil {
 			return e
 		}
 	}

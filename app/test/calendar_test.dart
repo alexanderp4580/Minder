@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/application/calendar_controller.dart';
-import 'package:minder/application/use_cases.dart';
 import 'package:minder/data/wire.dart';
-import 'package:minder/domain/chat_repository.dart';
+import 'package:minder/domain/failure.dart';
 import 'package:minder/domain/item.dart';
 import 'package:minder/domain/item_repository.dart';
 import 'package:minder/ui/calendar_screen.dart';
@@ -42,7 +41,7 @@ class FakeItems implements ItemRepository {
   @override
   Future<List<Item>> itemsBetween(DateTime from, DateTime to) async {
     requests.add((from, to));
-    if (offline) throw const ApiException('Check your connection.');
+    if (offline) throw const RepositoryFailure('Check your connection.');
     return items.where((i) {
       final at = i.placedAt;
       return at != null && !at.isBefore(from) && at.isBefore(to);
@@ -51,7 +50,7 @@ class FakeItems implements ItemRepository {
 }
 
 CalendarController controller(FakeItems repo) =>
-    CalendarController(LoadItems(repo), now: () => DateTime(2026, 11, 12, 10));
+    CalendarController(repo, now: () => DateTime(2026, 11, 12, 10));
 
 class PendingItems implements ItemRepository {
   final requests = <Completer<List<Item>>>[];
@@ -136,10 +135,7 @@ void main() {
 
   test('a slow earlier month cannot replace the latest month', () async {
     final repo = PendingItems();
-    final c = CalendarController(
-      LoadItems(repo),
-      now: () => DateTime(2026, 11, 12),
-    );
+    final c = CalendarController(repo, now: () => DateTime(2026, 11, 12));
     final november = c.load();
     final december = c.next();
     repo.requests[1].complete([
@@ -158,10 +154,10 @@ void main() {
 
   test('an earlier failure cannot end a newer load or set its error', () async {
     final repo = PendingItems();
-    final c = CalendarController(LoadItems(repo));
+    final c = CalendarController(repo);
     final first = c.load();
     final latest = c.next();
-    repo.requests[0].completeError(const ApiException('Old failure'));
+    repo.requests[0].completeError(const RepositoryFailure('Old failure'));
     await first;
     expect(c.loading, true);
     expect(c.error, isNull);

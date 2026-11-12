@@ -2,12 +2,14 @@ package command
 
 import (
 	"errors"
-	"github.com/alexanderp4580/Minder/server/domain"
-	"github.com/alexanderp4580/Minder/server/store"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/reminder"
+	"github.com/alexanderp4580/Minder/server/store"
 )
 
 func setup(t *testing.T) (*Service, *store.Store) {
@@ -169,9 +171,9 @@ func TestNotificationDoneCanUndoWithoutRearmingOtherChanges(t *testing.T) {
 		t.Fatal(e)
 	}
 	c.Confirm(p.Change.ID)
-	s.DueReminders(now)
+	reminder.New(s).ScheduleDue(now)
 	active, _ := s.ActiveReminders()
-	result, e := s.ReminderAction(active[0].Reminder.ID, "done", now)
+	result, e := reminder.New(s).Act(active[0].Reminder.ID, "done", now)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -181,7 +183,7 @@ func TestNotificationDoneCanUndoWithoutRearmingOtherChanges(t *testing.T) {
 	if _, e = c.Undo(result.Change.UndoID); e != nil {
 		t.Fatal(e)
 	}
-	s.DueReminders(now)
+	reminder.New(s).ScheduleDue(now)
 	active, _ = s.ActiveReminders()
 	if len(active) != 1 {
 		t.Fatal("Undo lost reminder")

@@ -1,10 +1,8 @@
 package store
 
 import (
-	"crypto/rand"
 	"database/sql"
 	"embed"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +12,7 @@ import (
 	"time"
 
 	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/port"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -66,13 +65,6 @@ type Store struct {
 }
 type Tx struct{ tx *sql.Tx }
 
-func ID() string {
-	var b [16]byte
-	if _, e := rand.Read(b[:]); e != nil {
-		panic(e)
-	}
-	return hex.EncodeToString(b[:])
-}
 func Open(path string) (*Store, error) {
 	db, e := sql.Open("sqlite3", path+"?_foreign_keys=on&_busy_timeout=5000&_journal_mode=WAL")
 	if e != nil {
@@ -91,6 +83,10 @@ func Open(path string) (*Store, error) {
 	return st, nil
 }
 func (s *Store) Close() error { return s.db.Close() }
+func (s *Store) Transact(fn func(port.Transaction) error) error {
+	return s.Write(func(tx *Tx) error { return fn(tx) })
+}
+
 func (s *Store) Write(fn func(*Tx) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -140,11 +136,8 @@ func decode[T any](row *sql.Row) (T, error) {
 	var v T
 	var b string
 	e := row.Scan(&b)
-	if e == sql.ErrNoRows {
-		return v, domain.ErrNotFound
-	}
 	if e != nil {
-		return v, e
+		return v, rowError(e)
 	}
 	e = json.Unmarshal([]byte(b), &v)
 	return v, e
@@ -175,7 +168,7 @@ func (t *Tx) PutItem(i domain.Item) error {
 	return t.syncReminder(old, i)
 }
 func (t *Tx) DeleteItem(id string) error {
-	if e := t.closeReminders(id, "cancelled"); e != nil {
+	if e := t.CloseReminders(id, "cancelled"); e != nil {
 		return e
 	}
 	if _, e := t.tx.Exec("DELETE FROM reminder_schedule WHERE item_id=?", id); e != nil {
@@ -204,7 +197,7 @@ func (t *Tx) Entry(id string) (domain.Entry, error) {
 }
 func (t *Tx) PutEntry(e domain.Entry) (domain.Entry, error) {
 	if e.ID == "" {
-		e.ID = ID()
+		e.ID = domain.NewID()
 	}
 	if e.CreatedAt == "" {
 		e.CreatedAt = domain.Now()
@@ -290,14 +283,14 @@ func (s *Store) RecordUsage(cost float64, v any) error {
 		return fmt.Errorf("invalid cost")
 	}
 	return s.Write(func(t *Tx) error {
-		_, e := t.tx.Exec("INSERT INTO usage(id,month,cost_eur,body) VALUES(?,?,?,?)", ID(), month(), cost, body(v))
+		_, e := t.tx.Exec("INSERT INTO usage(id,month,cost_eur,body) VALUES(?,?,?,?)", domain.NewID(), month(), cost, body(v))
 		return e
 	})
 }
 
 // Reserve before a provider call. A crash or unknown provider cost keeps the reservation.
 func (s *Store) ReserveUsage(limit, amount float64) (id string, err error) {
-	id = ID()
+	id = domain.NewID()
 	err = s.Write(func(t *Tx) error {
 		var total float64
 		if e := t.tx.QueryRow("SELECT COALESCE(SUM(cost_eur),0) FROM usage WHERE month=?", month()).Scan(&total); e != nil {

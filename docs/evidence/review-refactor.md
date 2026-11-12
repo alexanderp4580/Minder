@@ -65,7 +65,7 @@ Flutter's container prints a root-user warning and notices for newer dependency 
 These checks use the pinned SDKs and current dependency versions.
 
 Final review ran inline. It covered authentication gates, typed-nil handling, startup errors, wire compatibility and controller request ordering.
-The branch retains its concrete store transaction boundaries. This review adds no storage abstraction or dependencies.
+Current transaction interfaces and dependency checks appear in [architecture-cleanup.md](architecture-cleanup.md).
 Browser screenshots from this run remain in `.local/review-evidence/`; tracked screenshots retain their prior contents.
 
 ## Release requirements
@@ -85,14 +85,6 @@ Date-only interpretation needs a product rule and real-model checks.
 A weaker model can omit a requested change. This review does not change the model prompt or tools.
 The app uses Material icons; the design guide calls for Carbon icons.
 
-## Architecture assessment
+## Current architecture
 
-Flutter has inward dependencies: UI uses controllers, controllers use domain interfaces, and data adapters implement those interfaces.
-The domain has no Flutter, HTTP, JSON or platform channel dependencies.
-Controllers use Flutter's `ChangeNotifier` for state notifications.
-
-Go has package separation but still couples `command`, `assistant`, `api` and the reminder worker to concrete store types.
-Command operations also use concrete `store.Tx` transactions.
-`store.ReminderAction` contains snooze policy and coordinates completion, audit and chat results alongside SQL.
-A strict clean architecture would put that orchestration in application services and use persistence interfaces.
-The refactor does not complete that separation.
+See [architecture-cleanup.md](architecture-cleanup.md) for the current dependency and transaction checks.
