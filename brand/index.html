@@ -279,6 +279,37 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
  .sq{margin:12px 12px 0}
  .acts{padding:12px}
 }
+/* Calendar layout: 8 / 16 / 24 / 32 spacing. */
+.calendar-layout,.calendar-layout *{box-sizing:border-box}
+.calendar-layout{width:412px;min-width:412px;min-height:892px;padding:24px 24px 32px;background:var(--void);color:var(--text);font-family:'Chakra Petch',sans-serif;font-weight:500;border:1px solid var(--line)}
+.calendar-layout .cal-header{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px}
+.calendar-layout .cal-title{font-family:Michroma,sans-serif;font-size:22px;font-weight:400;letter-spacing:.2em;line-height:1.4}
+.calendar-layout .cal-control{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex:none;background:var(--panel);border:1px solid var(--edge);color:var(--text);font-size:14px;font-weight:700;letter-spacing:.04em}
+.calendar-layout .cal-control svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:square;stroke-linejoin:miter}
+.calendar-layout .cal-month-bar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:32px;min-height:54px}
+.calendar-layout .cal-month{font-size:24px;line-height:1.15;font-weight:600}
+.calendar-layout .cal-year{margin-top:6px;font-size:14px;letter-spacing:.08em;color:var(--muted);line-height:20px}
+.calendar-layout .cal-arrows{display:flex;gap:8px}
+.calendar-layout .cal-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));margin-top:24px;text-align:center;font-size:12px;color:var(--muted);letter-spacing:.08em;line-height:18px}
+.calendar-layout .cal-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:8px;margin-top:12px}
+.calendar-layout .cal-day{height:56px;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.calendar-layout .cal-day.other{color:var(--dim)}
+.calendar-layout .cal-face{width:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid transparent}
+.calendar-layout .cal-day.selected .cal-face{border-color:var(--signal)}
+.calendar-layout .cal-number{font-size:16px;font-weight:500;line-height:1.2}
+.calendar-layout .cal-day.today .cal-number{text-decoration:underline;text-underline-offset:4px;font-weight:700}
+.calendar-layout .cal-marker{height:4px;width:4px;background:transparent;margin-top:6px}
+.calendar-layout .cal-day.has-item .cal-marker{background:var(--text)}
+.calendar-layout .cal-agenda{margin-top:32px}
+.calendar-layout .cal-agenda-header{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px}
+.calendar-layout .cal-date{font-size:16px;font-weight:600;line-height:24px;letter-spacing:.01em}
+.calendar-layout .cal-today{width:auto;padding:0 16px}
+.calendar-layout .cal-event{margin-top:16px;padding:20px;background:var(--panel);border:1px solid var(--line)}
+.calendar-layout .cal-time{color:var(--muted);font-size:13px;line-height:18px;letter-spacing:.06em}
+.calendar-layout .cal-event-title{margin-top:8px;font-size:18px;font-weight:600;line-height:26px}
+.calendar-example-wrap{max-width:100%;overflow-x:auto;margin-top:24px}
+.calendar-caption{font-size:13px;color:var(--muted);margin:12px 0 0}
+
 </style>
 </head>
 <body>
@@ -473,6 +504,75 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
   </div>
   <h3>Rules</h3>
   <p>Use the Line colour for dividers. Card corners are square. The cut corner on the main button is the only angled shape. A control has a hit area of at least 44 × 44 px.</p>
+
+  <h3>Space by relationship</h3>
+  <p>Give related controls a clear group. Leave more space between sections than inside them.</p>
+  <div class="tw"><table>
+   <tr><th>Space</th><th>Use</th></tr>
+   <tr><td>8 px</td><td>Controls in one group; gaps between calendar weeks.</td></tr>
+   <tr><td>16 px</td><td>Related rows; an agenda heading and its cards.</td></tr>
+   <tr><td>24 px</td><td>Calendar side gutters; navigation and weekday labels.</td></tr>
+   <tr><td>32 px</td><td>Major sections: screen header, month navigation and agenda.</td></tr>
+  </table></div>
+  <h3>Calendar</h3>
+  <p>Give the month a 24 px heading and the year its own 14 px line. Group the two arrows on the right.</p>
+  <p>Place Today beside the agenda date. Keep it outside the month navigation group.</p>
+  <p>Use 56 px day targets with 8 px gaps between weeks. Inset the 44 px selection frame inside each target.</p>
+  <p>Give agenda cards 20 px padding, an 18 px title and 16 px between cards. Use Line for their outlines.</p>
+  <p>Keep the calendar column at most 520 px wide. Use 24 px side gutters from 360 px upward.</p>
+  <p>On narrower screens, reduce gutters to preserve 44 px day targets. Let the page scroll with larger text or shorter screens.</p>
+  <div class="calendar-example-wrap"><div class="calendar-layout" aria-label="Calendar spacing example">
+ <div class="cal-header"><div class="cal-title">CALENDAR</div><span class="cal-control" aria-label="Chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v13H9l-5 4V4Z"/></svg></span></div>
+ <div class="cal-month-bar"><div><div class="cal-month">November</div><div class="cal-year">2026</div></div><div class="cal-arrows"><span class="cal-control" aria-label="Previous month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></span><span class="cal-control" aria-label="Next month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></span></div></div>
+ <div class="cal-weekdays"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>
+ <div class="cal-days">
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">26</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">27</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">28</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">29</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">30</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">31</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">1</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">2</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">3</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">4</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">5</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">6</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">7</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">8</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">9</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">10</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">11</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day selected today has-item"><div class="cal-face"><span class="cal-number">12</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">13</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">14</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">15</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">16</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">17</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">18</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">19</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">20</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">21</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">22</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">23</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">24</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">25</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">26</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">27</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">28</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">29</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">30</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">1</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">2</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">3</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">4</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">5</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">6</span><span class="cal-marker"></span></div></div>
+ </div>
+ <div class="cal-agenda"><div class="cal-agenda-header"><div class="cal-date">Thursday, 12 Nov</div><span class="cal-control cal-today">Today</span></div><div class="cal-event"><div class="cal-time">Due 10:00</div><div class="cal-event-title">Call plumber</div></div></div>
+</div></div>
+  <p class="calendar-caption">Illustrative phone example, 412 px wide. Scroll the example sideways on a narrow guide page.</p>
+
  </div>
 </section>
 

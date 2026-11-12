@@ -19,6 +19,7 @@ abstract final class Tokens {
       alert = Color(0xffff4448),
       white = Color(0xffffffff);
   static const gutter = 20.0, gap = 8.0, minTarget = 44.0;
+  static const relatedGap = 16.0, sectionGap = 24.0, blockGap = 32.0;
   static ThemeData get theme => ThemeData(
     brightness: Brightness.dark,
     // Desktop browsers default to compact density, which shrinks fields below 44 px.
@@ -106,4 +107,12 @@ abstract final class Tokens {
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(color: muted),
   );
+}
+
+abstract final class CalendarTokens {
+  static const gutter = Tokens.sectionGap,
+      maxWidth = 520.0,
+      dayHeight = 56.0,
+      selectionSize = Tokens.minTarget,
+      cardPadding = 20.0;
 }

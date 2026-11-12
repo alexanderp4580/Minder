@@ -1,15 +1,54 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Minder · Calendar</title><link rel="stylesheet" href="common.css"></head><body><div class="page"><div class="ph"><div class="st"><span>07:30 · Wed 11 Nov</span><span class="demo">Illustrative</span></div><div class="body"><div class="hd"><div class="ttl">Calendar</div><div class="ibtn"><i class="cb i-gear"></i></div></div>
-<div style="padding:12px 20px 0"><div class="seg"><span>Day</span><span class="on">Week</span><span>Month</span></div></div>
-<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px"><div class="ibtn"><i class="cb i-back"></i></div><div style="text-align:center"><div style="font-size:16px;font-weight:700;letter-spacing:.04em">9 – 15 Nov 2026</div><div class="mut" style="margin-top:2px">10 items this week</div></div><div class="ibtn"><i class="cb i-right"></i></div></div>
-<div style="display:flex;gap:4px;padding:0 20px 10px"><div style="flex:1;border:1px solid var(--line);padding:6px 0;text-align:center;background:var(--panel);min-height:60px"><div class="mut">Mon</div><div style="font-size:18px;font-weight:700;margin:2px 0">9</div><div style="font-size:12px;color:var(--text)">1</div></div><div style="flex:1;border:1px solid var(--line);padding:6px 0;text-align:center;background:var(--panel);min-height:60px"><div class="mut">Tue</div><div style="font-size:18px;font-weight:700;margin:2px 0">10</div><div style="font-size:12px;color:var(--dim)">0</div></div><div style="flex:1;border:2px solid var(--signal);padding:6px 0;text-align:center;background:var(--panel);min-height:60px"><div class="mut">Wed</div><div style="font-size:18px;font-weight:700;margin:2px 0">11</div><div style="font-size:12px;color:var(--text)">7</div></div><div style="flex:1;border:1px solid var(--line);padding:6px 0;text-align:center;background:var(--panel);min-height:60px"><div class="mut">Thu</div><div style="font-size:18px;font-weight:700;margin:2px 0">12</div><div style="font-size:12px;color:var(--text)">1</div></div><div style="flex:1;border:1px solid var(--line);padding:6px 0;text-align:center;background:var(--panel);min-height:60px"><div class="mut">Fri</div><div style="font-size:18px;font-weight:700;margin:2px 0">13</div><div style="font-size:12px;color:var(--dim)">0</div></div><div style="flex:1;border:1px solid var(--line);padding:6px 0;text-align:center;background:var(--panel);min-height:60px"><div class="mut">Sat</div><div style="font-size:18px;font-weight:700;margin:2px 0">14</div><div style="font-size:12px;color:var(--text)">1</div></div><div style="flex:1;border:1px solid var(--line);padding:6px 0;text-align:center;background:var(--panel);min-height:60px"><div class="mut">Sun</div><div style="font-size:18px;font-weight:700;margin:2px 0">15</div><div style="font-size:12px;color:var(--dim)">0</div></div></div>
-<div class="sec" style="padding:10px 20px 6px"><span class="mut t">Wed 11 Nov</span><span class="mut">7 items</span></div>
-<div class="it done" style="padding:7px 20px"><div class="b on"><i class="cb i-check"></i></div><div class="t"><span class="tt">Water plants</span><small><span class="lbl c-green">Home</span></small></div><div class="r">06:45</div></div>
-<div class="it done" style="padding:7px 20px"><div class="b on"><i class="cb i-check"></i></div><div class="t"><span class="tt">Reply to Anna</span><small><span class="lbl c-lilac">Family</span></small></div><div class="r">07:10</div></div>
-<div class="it done" style="padding:7px 20px"><div class="b on"><i class="cb i-check"></i></div><div class="t"><span class="tt">Pick up parcel</span><small><span class="lbl c-amber">Admin</span></small></div><div class="r">07:20</div></div>
-<div class="it" style="padding:7px 20px"><div class="b"></div><div class="t"><span class="tt">Call dentist</span><small><span class="lbl c-blue">Health</span></small></div><div class="r">09:00</div></div>
-<div class="it" style="padding:7px 20px"><div class="b"></div><div class="t"><span class="tt">Take out trash</span><small><span class="lbl c-green">Home</span></small></div><div class="r">17:00</div></div>
-<div class="it" style="padding:7px 20px"><div class="b"></div><div class="t"><span class="tt">Book flights to Lisbon</span><small><span class="lbl c-teal">Trip</span></small></div><div class="r">18:00</div></div>
-<div class="it" style="padding:7px 20px"><div class="b"></div><div class="t"><span class="tt">Buy card for Mum</span><small><span class="lbl c-lilac">Family</span></small></div><div class="r">All day</div></div>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minder · Calendar</title><link rel="stylesheet" href="common.css"></head>
+<body><div class="page"><div><div style="padding:8px 0"><span class="demo">Illustrative</span></div>
+<div class="calendar-layout" aria-label="Calendar spacing example">
+ <div class="cal-header"><div class="cal-title">CALENDAR</div><span class="cal-control" aria-label="Chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v13H9l-5 4V4Z"/></svg></span></div>
+ <div class="cal-month-bar"><div><div class="cal-month">November</div><div class="cal-year">2026</div></div><div class="cal-arrows"><span class="cal-control" aria-label="Previous month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></span><span class="cal-control" aria-label="Next month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></span></div></div>
+ <div class="cal-weekdays"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>
+ <div class="cal-days">
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">26</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">27</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">28</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">29</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">30</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">31</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">1</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">2</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">3</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">4</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">5</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">6</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">7</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">8</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">9</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">10</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">11</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day selected today has-item"><div class="cal-face"><span class="cal-number">12</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">13</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">14</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">15</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">16</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">17</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">18</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">19</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">20</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">21</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">22</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">23</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">24</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">25</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">26</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">27</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">28</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">29</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day"><div class="cal-face"><span class="cal-number">30</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">1</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">2</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">3</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">4</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">5</span><span class="cal-marker"></span></div></div>
+  <div class="cal-day other"><div class="cal-face"><span class="cal-number">6</span><span class="cal-marker"></span></div></div>
+ </div>
+ <div class="cal-agenda"><div class="cal-agenda-header"><div class="cal-date">Thursday, 12 Nov</div><span class="cal-control cal-today">Today</span></div><div class="cal-event"><div class="cal-time">Due 10:00</div><div class="cal-event-title">Call plumber</div></div></div>
 </div>
-<div class="cap"><div class="in">Tell Minder…</div><div class="mic"><i class="cb i-mic"></i></div></div>
-<div class="nav"><div><i class="cb i-home"></i>Today</div><div><i class="cb i-board"></i>Board</div><div class="on"><i class="cb i-cal"></i>Calendar</div><div><i class="cb i-list"></i>Lists</div></div></div></div></body></html>
+</div></div></body></html>

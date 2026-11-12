@@ -6,19 +6,18 @@ Product requirements and design docs for Minder.
 
 - `requirements.md`: product requirements, open questions and architecture decisions
 - `master-plan.md`: architecture, designs to write, milestones, risks and order of work
-- `screens.md`: the chat screen, objects and open decisions
-- `foundation.md`: design rules for the chat screen: colour, type, space, components, states
+- `screens.md`: chat, calendar, objects and open decisions
+- `foundation.md`: design rules for chat and calendar: colour, type, space, components, states
 - `architecture.md`: current Go service and Flutter layers, runtime boundaries, routes and checks
 - `m0-spec.md`: scope, interfaces, task plan and acceptance criteria of milestone M0
 - `m1-spec.md`: scope, behaviour, interfaces and acceptance of the lists, profiles and recurrence slice
 - `calendar-spec.md`: the read-only calendar page, its data and the start, duration and priority fields
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
-- `evidence/`: local and hosted verification results; architecture-cleanup.md records the current architecture checks
+- `evidence/`: local and hosted verification results, architecture checks and calendar layout checks
 - `dox-license.txt`: Agent0ai DOX MIT notice
 - `superpowers/`: approved architecture designs and execution plans
 
 - `m0-execution.md`: approved execution order and checks
-- `evidence/`: M0 and M1 verification results, real model costs, hosted access checks, Firefox callback proof and app/consent branding checks
 
 # Local Contracts
 
@@ -26,6 +25,7 @@ Product requirements and design docs for Minder.
 - `master-plan.md` and `requirements.md` must agree; a decision changed in one changes in the other in the same edit
 - Decisions the user made are written as decided; undecided items stay in the "Open questions" section of `requirements.md`
 - Facts about other projects, services and libraries are verified against their source before they are written
+- Calendar layout rules match the brand guide, foundation, calendar spec, mockup and Flutter rendering.
 - When a screen spec exists, its mockup changes in the same edit
 
 # Work Guidance

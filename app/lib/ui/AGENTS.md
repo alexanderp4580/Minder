@@ -11,6 +11,8 @@ ChatScreen, CalendarScreen, EntryView, time/cost labels and Tokens.theme.
 Use controllers and typed domain values. Never build API routes or read raw transport maps.
 Theme controls buttons, fields and standard visual density. Preserve 44 px controls and existing goldens.
 Screens use Material icons and bundled fonts.
+CalendarTokens owns calendar dimensions. The calendar uses a centered, scrolling column with grouped month arrows and Today beside the agenda date.
+Day targets stay at least 44 px wide; row height expands for enlarged text. Calendar goldens change only with an approved design.
 
 # Work Guidance
 

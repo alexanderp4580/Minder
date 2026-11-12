@@ -6,7 +6,7 @@ All names, dates, counts and times in the text and in the mockup are illustrativ
 
 ## UX rules
 
-- Chat is the whole app. You talk, Minder answers, and Minder speaks first when a reminder is due.
+- Chat is the main workspace. Minder answers requests and posts reminders there. The calendar shows dates.
 - Lists, views and summaries appear as Minder messages in the chat.
 - Every action has a visible button.
 - Done and Snooze act at once and show an Undo button. Every assistant request that creates or changes data shows a preview with Confirm, Edit and Discard.
@@ -59,6 +59,13 @@ States:
 - A reminder arrives while the app is closed: an Android notification with Done, Snooze and Open. Open shows the chat at the nag frame.
 
 Serves: requirements §1.2, §5.2, §6.2, §7.
+
+## Calendar
+
+Read-only month grid and agenda. The month heading and year sit beside grouped month arrows.
+Today sits beside the selected date in the agenda header.
+The whole page scrolls on short screens. Spacing and selection rules are in [foundation.md](foundation.md).
+Behaviour is in [calendar-spec.md](calendar-spec.md). The mockup is `mockups/calendar.html` with `mockups/calendar.png`.
 
 ## Open decisions
 

@@ -8,7 +8,7 @@ Keep this file current until the owner merges.
 - Chat, item and profile previews, Confirm, Discard, Undo and open-item queries.
 - Lists, profiles, recurrence, reminders, nagging and Android FCM actions.
 - Start, deadline, duration, priority and location fields.
-- Read-only calendar with a month grid and day agenda.
+- Read-only calendar with a month grid, spaced week rows and a scrolling day agenda.
 - Theme spacing, standard visual density, shared Material styles and golden tests.
 - Private `/branding/` guide and public OAuth logo.
 
@@ -37,6 +37,15 @@ Evidence: [docs/evidence/architecture-cleanup.md](docs/evidence/architecture-cle
 `CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL` are configured in Coolify as runtime-only variables.
 Read-back matched the live Cloudflare app and owner policy. They apply on the next deployment.
 `cmd/minder` contains no Cloudflare identity settings.
+
+## Calendar spacing
+
+The owner approved the roomier calendar preview. The Flutter page, brand guide, foundation,
+calendar spec and HTML mockup now share the same layout.
+The page uses 24 px gutters, 8 px week gaps, a separate month/year heading and 20 px card padding.
+Today sits beside the agenda date. The whole page scrolls on short screens.
+Narrow-screen checks cover 320 and 360 px with 1.4× text; day targets remain at least 44 px wide.
+Evidence: [docs/evidence/calendar-spacing.md](docs/evidence/calendar-spacing.md).
 
 ## Deployment and APK status
 

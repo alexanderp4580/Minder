@@ -56,29 +56,48 @@ Entry entry(
 });
 
 void main() {
-  testWidgets('calendar days have room between the weeks', (tester) async {
-    tester.view.physicalSize = const Size(412, 892);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final c = CalendarController(
-      EmptyItems(),
-      now: () => DateTime(2026, 11, 12, 10),
-    );
-    await c.load();
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: Tokens.theme,
-        home: CalendarScreen(controller: c),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final first = tester.getRect(find.byKey(const ValueKey('day-2026-11-02')));
-    final next = tester.getRect(find.byKey(const ValueKey('day-2026-11-09')));
-    expect(first.height, 56);
-    expect(next.top - first.top, 56);
-    await tester.pumpWidget(const SizedBox());
-    c.dispose();
-  });
+  testWidgets(
+    'calendar keeps separate day targets, selection frames and week gaps',
+    (tester) async {
+      tester.view.physicalSize = const Size(412, 892);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = CalendarController(
+        EmptyItems(),
+        now: () => DateTime(2026, 11, 12, 10),
+      );
+      await c.load();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: Tokens.theme,
+          home: CalendarScreen(controller: c),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final first = tester.getRect(
+        find.byKey(const ValueKey('day-2026-11-02')),
+      );
+      final next = tester.getRect(find.byKey(const ValueKey('day-2026-11-09')));
+      expect(first.height, 56);
+      expect(next.top - first.top, 64);
+      final selection = tester.getRect(
+        find.byKey(const ValueKey('calendar-selection')),
+      );
+      expect(selection.size, const Size(44, 44));
+      final lastWeek = tester.getRect(
+        find.byKey(const ValueKey('day-2026-12-06')),
+      );
+      final today = tester.getRect(
+        find.widgetWithText(OutlinedButton, 'Today'),
+      );
+      expect(today.top - lastWeek.bottom, greaterThanOrEqualTo(32));
+      expect(today.height, greaterThanOrEqualTo(44));
+      expect(find.text('November'), findsOneWidget);
+      expect(find.text('2026'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    },
+  );
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();

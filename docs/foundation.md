@@ -1,12 +1,12 @@
 # Minder foundation (draft)
 
-Status 2026-11-11. This file defines the shared design rules for the chat screen. The values come from `../brand/index.html` and `mockups/common.css`. Where the two differ, the brand guide wins. Items marked "?" are not decided.
+Status 2026-11-12. This file defines the shared design rules for chat and calendar. The values come from `../brand/index.html` and `mockups/common.css`. Where the two differ, the brand guide wins. Items marked "?" are not decided.
 
 Scope: the chat screen and the calendar page ([calendar-spec.md](calendar-spec.md)). Other screens are not designed.
 
 ## Principles
 
-- Chat is the whole app. You talk, Minder answers, and Minder speaks first when a reminder is due.
+- Chat is the main workspace. Minder answers requests and posts reminders there. The calendar shows dates.
 - Minder nags in the conversation. A reminder is a message that stays until you act on it.
 - Every action has a visible button. Typing is optional.
 - Every request that creates or changes data shows a preview with Confirm, Edit and Discard.
@@ -51,7 +51,8 @@ Rules:
 - The smallest text is 12 px.
 - Upper case is for short labels only: sender, card type, urgency.
 - Buttons and meta text use mixed case.
-- Fonts load from Google Fonts. Titles use Michroma. All other text uses Chakra Petch.
+- The app bundles its fonts. HTML guides and mockups load them from Google Fonts.
+Titles use Michroma. All other text uses Chakra Petch.
 
 ## Space and shape
 
@@ -66,6 +67,21 @@ Rules:
 - Corners are square. The primary button has one cut corner at the bottom right (12 px). The mic button has the same cut (10 px).
 - Every control is at least 44 × 44 px.
 - The focus frame is four Signal corner brackets, 14 px, 2 px stroke, with no full border.
+
+## Calendar layout
+
+The calendar follows the Layout section of the brand guide.
+
+- Use 8 px inside control groups, 16 px between related rows, 24 px between sections and 32 px between major blocks.
+- The calendar column is at most 520 px wide. Side gutters are 24 px at widths of 360 px and above.
+- At narrower widths, reduce gutters to preserve seven 44 px day targets. The whole page scrolls on short screens.
+- Leave 32 px after the screen header. Show the month at 24 px, with the year below at 14 px.
+- Group the two 44 px month arrows with an 8 px gap. Today sits beside the agenda date.
+- Leave 24 px before weekday labels, then 12 px before the date grid.
+- Day targets are 56 px high, with 8 px between weeks. The selected frame is 44 × 44 px at normal text size.
+- Grow day rows and selection frames when enlarged text needs more height. Keep the date and markers visible.
+- Leave 32 px between the grid and agenda, and 16 px between the agenda heading and cards.
+- Agenda cards use 20 px padding, an 18 px title and a Line outline. Leave 16 px between cards.
 
 ## Icons
 

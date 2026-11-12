@@ -168,6 +168,66 @@ void main() {
     c.dispose();
   });
 
+  for (final width in [320.0, 360.0]) {
+    testWidgets(
+      'a ${width.toInt()} px calendar scrolls its agenda without clipping enlarged text',
+      (tester) async {
+        tester.view.physicalSize = Size(width, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final repo = FakeItems()
+          ..items = [
+            item(
+              'long',
+              'Dentist appointment with Dr Smit',
+              start: utc(2026, 11, 12, 9),
+              location: 'Damrak 1, Amsterdam',
+            ),
+          ];
+        final c = controller(repo);
+        await c.load();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: Tokens.theme,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(1.4)),
+              child: child!,
+            ),
+            home: CalendarScreen(controller: c),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final dayTarget = tester.getRect(
+          find.byKey(const ValueKey('day-2026-11-12')),
+        );
+        expect(dayTarget.width, greaterThanOrEqualTo(44));
+        await tester.ensureVisible(
+          find.text('Dentist appointment with Dr Smit'),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final title = tester.getRect(
+          find.text('Dentist appointment with Dr Smit'),
+        );
+        expect(title.left, greaterThanOrEqualTo(0));
+        expect(title.right, lessThanOrEqualTo(width));
+        expect(title.top, greaterThanOrEqualTo(0));
+        expect(title.bottom, lessThanOrEqualTo(640));
+        await tester.ensureVisible(
+          find.widgetWithText(OutlinedButton, 'Today'),
+        );
+        await tester.tap(find.widgetWithText(OutlinedButton, 'Today'));
+        await tester.pumpAndSettle();
+        expect(c.selected, DateTime(2026, 11, 12));
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        c.dispose();
+      },
+    );
+  }
+
   testWidgets('screen shows the month, markers and the day agenda', (
     tester,
   ) async {
@@ -196,7 +256,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('NOVEMBER 2026'), findsOneWidget);
+    expect(find.text('November'), findsOneWidget);
     expect(find.text('Nothing planned.'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('day-2026-11-13')));
     await tester.pumpAndSettle();
@@ -212,7 +272,7 @@ void main() {
     );
     await tester.tap(find.byTooltip('Next month'));
     await tester.pumpAndSettle();
-    expect(find.text('DECEMBER 2026'), findsOneWidget);
+    expect(find.text('December'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     c.dispose();
   });

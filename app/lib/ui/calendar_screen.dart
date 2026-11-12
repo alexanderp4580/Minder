@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../application/calendar_controller.dart';
@@ -20,6 +22,19 @@ const _months = [
   'DECEMBER',
 ];
 const _weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const _dayNames = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+String _monthName(int month) {
+  final upper = _months[month - 1];
+  return upper[0] + upper.substring(1).toLowerCase();
+}
 
 String _duration(int minutes) {
   if (minutes < 60) return '$minutes min';
@@ -57,116 +72,152 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     body: SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              Tokens.gutter,
-              18,
-              Tokens.gutter,
-              0,
-            ),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'CALENDAR',
-                    style: TextStyle(
-                      fontFamily: 'Michroma',
-                      fontSize: 22,
-                      letterSpacing: 4.4,
-                    ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = math.min(constraints.maxWidth, CalendarTokens.maxWidth);
+          final gutter = math.min(
+            CalendarTokens.gutter,
+            math.max(0.0, (width - 7 * Tokens.minTarget) / 2),
+          );
+          return SingleChildScrollView(
+            child: Center(
+              child: SizedBox(
+                width: width,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    gutter,
+                    Tokens.sectionGap,
+                    gutter,
+                    Tokens.blockGap,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _header(),
+                      const SizedBox(height: Tokens.blockGap),
+                      _monthBar(),
+                      const SizedBox(height: Tokens.sectionGap),
+                      _weekdayRow(),
+                      const SizedBox(height: 12),
+                      for (var w = 0; w < 6; w++) ...[
+                        if (w > 0) const SizedBox(height: Tokens.gap),
+                        _week(w),
+                      ],
+                      const SizedBox(height: Tokens.blockGap),
+                      _agenda(),
+                    ],
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Chat',
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  icon: const Icon(Icons.chat_bubble_outline),
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _monthBar(),
-          const SizedBox(height: 8),
-          _weekdayRow(),
-          for (var w = 0; w < 6; w++) _week(w),
-          const Divider(height: 1),
-          Expanded(child: _agenda()),
-        ],
+          );
+        },
       ),
     ),
   );
 
-  Widget _monthBar() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: Tokens.gutter),
+  Widget _header() => Row(
+    children: [
+      const Expanded(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'CALENDAR',
+            style: TextStyle(
+              fontFamily: 'Michroma',
+              fontSize: 22,
+              letterSpacing: 4.4,
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(width: Tokens.relatedGap),
+      IconButton(
+        tooltip: 'Chat',
+        onPressed: () => Navigator.of(context).maybePop(),
+        icon: const Icon(Icons.chat_bubble_outline),
+      ),
+    ],
+  );
+
+  Widget _monthBar() => ConstrainedBox(
+    constraints: const BoxConstraints(minHeight: 54),
     child: Row(
       children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _monthName(c.month.month),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  height: 1.15,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${c.month.year}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Tokens.muted,
+                  letterSpacing: 1.12,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: Tokens.sectionGap),
         IconButton(
           tooltip: 'Previous month',
           onPressed: c.previous,
           icon: const Icon(Icons.chevron_left),
         ),
-        Expanded(
-          child: Text(
-            '${_months[c.month.month - 1]} ${c.month.year}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 14,
-              letterSpacing: 1.4,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
+        const SizedBox(width: Tokens.gap),
         IconButton(
           tooltip: 'Next month',
           onPressed: c.next,
           icon: const Icon(Icons.chevron_right),
         ),
-        const SizedBox(width: Tokens.gap),
-        OutlinedButton(onPressed: c.goToday, child: Text('Today')),
       ],
     ),
   );
 
-  Widget _weekdayRow() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: Tokens.gutter - 4),
-    child: Row(
-      children: [
-        for (final d in _weekdays)
-          Expanded(
-            child: Center(
-              child: Text(
-                d,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Tokens.muted,
-                  letterSpacing: 1,
-                ),
+  Widget _weekdayRow() => Row(
+    children: [
+      for (final d in _weekdays)
+        Expanded(
+          child: Center(
+            child: Text(
+              d,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Tokens.muted,
+                letterSpacing: 1,
+                height: 1.5,
               ),
             ),
           ),
-      ],
-    ),
+        ),
+    ],
   );
 
-  Widget _week(int w) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: Tokens.gutter - 4),
-    child: Row(
-      children: [
-        for (var d = 0; d < 7; d++)
-          Expanded(
-            child: _cell(
-              DateTime(
-                c.gridStart.year,
-                c.gridStart.month,
-                c.gridStart.day + w * 7 + d,
-              ),
+  Widget _week(int w) => Row(
+    children: [
+      for (var d = 0; d < 7; d++)
+        Expanded(
+          child: _cell(
+            DateTime(
+              c.gridStart.year,
+              c.gridStart.month,
+              c.gridStart.day + w * 7 + d,
             ),
           ),
-      ],
-    ),
+        ),
+    ],
   );
 
   Widget _cell(DateTime day) {
@@ -174,52 +225,66 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final selected = day == c.selected;
     final isToday = day == c.today;
     final count = c.countOn(day);
+    final faceHeight = math.max(
+      CalendarTokens.selectionSize,
+      MediaQuery.textScalerOf(context).scale(16) * 1.2 + 16,
+    );
     return Semantics(
       button: true,
       selected: selected,
       label:
-          '${_months[day.month - 1].substring(0, 3)} ${day.day}, '
-          '$count ${count == 1 ? 'item' : 'items'}',
+          '${_months[day.month - 1].substring(0, 3)} ${day.day}, $count ${count == 1 ? 'item' : 'items'}',
       excludeSemantics: true,
-      child: InkWell(
-        key: ValueKey('day-${day.year}-${_two(day.month)}-${_two(day.day)}'),
-        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-        onTap: () => c.select(day),
-        child: Container(
-          height: 56,
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: selected ? Tokens.signal : Colors.transparent,
-              width: 2,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '${day.day}',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
-                  color: inMonth ? Tokens.text : Tokens.dim,
-                  decoration: isToday ? TextDecoration.underline : null,
-                  decorationColor: Tokens.text,
+      child: SizedBox(
+        height: math.max(CalendarTokens.dayHeight, faceHeight + 12),
+        child: InkWell(
+          key: ValueKey('day-${day.year}-${_two(day.month)}-${_two(day.day)}'),
+          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+          onTap: () => c.select(day),
+          child: Center(
+            child: Container(
+              key: selected ? const ValueKey('calendar-selection') : null,
+              width: CalendarTokens.selectionSize,
+              height: faceHeight,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: selected ? Tokens.signal : Colors.transparent,
+                  width: 2,
                 ),
               ),
-              const SizedBox(height: 3),
-              Row(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  for (var i = 0; i < count.clamp(0, 3); i++)
-                    Container(
-                      width: 5,
-                      height: 5,
-                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                  Text(
+                    '${day.day}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      height: 1.2,
+                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                       color: inMonth ? Tokens.text : Tokens.dim,
+                      decoration: isToday ? TextDecoration.underline : null,
+                      decorationColor: Tokens.text,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: 4,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (var i = 0; i < count.clamp(0, 3); i++)
+                          Container(
+                            width: 4,
+                            height: 4,
+                            margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                            color: inMonth ? Tokens.text : Tokens.dim,
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -229,19 +294,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget _agenda() {
     final day = c.selected;
     final items = c.selectedItems;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(Tokens.gutter, 16, Tokens.gutter, 24),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          '${_weekdays[day.weekday - 1]} ${day.day} '
-          '${_months[day.month - 1].substring(0, 3)}',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Tokens.muted,
-            letterSpacing: 1.2,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${_dayNames[day.weekday - 1]}, ${day.day} ${_monthName(day.month).substring(0, 3)}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(width: Tokens.relatedGap),
+            OutlinedButton(onPressed: c.goToday, child: const Text('Today')),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: Tokens.relatedGap),
         if (c.error != null) ...[
           Text(c.error!, style: const TextStyle(color: Tokens.alert)),
           const SizedBox(height: 8),
@@ -272,11 +344,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
       if (item.repeat.isNotEmpty) item.repeat,
     ];
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: Tokens.relatedGap),
+      padding: const EdgeInsets.all(CalendarTokens.cardPadding),
       decoration: BoxDecoration(
         color: Tokens.panel,
-        border: Border.all(color: Tokens.edge),
+        border: Border.all(color: Tokens.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,12 +361,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Tokens.gap),
           Text(
             item.title,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
               color: item.done ? Tokens.dim : Tokens.text,
               decoration: item.done ? TextDecoration.lineThrough : null,
             ),
