@@ -362,4 +362,95 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     c.dispose();
   });
+
+  testWidgets(
+    'the list stays at the bottom after sending with the keyboard open',
+    (tester) async {
+      tester.view.physicalSize = const Size(412, 892);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.reset();
+      });
+      final repo = GrowingRepository();
+      for (var i = 1; i <= 30; i++) {
+        repo.saved.add(entry('m$i', i, 'minder', text: 'Earlier message $i.'));
+      }
+      final c = ChatController(repo, pollInterval: const Duration(days: 1));
+      await c.start();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: Tokens.theme,
+          home: ChatScreen(controller: c, onCalendar: () {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+      ScrollPosition position() => tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position;
+      expect(position().pixels, position().maxScrollExtent);
+      // The keyboard opens. The bottom bar hides.
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+      expect(position().pixels, closeTo(position().maxScrollExtent, 1));
+      await tester.enterText(find.byType(TextField), 'Call the plumber');
+      await tester.tap(find.byTooltip('Send'));
+      await tester.pump(const Duration(milliseconds: 300));
+      // The keyboard closes in steps, then the bar comes back.
+      for (final inset in [200.0, 100.0, 1.0, 0.0]) {
+        tester.view.viewInsets = FakeViewPadding(bottom: inset);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.text('Call the plumber'), findsOneWidget);
+      expect(position().pixels, closeTo(position().maxScrollExtent, 1));
+
+      repo.events.add(entry('first-reply', 200, 'minder', text: 'Saved.'));
+      await tester.pumpAndSettle();
+
+      // Reading older messages must survive another keyboard resize.
+      await tester.drag(find.byType(ListView), const Offset(0, 400));
+      await tester.pumpAndSettle();
+      final readingOffset = position().pixels;
+      expect(position().extentAfter, greaterThan(200));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      expect(position().pixels, closeTo(readingOffset, 1));
+      tester.view.viewInsets = const FakeViewPadding();
+      await tester.pumpAndSettle();
+      expect(position().pixels, closeTo(readingOffset, 1));
+
+      // Scrolling back to the bottom resumes following the viewport.
+      await tester.drag(find.byType(ListView), const Offset(0, -1200));
+      await tester.pumpAndSettle();
+      expect(position().pixels, closeTo(position().maxScrollExtent, 1));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      expect(position().pixels, closeTo(position().maxScrollExtent, 1));
+
+      // A new reply retains the existing automatic scroll behaviour.
+      await tester.drag(find.byType(ListView), const Offset(0, 400));
+      await tester.pumpAndSettle();
+      repo.events.add(entry('reply', 201, 'minder', text: 'Message received.'));
+      await tester.pumpAndSettle();
+      expect(position().pixels, closeTo(position().maxScrollExtent, 1));
+
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+      repo.close();
+    },
+  );
+}
+
+class GrowingRepository extends FakeRepository {
+  @override
+  Future<Entry> send(String text) async {
+    sends++;
+    return entry('u$sends', 100 + sends, 'user', text: text);
+  }
 }

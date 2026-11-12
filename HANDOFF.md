@@ -1,7 +1,7 @@
 # Handoff
 
 State on 2026-11-12. Production runs commit `2033008` from branch `main`.
-Branch `m0-chat` is merged into `main`. Local email work is on `notification-body-tap`; it is not merged or deployed.
+Branch `m0-chat` is merged into `main`. The worktree `Minder-m0-chat` is on branch `notification-body-tap`, which has unmerged work (see "Open work").
 
 ## Current source
 
@@ -64,6 +64,36 @@ Phone frame timing and battery use remain unmeasured.
 The owner approved reconstructing the artwork and moving highlights along its fixed paths.
 The SVGs own geometry and lighting; toolchain/export-orbits.py keeps Flutter and HTML exports aligned.
 The calendar spacing and opaque cards remain unchanged.
+
+## Open work
+
+### Branch `notification-body-tap` (not merged, not pushed, not deployed)
+
+- `be4aeff`: the reminder notification has no content intent. Tapping its body does nothing.
+- `6c115a5`: Done and Snooze run in the background. `ReminderActionReceiver` starts a headless Flutter engine at the Dart entry point `notificationAction` and calls the reminder action with the app login. Open still opens the app.
+- App version 0.4.8+17. APK 0.4.8 reached Telegram once (message 1975). The server is unchanged.
+- Verified on the emulator with a direct broadcast, not a rendered button. Evidence and limits: [docs/evidence/notification-actions.md](docs/evidence/notification-actions.md).
+- Not checked: a physical phone, Android 12 and later background limits, battery restrictions, and the failure message with notifications on.
+- Merge after the owner approves the buttons on a phone. No deployment is needed.
+
+### Keyboard auto-scroll fix
+
+`ChatScreen` now follows list metrics after layout while pinned to the bottom.
+Keyboard opening and stepped dismissal, the returning bottom bar and composer resizing keep the latest content visible.
+User scrolling away pauses viewport following. Returning to the bottom or a new message cursor resumes it.
+
+The regression test reproduced a 244 px gap after keyboard opening before the fix.
+It covers sending during keyboard dismissal, preserving the reading position, resuming at the bottom and receiving a reply.
+Verification: `toolchain/check` exited 0 on 2026-11-12: 56 Flutter tests, analyze, format, Go race tests/vet, toolchain/hook tests, architecture, DOX and orbital export checks.
+Physical phone verification remains pending. This change has no APK delivery or deployment yet.
+The email extractor allows one evidence correction per batch (`96d1778`); see the email capture section.
+
+Leftovers on this machine:
+
+- A local `minder` server on `127.0.0.1:18190` and `toolchain/model_fixture.py` on port 8181 may still run. Stop them by process name, not with `pkill -f`, which also kills the calling shell.
+- The emulator `emulator-5584` has the debug x86_64 build 0.4.8 installed over 0.1.1, and a port forward for 18190. Remove it with `adb reverse --remove-all`. `adb unroot` was already run.
+
+Send each APK once. A 504 from Telegram can mean the file arrived.
 
 ## Email capture implementation
 

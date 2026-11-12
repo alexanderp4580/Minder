@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 
 import '../application/chat_controller.dart';
 import 'bottom_nav.dart';
@@ -33,6 +34,19 @@ class _ChatScreenState extends State<ChatScreen> {
   final _scroll = ScrollController();
   int _lastCursor = -1;
   bool _signingIn = false;
+  bool _stickToBottom = true;
+  bool _bottomScrollScheduled = false;
+
+  void _followBottom() {
+    if (!_stickToBottom || _bottomScrollScheduled) return;
+    _bottomScrollScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bottomScrollScheduled = false;
+      if (!mounted || !_stickToBottom || !_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    });
+  }
+
   @override
   void dispose() {
     _text.dispose();
@@ -67,8 +81,9 @@ class _ChatScreenState extends State<ChatScreen> {
       final c = widget.controller;
       if (c.cursor != _lastCursor) {
         _lastCursor = c.cursor;
+        _stickToBottom = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scroll.hasClients) {
+          if (mounted && _stickToBottom && _scroll.hasClients) {
             _scroll.animateTo(
               _scroll.position.maxScrollExtent,
               duration: const Duration(milliseconds: 180),
@@ -123,110 +138,134 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                     Expanded(
-                      child: SelectionArea(
-                        child: ListView(
-                          controller: _scroll,
-                          padding: const EdgeInsets.fromLTRB(
-                            Tokens.gutter,
-                            Tokens.relatedGap,
-                            Tokens.gutter,
-                            16,
-                          ),
-                          children: [
-                            if (c.entries.isEmpty && !c.loading)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 30),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'MINDER',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Tokens.muted,
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      'What do you need to do?',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      'Tell me a task, or ask what is open.',
-                                      style: TextStyle(color: Tokens.muted),
-                                    ),
-                                  ],
-                                ),
+                      child: NotificationListener<ScrollMetricsNotification>(
+                        onNotification: (notification) {
+                          if (notification.depth == 0) _followBottom();
+                          return false;
+                        },
+                        child: NotificationListener<UserScrollNotification>(
+                          onNotification: (notification) {
+                            if (notification.depth == 0) {
+                              _stickToBottom =
+                                  notification.direction ==
+                                      ScrollDirection.idle &&
+                                  notification.metrics.extentAfter <= 1;
+                            }
+                            return false;
+                          },
+                          child: SelectionArea(
+                            child: ListView(
+                              controller: _scroll,
+                              padding: const EdgeInsets.fromLTRB(
+                                Tokens.gutter,
+                                Tokens.relatedGap,
+                                Tokens.gutter,
+                                16,
                               ),
-                            for (final e in c.entries)
-                              EntryView(entry: e, controller: c),
-                            if (c.waiting)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 12,
-                                      height: 12,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text(
-                                      'Working',
-                                      style: TextStyle(color: Tokens.muted),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            if (c.error != null)
-                              Container(
-                                margin: const EdgeInsets.only(top: 16),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Tokens.edge),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(c.error!),
-                                    if (c.needsSignIn && widget.signIn != null)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 12),
-                                        child: Align(
-                                          alignment: Alignment.centerRight,
-                                          child: FilledButton(
-                                            onPressed: _signingIn
-                                                ? null
-                                                : _login,
-                                            child: Text(
-                                              _signingIn
-                                                  ? 'Signing in…'
-                                                  : 'Sign in',
-                                            ),
+                              children: [
+                                if (c.entries.isEmpty && !c.loading)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 30),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'MINDER',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Tokens.muted,
+                                            letterSpacing: 1.2,
                                           ),
                                         ),
-                                      )
-                                    else
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 12),
-                                        child: OutlinedButton(
-                                          onPressed: c.acting || c.waiting
-                                              ? null
-                                              : () => c.retry(),
-                                          child: Text('Retry'),
+                                        SizedBox(height: 10),
+                                        Text(
+                                          'What do you need to do?',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                          ],
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Tell me a task, or ask what is open.',
+                                          style: TextStyle(color: Tokens.muted),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                for (final e in c.entries)
+                                  EntryView(entry: e, controller: c),
+                                if (c.waiting)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    child: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 12,
+                                          height: 12,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Text(
+                                          'Working',
+                                          style: TextStyle(color: Tokens.muted),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (c.error != null)
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 16),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Tokens.edge),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(c.error!),
+                                        if (c.needsSignIn &&
+                                            widget.signIn != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 12,
+                                            ),
+                                            child: Align(
+                                              alignment: Alignment.centerRight,
+                                              child: FilledButton(
+                                                onPressed: _signingIn
+                                                    ? null
+                                                    : _login,
+                                                child: Text(
+                                                  _signingIn
+                                                      ? 'Signing in…'
+                                                      : 'Sign in',
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 12,
+                                            ),
+                                            child: OutlinedButton(
+                                              onPressed: c.acting || c.waiting
+                                                  ? null
+                                                  : () => c.retry(),
+                                              child: Text('Retry'),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
