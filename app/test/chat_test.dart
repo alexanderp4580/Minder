@@ -15,6 +15,7 @@ Entry entry(
   String kind, {
   String text = '',
   Map<String, dynamic>? change,
+  double? cost,
 }) => Entry.fromJson({
   'id': id,
   'cursor': cursor,
@@ -22,6 +23,7 @@ Entry entry(
   'text': text,
   'created_at': '2026-11-11T09:00:00Z',
   'change': ?change,
+  'cost_eur': ?cost,
 });
 Map<String, dynamic> preview({String state = 'pending', String? undo}) => {
   'id': 'p',
@@ -250,6 +252,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('PREVIEW · CHANGE PROFILE'), findsOneWidget);
     expect(find.text('Remind before (minutes):'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
+  testWidgets('a reply shows what its request cost', (tester) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repo = FakeRepository();
+    repo.saved.add(entry('a', 1, 'minder', text: 'Where is it?', cost: 0.0008));
+    repo.saved.add(entry('b', 2, 'minder', text: 'Free reply.'));
+    final c = ChatController(repo, pollInterval: const Duration(days: 1));
+    await c.start();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: Tokens.theme,
+        home: ChatScreen(controller: c),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('€0.0008'), findsOneWidget);
+    expect(find.textContaining('€'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     c.dispose();
   });

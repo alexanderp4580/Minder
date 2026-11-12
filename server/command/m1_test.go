@@ -193,3 +193,18 @@ func TestLocationIsStoredShownAndLimited(t *testing.T) {
 		t.Fatalf("long location: %v", e)
 	}
 }
+
+func TestPreviewAllIsAllOrNothing(t *testing.T) {
+	c, s := setup(t)
+	_, e := c.PreviewAll([]domain.Proposal{{Action: "create_item", Title: "Fine"}, {Action: "create_item", Title: ""}})
+	if e == nil {
+		t.Fatal("invalid proposal accepted")
+	}
+	if h, _ := s.History(0, 20); len(h) != 0 {
+		t.Fatalf("failed batch left %d entries", len(h))
+	}
+	got, e := c.PreviewAll([]domain.Proposal{{Action: "create_item", Title: "One"}, {Action: "create_item", Title: "Two"}})
+	if e != nil || len(got) != 2 || got[0].Change.ID == got[1].Change.ID {
+		t.Fatalf("%+v %v", got, e)
+	}
+}

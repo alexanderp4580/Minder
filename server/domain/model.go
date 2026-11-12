@@ -78,6 +78,7 @@ type Change struct {
 	UndoID    string  `json:"undo_id,omitempty"`
 }
 type Entry struct {
+	CostEUR   float64   `json:"cost_eur,omitempty"`
 	Reminder  *Reminder `json:"reminder,omitempty"`
 	ID        string    `json:"id"`
 	Cursor    int64     `json:"cursor"`

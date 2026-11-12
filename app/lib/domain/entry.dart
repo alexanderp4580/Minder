@@ -7,6 +7,7 @@ class Entry {
     required this.createdAt,
     this.change,
     this.reminder,
+    this.costEur = 0,
   });
   factory Entry.fromJson(Map<String, dynamic> j) => Entry(
     id: j['id'] as String,
@@ -16,10 +17,12 @@ class Entry {
     createdAt: DateTime.parse(j['created_at'] as String),
     change: j['change'] as Map<String, dynamic>?,
     reminder: j['reminder'] as Map<String, dynamic>?,
+    costEur: (j['cost_eur'] as num?)?.toDouble() ?? 0,
   );
   final String id, kind, text;
   final int cursor;
   final DateTime createdAt;
   final Map<String, dynamic>? change;
   final Map<String, dynamic>? reminder;
+  final double costEur;
 }

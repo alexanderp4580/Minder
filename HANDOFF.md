@@ -32,9 +32,11 @@ Steps:
 - [x] Deployed `e2ab375` to production without `force`: 28 seconds, `running:healthy`. A forced deploy takes about 5.5 minutes because it rebuilds every layer. Use `force` only when a build input outside the Dockerfile layers changes.
 - [x] APK 0.3.0 sent to Telegram. APK 0.3.1 hides the notification button and text once notifications are on.
 - [x] Location field and follow-up questions (tests pass, real-model run in `docs/evidence/m1.md`).
-- [ ] Deploy and APK for the location change.
+- [x] Several changes in one message, cost on each reply (tests pass, Haiku run in `docs/evidence/m1.md`).
+- [ ] Deploy and APK 0.3.3 (location, several changes, cost).
 - [ ] Owner phone check of lists, profiles, recurrence and follow-up questions.
 - Open: "Buy milk tomorrow" gets no due time. The model writes the date into the notes.
+- Open: a weaker model can drop a change from a multi-change message without an error. Free OpenRouter models work for plumbing tests. Rate limits apply.
 
 ## Checks
 

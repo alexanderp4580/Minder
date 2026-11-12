@@ -12,99 +12,115 @@ type Service struct{ Store *store.Store }
 
 func New(s *store.Store) *Service { return &Service{s} }
 func (c *Service) Preview(p domain.Proposal) (out domain.Entry, err error) {
+	err = c.Store.Write(func(t *store.Tx) error { return previewIn(t, p, &out) })
+	return
+}
+
+// PreviewAll previews several proposals in one transaction. One invalid proposal leaves no preview behind.
+func (c *Service) PreviewAll(ps []domain.Proposal) (out []domain.Entry, err error) {
 	err = c.Store.Write(func(t *store.Tx) error {
-		var before *domain.Item
-		var after domain.Item
-		switch p.Action {
-		case "create_item":
-			after = domain.Item{ID: store.ID(), Title: p.Title, DueAt: p.DueAt, Timezone: p.Timezone, Notes: p.Notes, RemindAt: p.RemindAt, NagMinutes: p.NagMinutes, Status: "open", Version: 1, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}
-			if e := setAttributes(t, p, &after); e != nil {
+		for _, p := range ps {
+			var entry domain.Entry
+			if e := previewIn(t, p, &entry); e != nil {
 				return e
 			}
-		case "update_item", "complete_item":
-			i, e := t.Item(p.ItemID)
-			if e != nil {
-				return e
-			}
-			if p.ExpectedVersion < 1 || p.ExpectedVersion != i.Version {
-				return domain.ErrConflict
-			}
-			before = &i
-			after = i
-			after.Version++
-			after.UpdatedAt = domain.Now()
-			if p.Action == "complete_item" {
-				if i.Status != "open" && i.Status != "in_progress" {
-					return domain.ErrConflict
-				}
-				if i.Recurrence != nil {
-					if e := roll(&after, time.Now()); e != nil {
-						return e
-					}
-				} else {
-					after.Status = "done"
-				}
-				after.CompletedAt = domain.Now()
-			} else {
-				if p.RemindAt != "" {
-					after.RemindAt = p.RemindAt
-					after.NagMinutes = p.NagMinutes
-				}
-				if p.NagMinutes != 0 {
-					after.NagMinutes = p.NagMinutes
-				}
-				if p.ClearNag {
-					after.NagMinutes = 0
-				}
-				if p.ClearReminder {
-					after.RemindAt = ""
-					after.NagMinutes = 0
-				}
-				if p.Title != "" {
-					after.Title = p.Title
-				}
-				if p.DueAt != "" || p.ClearDue {
-					after.DueAt = p.DueAt
-				}
-				if p.Notes != "" || p.ClearNotes {
-					after.Notes = p.Notes
-				}
-				if p.Timezone != "" {
-					after.Timezone = p.Timezone
-				}
-				if e := setAttributes(t, p, &after); e != nil {
-					return e
-				}
-			}
-		case "create_profile", "update_profile":
-			entry, e := previewProfile(t, p)
-			out = entry
-			return e
-		default:
-			return &domain.Invalid{Field: "action", Message: "Choose create, change or complete."}
+			out = append(out, entry)
 		}
-		if e := domain.Validate(&after); e != nil {
+		return nil
+	})
+	return
+}
+func previewIn(t *store.Tx, p domain.Proposal, out *domain.Entry) error {
+	var before *domain.Item
+	var after domain.Item
+	switch p.Action {
+	case "create_item":
+		after = domain.Item{ID: store.ID(), Title: p.Title, DueAt: p.DueAt, Timezone: p.Timezone, Notes: p.Notes, RemindAt: p.RemindAt, NagMinutes: p.NagMinutes, Status: "open", Version: 1, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}
+		if e := setAttributes(t, p, &after); e != nil {
 			return e
 		}
-		id := store.ID()
-		fields := []domain.Field{}
-		old := domain.Item{}
-		if before != nil {
-			old = *before
-		}
-		for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}, {Name: "location", Old: old.Location, New: after.Location}, {Name: "list", Old: old.List, New: after.List}, {Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, after.ProfileID)}, {Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(after.Recurrence)}} {
-			if f.Old != f.New {
-				fields = append(fields, f)
-			}
-		}
-		var e error
-		out, e = t.PutEntry(domain.Entry{Kind: "preview", Text: "Review this change.", Change: &domain.Change{ID: id, Action: p.Action, ItemTitle: after.Title, Fields: fields, State: "pending"}})
+	case "update_item", "complete_item":
+		i, e := t.Item(p.ItemID)
 		if e != nil {
 			return e
 		}
-		return t.PutPending(domain.Pending{ID: id, Proposal: p, Before: before, After: after, State: "pending", EntryID: out.ID})
-	})
-	return
+		if p.ExpectedVersion < 1 || p.ExpectedVersion != i.Version {
+			return domain.ErrConflict
+		}
+		before = &i
+		after = i
+		after.Version++
+		after.UpdatedAt = domain.Now()
+		if p.Action == "complete_item" {
+			if i.Status != "open" && i.Status != "in_progress" {
+				return domain.ErrConflict
+			}
+			if i.Recurrence != nil {
+				if e := roll(&after, time.Now()); e != nil {
+					return e
+				}
+			} else {
+				after.Status = "done"
+			}
+			after.CompletedAt = domain.Now()
+		} else {
+			if p.RemindAt != "" {
+				after.RemindAt = p.RemindAt
+				after.NagMinutes = p.NagMinutes
+			}
+			if p.NagMinutes != 0 {
+				after.NagMinutes = p.NagMinutes
+			}
+			if p.ClearNag {
+				after.NagMinutes = 0
+			}
+			if p.ClearReminder {
+				after.RemindAt = ""
+				after.NagMinutes = 0
+			}
+			if p.Title != "" {
+				after.Title = p.Title
+			}
+			if p.DueAt != "" || p.ClearDue {
+				after.DueAt = p.DueAt
+			}
+			if p.Notes != "" || p.ClearNotes {
+				after.Notes = p.Notes
+			}
+			if p.Timezone != "" {
+				after.Timezone = p.Timezone
+			}
+			if e := setAttributes(t, p, &after); e != nil {
+				return e
+			}
+		}
+	case "create_profile", "update_profile":
+		entry, e := previewProfile(t, p)
+		*out = entry
+		return e
+	default:
+		return &domain.Invalid{Field: "action", Message: "Choose create, change or complete."}
+	}
+	if e := domain.Validate(&after); e != nil {
+		return e
+	}
+	id := store.ID()
+	fields := []domain.Field{}
+	old := domain.Item{}
+	if before != nil {
+		old = *before
+	}
+	for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}, {Name: "location", Old: old.Location, New: after.Location}, {Name: "list", Old: old.List, New: after.List}, {Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, after.ProfileID)}, {Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(after.Recurrence)}} {
+		if f.Old != f.New {
+			fields = append(fields, f)
+		}
+	}
+	var e error
+	*out, e = t.PutEntry(domain.Entry{Kind: "preview", Text: "Review this change.", Change: &domain.Change{ID: id, Action: p.Action, ItemTitle: after.Title, Fields: fields, State: "pending"}})
+	if e != nil {
+		return e
+	}
+	return t.PutPending(domain.Pending{ID: id, Proposal: p, Before: before, After: after, State: "pending", EntryID: out.ID})
 }
 func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 	err = c.Store.Write(func(t *store.Tx) error {

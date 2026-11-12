@@ -320,7 +320,8 @@ class _ChatScreenState extends State<ChatScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${mine ? 'YOU' : 'MINDER'} · $time',
+          '${mine ? 'YOU' : 'MINDER'} · $time'
+          '${e.costEur > 0 ? ' · €${e.costEur.toStringAsFixed(4)}' : ''}',
           style: const TextStyle(
             fontSize: 12,
             color: Tokens.muted,

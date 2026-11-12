@@ -32,6 +32,17 @@ Status 2026-11-12. The owner asked for M1 to finish without questions. Reminders
 - Your answer leads to a normal preview. The question changes nothing.
 - Date-only tasks, such as "Buy milk tomorrow", get no question.
 
+## Several changes in one message
+
+- One message can hold up to five changes, for example two date changes. Each change gets its own preview card.
+- The server creates all previews in one transaction. One invalid change leaves no preview behind.
+- The assistant puts all changes to one item into one change. More than five changes give the error "Ask for at most five changes at once."
+
+## Cost on each message
+
+- A reply shows what its model request cost in euros, in the message header. A request that cost nothing shows no amount.
+- With several previews, the first one carries the cost.
+
 ## Interfaces
 
 Item fields: `location`, `list`, `profile` (profile id), `recurrence` (`every`, `interval`, `after_completion`).

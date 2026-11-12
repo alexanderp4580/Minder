@@ -216,3 +216,71 @@ func TestPromptGuidesFollowUpQuestions(t *testing.T) {
 		}
 	}
 }
+
+func TestSeveralChangesInOneMessageGiveSeveralPreviews(t *testing.T) {
+	a, s, f := newAssistant(t, Response{CostUSD: 0.001})
+	for _, id := range []string{"a", "b"} {
+		i := domain.Item{ID: id, Title: "Item " + id, Status: "open", Version: 1, Timezone: "Europe/Amsterdam", DueAt: "2026-11-12T09:00:00Z"}
+		if e := s.Write(func(tx *store.Tx) error { return tx.PutItem(i) }); e != nil {
+			t.Fatal(e)
+		}
+	}
+	f.r = Response{Calls: []Call{
+		{Name: "propose_update", Arguments: `{"item_id":"a","expected_version":1,"due_at":"2026-11-14T09:00:00Z"}`},
+		{Name: "propose_update", Arguments: `{"item_id":"b","expected_version":1,"due_at":"2026-11-15T09:00:00Z"}`},
+	}, CostUSD: 0.001}
+	entries, e := a.Reply(context.Background(), "Move a to Saturday and b to Sunday")
+	if e != nil || len(entries) != 2 || entries[0].Kind != "preview" || entries[1].Kind != "preview" {
+		t.Fatalf("%+v %v", entries, e)
+	}
+	items, _ := s.Items()
+	for _, i := range items {
+		if i.DueAt != "2026-11-12T09:00:00Z" {
+			t.Fatal("a preview changed data")
+		}
+	}
+	calls := make([]Call, 6)
+	for n := range calls {
+		calls[n] = Call{Name: "propose_create", Arguments: `{"title":"x"}`}
+	}
+	f.r = Response{Calls: calls, CostUSD: 0.001}
+	if _, e = a.Reply(context.Background(), "Add six things"); e == nil {
+		t.Fatal("six changes accepted")
+	}
+	h, _ := s.History(0, 50)
+	previews := 0
+	for _, en := range h {
+		if en.Kind == "preview" {
+			previews++
+		}
+	}
+	if previews != 2 {
+		t.Fatalf("a rejected batch left %d previews", previews)
+	}
+}
+
+func TestReplyEntriesCarryTheRequestCost(t *testing.T) {
+	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
+	defer s.Close()
+	f := &fakeModel{r: Response{Text: "Which item do you mean?", CostUSD: 0.002}}
+	a := New(s, command.New(s), f, 5, 0.9)
+	entries, e := a.Reply(context.Background(), "Move it")
+	if e != nil || len(entries) != 1 || entries[0].CostEUR < 0.0017999 || entries[0].CostEUR > 0.0018001 {
+		t.Fatalf("%+v %v", entries, e)
+	}
+	f.r = Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"A"}`}, {Name: "propose_create", Arguments: `{"title":"B"}`}}, CostUSD: 0.002}
+	entries, e = a.Reply(context.Background(), "Add A and B")
+	if e != nil || len(entries) != 2 || entries[0].CostEUR == 0 || entries[1].CostEUR != 0 {
+		t.Fatalf("cost must sit on the first entry only: %+v %v", entries, e)
+	}
+	h, _ := s.History(0, 50)
+	saved := 0
+	for _, en := range h {
+		if en.Kind == "preview" && en.CostEUR > 0 {
+			saved++
+		}
+	}
+	if saved != 1 {
+		t.Fatalf("stored previews with cost: %d", saved)
+	}
+}

@@ -149,6 +149,19 @@ func (t *Tx) PutEntry(e domain.Entry) (domain.Entry, error) {
 	_, err = t.tx.Exec("INSERT INTO chat_entry(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", e.ID, body(e))
 	return e, err
 }
+// AttachCost records what the model request behind an entry cost.
+func (s *Store) AttachCost(id string, cost float64) (out domain.Entry, err error) {
+	err = s.Write(func(t *Tx) error {
+		entry, e := t.Entry(id)
+		if e != nil {
+			return e
+		}
+		entry.CostEUR = cost
+		out, e = t.PutEntry(entry)
+		return e
+	})
+	return
+}
 func (s *Store) AddEntry(e domain.Entry) (out domain.Entry, err error) {
 	err = s.Write(func(t *Tx) error { var e2 error; out, e2 = t.PutEntry(e); return e2 })
 	return
