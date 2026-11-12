@@ -7,7 +7,7 @@ State on 2026-11-12. Branch `m0-chat`, worktree `Minder-m0-chat`. This file is t
 - M0 chat: server, Flutter app, Cloudflare Access, Coolify deploy. The owner approved it on a phone.
 - Reminders and push (`cce3855`): scheduling with catch-up, nagging, FCM, notification actions. The owner confirmed that it works on a phone.
 - The app uses repository interfaces and use cases. Only `data` knows API routes.
-- Production runs `e2ab375`. Firebase settings are runtime variables on Coolify.
+- Production runs `124494d`. Firebase settings are runtime variables on Coolify.
 
 ## In progress: M1 remainder (lists, profiles, recurrence)
 
@@ -33,7 +33,7 @@ Steps:
 - [x] APK 0.3.0 sent to Telegram. APK 0.3.1 hides the notification button and text once notifications are on.
 - [x] Location field and follow-up questions (tests pass, real-model run in `docs/evidence/m1.md`).
 - [x] Several changes in one message, cost on each reply (tests pass, Haiku run in `docs/evidence/m1.md`).
-- [ ] Deploy and APK 0.3.3 (location, several changes, cost).
+- [x] Deployed `124494d` (76 seconds, healthy). APK 0.3.3 sent to Telegram.
 - [ ] Owner phone check of lists, profiles, recurrence and follow-up questions.
 - Open: "Buy milk tomorrow" gets no due time. The model writes the date into the notes.
 - Open: a weaker model can drop a change from a multi-change message without an error. Free OpenRouter models work for plumbing tests. Rate limits apply.
