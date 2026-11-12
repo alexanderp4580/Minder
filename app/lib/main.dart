@@ -4,11 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'application/calendar_controller.dart';
 import 'application/chat_controller.dart';
 import 'application/notifications.dart';
 import 'application/use_cases.dart';
 import 'data/chat_api.dart';
 import 'data/access_auth.dart';
+import 'ui/calendar_screen.dart';
 import 'ui/chat_screen.dart';
 import 'ui/tokens.dart';
 
@@ -37,6 +39,11 @@ void main() {
   runApp(const ProviderScope(child: MinderApp()));
 }
 
+final calendarProvider = Provider<CalendarController>((ref) {
+  final controller = CalendarController(LoadItems(ref.watch(apiProvider)));
+  ref.onDispose(controller.dispose);
+  return controller;
+});
 final notificationProvider = Provider<NotificationController>((ref) {
   final api = ref.watch(apiProvider);
   final controller = NotificationController(
@@ -91,8 +98,18 @@ class _MinderAppState extends ConsumerState<MinderApp>
         title: 'Minder',
         debugShowCheckedModeBanner: false,
         theme: Tokens.theme,
-        home: ChatScreen(
+        home: Builder(
+          builder: (context) => ChatScreen(
           controller: ref.watch(chatProvider),
+          onCalendar: () {
+            final calendar = ref.read(calendarProvider);
+            unawaited(calendar.goToday());
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => CalendarScreen(controller: calendar),
+              ),
+            );
+          },
           signIn: () async {
             if (kIsWeb) {
               await ref.read(authProvider).webSignIn();
@@ -108,6 +125,7 @@ class _MinderAppState extends ConsumerState<MinderApp>
               ? null
               : notifications?.status,
           notificationsBusy: notifications?.busy ?? false,
+        ),
         ),
       ),
     );

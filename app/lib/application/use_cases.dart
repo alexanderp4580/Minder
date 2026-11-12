@@ -1,5 +1,7 @@
 import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
+import '../domain/item.dart';
+import '../domain/item_repository.dart';
 
 class SendMessage {
   const SendMessage(this._repository);
@@ -30,4 +32,11 @@ class ActOnReminder {
   final ChatRepository _repository;
   Future<Entry> call(String reminderId, ReminderAction action) =>
       _repository.actOnReminder(reminderId, action);
+}
+
+class LoadItems {
+  const LoadItems(this._repository);
+  final ItemRepository _repository;
+  Future<List<Item>> call(DateTime from, DateTime to) =>
+      _repository.itemsBetween(from, to);
 }

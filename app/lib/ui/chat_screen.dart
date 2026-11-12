@@ -10,6 +10,7 @@ class ChatScreen extends StatefulWidget {
     super.key,
     required this.controller,
     this.signIn,
+    this.onCalendar,
     this.enableNotifications,
     this.notificationStatus,
     this.notificationsBusy = false,
@@ -19,6 +20,7 @@ class ChatScreen extends StatefulWidget {
   final bool notificationsBusy;
   final ChatController controller;
   final Future<void> Function()? signIn;
+  final VoidCallback? onCalendar;
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
@@ -131,6 +133,12 @@ class _ChatScreenState extends State<ChatScreen> {
                             ],
                           ),
                         ),
+                        if (widget.onCalendar != null)
+                          IconButton(
+                            tooltip: 'Calendar',
+                            onPressed: widget.onCalendar,
+                            icon: const Icon(Icons.calendar_month),
+                          ),
                         if (c.loading)
                           const SizedBox(
                             width: 18,
@@ -521,6 +529,9 @@ class _ChatScreenState extends State<ChatScreen> {
   };
 
   String _field(String name) => switch (name) {
+    'start_at' => 'Starts',
+    'duration_minutes' => 'Duration (minutes)',
+    'priority' => 'Priority',
     'location' => 'Location',
     'list' => 'List',
     'profile' => 'Profile',

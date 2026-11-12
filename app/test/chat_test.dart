@@ -276,6 +276,26 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     c.dispose();
   });
+  testWidgets('the header opens the calendar', (tester) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repo = FakeRepository();
+    final c = ChatController(repo, pollInterval: const Duration(days: 1));
+    await c.start();
+    var opened = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: Tokens.theme,
+        home: ChatScreen(controller: c, onCalendar: () => opened++),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Calendar'));
+    expect(opened, 1);
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
   testWidgets('entry types match M0 golden', (tester) async {
     tester.view.physicalSize = const Size(412, 892);
     tester.view.devicePixelRatio = 1;

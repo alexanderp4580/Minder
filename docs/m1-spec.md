@@ -9,6 +9,7 @@ Status 2026-11-12. The owner asked for M1 to finish without questions. Reminders
 - Profiles: reminder defaults for a kind of item. Five built-ins and your own.
 - Recurrence: daily, weekly, monthly and yearly repeats, fixed or after completion.
 - Location: an optional place on an item, up to 200 characters.
+- Start date, duration and priority. The calendar page shows them: [calendar-spec.md](calendar-spec.md).
 - The assistant sets all four, answers "what is on Groceries", and asks a follow-up when a missing detail matters.
 
 **Out (later)**
@@ -45,11 +46,12 @@ Status 2026-11-12. The owner asked for M1 to finish without questions. Reminders
 
 ## Interfaces
 
-Item fields: `location`, `list`, `profile` (profile id), `recurrence` (`every`, `interval`, `after_completion`).
-Proposal fields: `location`, `clear_location`, `list`, `clear_list`, `profile`, `clear_profile`, `recurrence`, `clear_recurrence`, and for profiles `profile_id`, `profile_name`, `profile_remind_before_minutes`, `profile_nag_minutes` with `expected_version`.
+Item fields: `start_at`, `duration_minutes`, `priority`, `location`, `list`, `profile` (profile id), `recurrence` (`every`, `interval`, `after_completion`).
+Proposal fields: `start_at`, `clear_start`, `duration_minutes`, `clear_duration`, `priority`, `clear_priority`, `location`, `clear_location`, `list`, `clear_list`, `profile`, `clear_profile`, `recurrence`, `clear_recurrence`, and for profiles `profile_id`, `profile_name`, `profile_remind_before_minutes`, `profile_nag_minutes` with `expected_version`.
 Actions: `create_profile` and `update_profile` join the item actions.
 Model tools: the three item tools take the new fields. `propose_profile` adds or changes a profile. `list_items` takes an optional `list`.
 The model context holds the list names and all profiles.
+`GET /v1/items?from=&to=` returns the items placed in a range.
 Schema version 3 adds the `profile` table. Built-in rows are inserted once and never overwritten.
 
 ## Acceptance

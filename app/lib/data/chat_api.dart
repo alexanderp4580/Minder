@@ -5,8 +5,10 @@ import 'package:http/http.dart' as http;
 
 import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
+import '../domain/item.dart';
+import '../domain/item_repository.dart';
 
-class ChatApi implements ChatRepository, PushRepository {
+class ChatApi implements ChatRepository, PushRepository, ItemRepository {
   ChatApi(this.base, {http.Client? client, this.authorization})
     : _client = client ?? http.Client();
   final String base;
@@ -82,6 +84,16 @@ class ChatApi implements ChatRepository, PushRepository {
     return Entry.fromJson(j['entry'] as Map<String, dynamic>);
   }
 
+  @override
+  Future<List<Item>> itemsBetween(DateTime from, DateTime to) async =>
+      ((await _request(
+                'GET',
+                '/v1/items?from=${from.toUtc().toIso8601String()}'
+                '&to=${to.toUtc().toIso8601String()}',
+              ))
+              as List)
+          .map((j) => Item.fromJson(j as Map<String, dynamic>))
+          .toList();
   Future<Entry> _post(String route) async =>
       Entry.fromJson(await _request('POST', route) as Map<String, dynamic>);
   @override

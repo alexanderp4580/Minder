@@ -24,3 +24,4 @@ A profile edit reschedules the reminders of items that use it in the same transa
 The assistant proposes profile changes through `propose_profile`. Spec: `../docs/m1-spec.md`.
 Items carry an optional `location`. The system prompt tells the model to ask one follow-up when a missing detail matters, and not to ask again after a decline.
 `command.PreviewAll` previews up to five proposals in one transaction. Entries carry `cost_eur`: the model request cost sits on the first entry of a reply.
+Items carry `start_at`, `duration_minutes` and `priority`. `domain.Anchor` is the deadline, else the start; reminders and repeats count from it. `domain.PlacedAt` is the start, else the deadline; the calendar uses it. `GET /v1/items` returns items for a range of at most 62 days. Spec: `../docs/calendar-spec.md`.

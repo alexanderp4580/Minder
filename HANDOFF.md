@@ -35,7 +35,7 @@ Steps:
 - [x] Several changes in one message, cost on each reply (tests pass, Haiku run in `docs/evidence/m1.md`).
 - [x] Deployed `124494d` (76 seconds, healthy). APK 0.3.3 sent to Telegram.
 - [ ] Owner phone check of lists, profiles, recurrence and follow-up questions.
-- Open: "Buy milk tomorrow" gets no due time. The model writes the date into the notes.
+- Open: date-only requests behave inconsistently. "Buy milk tomorrow" gets no due time and no question. "Call mum on Sunday" gets a question about the time.
 - Open: a weaker model can drop a change from a multi-change message without an error. Free OpenRouter models work for plumbing tests. Rate limits apply.
 
 ## In progress: start date, duration, priority and the calendar page
@@ -55,8 +55,8 @@ Steps:
 - [x] Domain: fields, validation, anchor rules, recurrence shift (tests pass).
 - [x] Command and assistant: proposals, previews, prompt (tests pass).
 - [x] API: `GET /v1/items` (tests pass).
-- [ ] App: item model, repository, use case, calendar controller, calendar screen, navigation, tests.
-- [ ] Docs: `docs/calendar-spec.md`, `docs/screens.md`, `docs/m1-spec.md`, AGENTS files, evidence.
+- [x] App: item model, repository, use case, calendar controller, calendar screen, navigation, tests (19 Flutter tests pass; web check passes).
+- [x] Docs: `docs/calendar-spec.md`, `docs/screens.md`, `docs/m1-spec.md`, AGENTS files, evidence.
 - [ ] Final checks, deploy, APK, phone check.
 
 ## Checks

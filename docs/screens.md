@@ -1,6 +1,6 @@
 # Minder screens (draft)
 
-Status 2026-11-11. Derived from [requirements.md](requirements.md). The app has one screen: Chat. The owner decided that no other screen is needed now. Design rules are in [foundation.md](foundation.md). The first build slice is in [m0-spec.md](m0-spec.md).
+Status 2026-11-11. Derived from [requirements.md](requirements.md). The app has two screens: Chat and a read-only Calendar ([calendar-spec.md](calendar-spec.md)). The owner decided that no other screen is needed now. Design rules are in [foundation.md](foundation.md). The first build slice is in [m0-spec.md](m0-spec.md).
 
 All names, dates, counts and times in the text and in the mockup are illustrative.
 

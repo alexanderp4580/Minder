@@ -24,3 +24,7 @@ The check asserts foreground ownership and callback delivery. It creates no acco
 
 `render-icons.py` exports launcher, web, favicon and public-logo assets from `brand/app-icon.svg`. It requires `rsvg-convert`.
 Do not edit generated icon files by hand. Rebuild exports after changing the SVG.
+
+`reminder-local-check` and `calendar-local-check` start the model fixture and a server on a free port, then run `reminder-check.cjs` or `calendar-check.cjs` in compiled Flutter web.
+`reminder-check.cjs` waits for a due reminder and presses Done. `calendar-check.cjs` opens the calendar page and checks that a confirmed item shows on its day.
+`local-check` needs the fixture running on port 8181 before it starts.

@@ -11,6 +11,7 @@ Product requirements and design docs for Minder.
 - `architecture.md`: Go service and Flutter app architecture, checks done, spikes
 - `m0-spec.md`: scope, interfaces, task plan and acceptance criteria of milestone M0
 - `m1-spec.md`: scope, behaviour, interfaces and acceptance of the lists, profiles and recurrence slice
+- `calendar-spec.md`: the read-only calendar page, its data and the start, duration and priority fields
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
 - Later design specs, plans and evidence files per slice
 
