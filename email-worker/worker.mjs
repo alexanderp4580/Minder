@@ -135,7 +135,7 @@ export async function receiveEmail(message, env, request = fetch) {
   let response;
   try {
     response = await request(config.destination.href, {
-      method: 'POST', body: bytes, headers, redirect: 'error', signal: AbortSignal.timeout(15000),
+      method: 'POST', body: bytes, headers, redirect: 'manual', signal: AbortSignal.timeout(15000),
     });
   } catch (error) {
     log('handoff_failed', { error: error?.name, detail: error?.message, handoff_ms: Date.now() - sent });

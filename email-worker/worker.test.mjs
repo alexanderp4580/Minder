@@ -99,3 +99,8 @@ test('a rejected status logs the code and a missing receipt is flagged', async t
   await assert.rejects(worker.email(message(), env, { fetch: async () => new Response('', { status: 302 }) }));
   assert.deepEqual([lines.at(-1).stage, lines.at(-1).status], ['handoff_rejected', 302]);
 });
+test('handoff uses a redirect mode the Workers runtime supports', async () => {
+  let redirect;
+  await worker.email(message(), env, { fetch: async (url, options) => { redirect = options.redirect; return new Response(JSON.stringify({ capture_id: 'x' }), { status: 201 }); } });
+  assert.ok(['follow', 'manual'].includes(redirect), String(redirect));
+});
