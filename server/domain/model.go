@@ -53,6 +53,10 @@ type Item struct {
 	CompletedAt     string      `json:"completed_at,omitempty"`
 }
 type Proposal struct {
+	CaptureID       string `json:"capture_id,omitempty"`
+	CandidateID     string `json:"candidate_id,omitempty"`
+	CaptureRevision int    `json:"capture_revision,omitempty"`
+
 	Kind          string `json:"kind,omitempty"`
 	EndAt         string `json:"end_at,omitempty"`
 	StartTimezone string `json:"start_timezone,omitempty"`
@@ -114,6 +118,8 @@ type Change struct {
 	UndoID    string  `json:"undo_id,omitempty"`
 }
 type Entry struct {
+	Capture *Capture `json:"capture,omitempty"`
+
 	CostEUR   float64   `json:"cost_eur,omitempty"`
 	Reminder  *Reminder `json:"reminder,omitempty"`
 	ID        string    `json:"id"`

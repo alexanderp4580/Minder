@@ -41,6 +41,7 @@ type Reminders interface {
 
 // Transaction is a single atomic write boundary. An error rolls back every change.
 type Transaction interface {
+	Captures
 	Items
 	Profiles
 	Changes

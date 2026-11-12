@@ -12,7 +12,7 @@ GO = {
     'domain': set(), 'port': {'domain'},
     'command': {'domain', 'port'}, 'assistant': {'domain', 'port'},
     'reminder': {'domain', 'port'}, 'conversation': {'domain'},
-    'store': {'domain', 'port'}, 'openrouter': {'domain', 'assistant'},
+    'mailfiles': set(), 'store': {'domain', 'port'}, 'openrouter': {'domain', 'assistant'},
     'push': set(), 'access': set(), 'config': set(),
     'api': {'domain', 'conversation'},
     'cmd/minder': {'domain', 'access', 'api', 'assistant', 'command', 'config',

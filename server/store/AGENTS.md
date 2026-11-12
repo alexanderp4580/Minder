@@ -15,6 +15,8 @@ No snooze choices, reminder messages, action orchestration or provider calls bel
 
 ItemsBetween selects overlapping event/date ranges, including stays that start before the query window.
 
+Capture rows persist jobs, leases, revisions and provenance. Ingestion receipts and source links are unique; ClaimCapture serializes lease acquisition.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

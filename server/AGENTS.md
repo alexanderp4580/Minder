@@ -35,6 +35,7 @@ Formatting must print no paths.
 - `assistant/AGENTS.md`: Model orchestration through model, proposal and persistence interfaces.
 - `conversation/AGENTS.md`: Message acceptance and asynchronous reply lifecycle.
 - `reminder/AGENTS.md`: Reminder scheduling, actions and delivery orchestration.
+- `mailfiles/AGENTS.md`: Private persistent capture files.
 - `store/AGENTS.md`: SQLite persistence adapter.
 - `openrouter/AGENTS.md`: OpenRouter HTTP model adapter.
 - `push/AGENTS.md`: Firebase Cloud Messaging adapter.

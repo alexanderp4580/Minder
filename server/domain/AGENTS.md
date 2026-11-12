@@ -14,6 +14,8 @@ Use the standard library only. Keep HTTP, SQL, SDKs and adapter imports out.
 
 Items distinguish event end from deadline, and date-only ranges from instants. Event ranges are half-open; Overlaps uses the viewing timezone. Travel retains start/end zones. Date-only recurrence advances local dates without creating a timed reminder.
 
+Capture values carry source metadata, attachment manifests, coverage, candidate revisions and follow-up answers without provider or storage code.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

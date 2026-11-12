@@ -11,6 +11,8 @@ Transaction capabilities and `UnitOfWork`.
 Depend on domain values only. `Transact` commits once on success and rolls back every write on error.
 Transaction handles stay inside their callback. Read methods must return storage errors without inventing version conflicts.
 
+Captures, ingestion receipts and item-source links participate in the same transaction as previews and confirmed items.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.
