@@ -4,6 +4,9 @@
 !server/**
 !app/
 !app/**
+!brand/index.html
+!brand/app-icon.svg
+!brand/app-icon.png
 app/build/
 app/.dart_tool/
 app/android/

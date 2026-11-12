@@ -58,6 +58,7 @@ Steps:
 - [x] App: item model, repository, use case, calendar controller, calendar screen, navigation, tests (19 Flutter tests pass; web check passes).
 - [x] Docs: `docs/calendar-spec.md`, `docs/screens.md`, `docs/m1-spec.md`, AGENTS files, evidence.
 - [x] Branding hosted at `/branding/` behind sign-in (tests pass). It is private. A public page needs a Cloudflare Access bypass for that path. The owner decides.
+- Docker context: `.dockerignore` lists the folders the image build may read. A new folder needs an entry there. The first branding deploy failed for this reason. Test a new COPY with `podman build` on a small Dockerfile before a deploy.
 - [ ] Deploy `HEAD`, then the APK 0.4.0 after the owner agrees to a build. The owner stopped the APK build.
 - [ ] Phone check of the calendar.
 
