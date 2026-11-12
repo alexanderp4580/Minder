@@ -24,8 +24,18 @@ Details and checks: [docs/evidence/review-refactor.md](docs/evidence/review-refa
 Architecture: [docs/architecture.md](docs/architecture.md).
 
 Production now requires explicit `CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL` settings.
-Set them in Coolify before deploying this build. The review did not inspect hosted settings.
+All three are configured in Coolify as runtime-only variables. Read-back matched the live Cloudflare app and owner policy.
+The service was `running:healthy` after the update. These settings apply when Coolify starts the next deployment.
 `cmd/minder` contains no Cloudflare settings or owner identity.
+
+## Architecture assessment
+
+Flutter separates domain values, data adapters, application controllers and UI.
+Application controllers depend on domain interfaces. JSON and Android messages stay in data adapters.
+
+Go separates packages and keeps SQL inside `store`, but services still depend on concrete store types.
+`store.ReminderAction` also chooses snooze times and coordinates completion, audit and chat results.
+Full dependency inversion and moving reminder action policy out of storage remain unfinished.
 
 ## Deployment and APK status
 

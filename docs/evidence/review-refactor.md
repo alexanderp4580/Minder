@@ -70,8 +70,11 @@ Browser screenshots from this run remain in `.local/review-evidence/`; tracked s
 
 ## Release requirements
 
-Set `CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL` in Coolify before deploying this build.
-The review did not inspect or change hosted settings. Missing settings stop startup.
+On 2026-11-12, the owner authorized setting `CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL` in Coolify.
+All three now match the live Cloudflare application and its single-email owner policy.
+Read-back verified exact values, runtime enabled, build-time disabled and preview disabled.
+Coolify reported `running:healthy` after the update. The settings apply on the next deployment.
+The API credentials stayed in process memory. No credential values entered files or output.
 No deploy, APK build, phone check or merge forms part of this review.
 The owner stopped the APK 0.4.0 build. The handoff retains that restriction.
 
@@ -81,3 +84,15 @@ The handoff still requires phone checks of lists, profiles, recurrence, follow-u
 Date-only interpretation needs a product rule and real-model checks.
 A weaker model can omit a requested change. This review does not change the model prompt or tools.
 The app uses Material icons; the design guide calls for Carbon icons.
+
+## Architecture assessment
+
+Flutter has inward dependencies: UI uses controllers, controllers use domain interfaces, and data adapters implement those interfaces.
+The domain has no Flutter, HTTP, JSON or platform channel dependencies.
+Controllers use Flutter's `ChangeNotifier` for state notifications.
+
+Go has package separation but still couples `command`, `assistant`, `api` and the reminder worker to concrete store types.
+Command operations also use concrete `store.Tx` transactions.
+`store.ReminderAction` contains snooze policy and coordinates completion, audit and chat results alongside SQL.
+A strict clean architecture would put that orchestration in application services and use persistence interfaces.
+The refactor does not complete that separation.

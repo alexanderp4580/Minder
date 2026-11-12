@@ -13,7 +13,7 @@ Product requirements and design docs for Minder.
 - `m1-spec.md`: scope, behaviour, interfaces and acceptance of the lists, profiles and recurrence slice
 - `calendar-spec.md`: the read-only calendar page, its data and the start, duration and priority fields
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
-- `evidence/review-refactor.md`: review scope, refactor checks and release requirements
+- `evidence/review-refactor.md`: review scope, refactor checks, architecture assessment and deployment setting verification
 - Later design specs, plans and evidence files per slice
 
 - `m0-execution.md`: approved execution order and checks
