@@ -59,3 +59,43 @@ test('signature matches the fixture verified by Go', async () => {
  assert.equal(headers['X-Minder-Email-Signature'],fixture.headers['X-Minder-Email-Signature']);
  assert.equal(headers['X-Minder-Email-Envelope'],fixture.headers['X-Minder-Email-Envelope']);
 });
+function capture(t) {
+  const lines = [];
+  for (const level of ['log', 'warn']) t.mock.method(console, level, (...args) => lines.push(JSON.parse(args[0])));
+  return lines;
+}
+test('invalid addresses name the failing field only', async t => {
+  const lines = capture(t);
+  const mail = message(); mail.headers.set('from', 'not an address');
+  await worker.email(mail, env, {});
+  assert.deepEqual(lines.map(l => [l.stage, l.reason]), [['received', undefined], ['config_ok', undefined], ['rejected', 'Invalid From header address.']]);
+});
+test('quoted display names are accepted', async () => {
+  const mail = message(); mail.headers.set('from', '"Owner, Test" <owner@example.com>');
+  let calls = 0;
+  await worker.email(mail, env, { fetch: async () => { calls++; return new Response(JSON.stringify({ capture_id: 'source' }), { status: 201 }); } });
+  assert.equal(calls, 1); assert.equal(mail.rejection, undefined);
+});
+test('handoff failures log type, message and timing', async t => {
+  const lines = capture(t);
+  await assert.rejects(worker.email(message(), env, { fetch: async () => { throw new TypeError('redirect mode is set to error'); } }));
+  const failed = lines.at(-1);
+  assert.deepEqual([failed.stage, failed.error, failed.detail], ['handoff_failed', 'TypeError', 'redirect mode is set to error']);
+  assert.equal(typeof failed.ms, 'number');
+});
+test('a successful email logs every stage and never any address, subject or secret', async t => {
+  const lines = capture(t);
+  await worker.email(message(), env, { fetch: async () => new Response(JSON.stringify({ capture_id: 'abc' }), { status: 201 }) });
+  assert.deepEqual(lines.map(l => l.stage), ['received', 'config_ok', 'admitted', 'read', 'handoff', 'receipt']);
+  assert.equal(lines[0].raw_size > 0, true);
+  assert.equal(lines[2].dmarc, 'pass');
+  assert.equal(lines[4].status, 201);
+  assert.equal(new Set(lines.map(l => l.id)).size, 1);
+  const text = JSON.stringify(lines);
+  for (const secret of ['example.com', 'example.net', 'test-secret', 'test-id', 'Forwarded flight']) assert.equal(text.includes(secret), false, secret);
+});
+test('a rejected status logs the code and a missing receipt is flagged', async t => {
+  const lines = capture(t);
+  await assert.rejects(worker.email(message(), env, { fetch: async () => new Response('', { status: 302 }) }));
+  assert.deepEqual([lines.at(-1).stage, lines.at(-1).status], ['handoff_rejected', 302]);
+});

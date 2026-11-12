@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"path/filepath"
@@ -25,20 +27,29 @@ func (s *Server) ingestEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	raw, e := io.ReadAll(http.MaxBytesReader(w, r.Body, domain.MaxEmailBytes))
 	if e != nil {
+		slog.Warn("email ingest rejected", "reason", "too_large", "limit_bytes", domain.MaxEmailBytes)
 		write(w, 413, map[string]string{"message": "Email exceeds the size limit."})
 		return
 	}
 	envelope, e := s.EmailVerifier.Authenticate(r, raw, time.Now())
 	if e != nil {
+		reason := "denied"
+		var reasoned interface{ Reason() string }
+		if errors.As(e, &reasoned) {
+			reason = reasoned.Reason()
+		}
+		slog.Warn("email ingest rejected", "reason", reason, "bytes", len(raw))
 		write(w, 401, map[string]string{"message": "Email authentication failed."})
 		return
 	}
 	noteAuth(w, "email_worker")
 	id, dup, e := s.EmailIngestor.Ingest(r.Context(), envelope, raw)
 	if e != nil {
+		slog.Warn("email ingest failed", "error_code", domain.ErrorCode(e), "bytes", len(raw))
 		fail(w, e)
 		return
 	}
+	slog.Info("email ingest accepted", "capture_id", id, "duplicate", dup, "bytes", len(raw))
 	status := 201
 	if dup {
 		status = 200

@@ -1,16 +1,16 @@
 const maxBytes = 20 * 1024 * 1024;
 const encoder = new TextEncoder();
 
-function mailbox(value) {
+function mailbox(value, field) {
   const text = String(value ?? '').trim();
-  const displayed = /^(?:"[^"\r\n]*"|[^<>"\r\n]*)<([^<>\r\n]+)>$/.exec(text);
+  const displayed = /^(?:"[^"\r\n]*"\s*|[^<>"\r\n]*)<([^<>\r\n]+)>$/.exec(text);
   const address = (displayed ? displayed[1] : text).trim().toLowerCase();
   if (!/^[a-z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(address)) {
-    throw new Error('Invalid email configuration or sender.');
+    throw new Error(`Invalid ${field} address.`);
   }
   const local = address.split('@')[0];
   if (local.startsWith('.') || local.endsWith('.') || local.includes('..')) {
-    throw new Error('Invalid email configuration or sender.');
+    throw new Error(`Invalid ${field} address.`);
   }
   return address;
 }
@@ -21,7 +21,7 @@ function settings(env) {
   const allowed = raw.split(',').map(value => {
     const bare = value.trim();
     if (bare.includes('<') || bare.includes('>')) throw new Error('Use bare allowed addresses.');
-    return mailbox(bare);
+    return mailbox(bare, 'allowed sender');
   });
   const destination = new URL(env.EMAIL_INGEST_URL);
   if (destination.protocol !== 'https:' || destination.username || destination.password || destination.hash) {
@@ -31,12 +31,12 @@ function settings(env) {
   if (key.length < 32 || !env.EMAIL_ACCESS_CLIENT_ID || !env.EMAIL_ACCESS_CLIENT_SECRET) {
     throw new Error('Email credentials are incomplete.');
   }
-  return { allowed, recipient: mailbox(env.EMAIL_RECIPIENT), destination, key };
+  return { allowed, recipient: mailbox(env.EMAIL_RECIPIENT, 'configured recipient'), destination, key };
 }
 
 function authenticatedSender(message, config) {
-  const from = mailbox(message.headers.get('from'));
-  if (!config.allowed.includes(from) || mailbox(message.to) !== config.recipient) {
+  const from = mailbox(message.headers.get('from'), 'From header');
+  if (!config.allowed.includes(from) || mailbox(message.to, 'envelope recipient') !== config.recipient) {
     throw new Error('Forwarding address is not allowed.');
   }
   // Cloudflare documents its first Authentication-Results header as the trusted verdict.
@@ -100,35 +100,58 @@ export async function signedHeaders(config, envelope, bytes, timestamp, requestI
   };
 }
 
+// One JSON line per stage. Fields are counts, codes, verdicts and timings only:
+// never addresses, subjects, bodies, headers or credentials.
+function logger(id, started) {
+  return (stage, fields = {}) => {
+    const line = JSON.stringify({ event: 'email', stage, id, ms: Date.now() - started, ...fields });
+    (stage.includes('reject') || stage.includes('failed') ? console.warn : console.log)(line);
+  };
+}
+
 export async function receiveEmail(message, env, request = fetch) {
+  const started = Date.now();
+  const id = crypto.randomUUID();
+  const log = logger(id, started);
+  log('received', { raw_size: message.rawSize, has_authentication_results: message.headers.has('authentication-results') });
   let config, from, bytes;
   try {
     config = settings(env);
+    log('config_ok', { allowed_senders: config.allowed.length });
     from = authenticatedSender(message, config);
+    log('admitted', { dmarc: 'pass' });
     if (message.rawSize > maxBytes) throw new Error('Email exceeds the size limit.');
     bytes = await rawBytes(message.raw);
-  } catch {
+    log('read', { bytes: bytes.length });
+  } catch (error) {
+    log('rejected', { reason: error instanceof Error ? error.message : 'unknown' });
     message.setReject('Email configuration, sender authentication or message size is invalid.');
     return;
   }
   const headers = await signedHeaders({
     key: config.key, clientId: env.EMAIL_ACCESS_CLIENT_ID, clientSecret: env.EMAIL_ACCESS_CLIENT_SECRET,
-  }, { from, to: config.recipient, dmarc: 'pass' }, bytes, Math.floor(Date.now() / 1000), crypto.randomUUID());
+  }, { from, to: config.recipient, dmarc: 'pass' }, bytes, Math.floor(Date.now() / 1000), id);
+  const sent = Date.now();
   let response;
   try {
     response = await request(config.destination.href, {
       method: 'POST', body: bytes, headers, redirect: 'error', signal: AbortSignal.timeout(15000),
     });
-  } catch {
+  } catch (error) {
+    log('handoff_failed', { error: error?.name, detail: error?.message, handoff_ms: Date.now() - sent });
     throw new Error('Minder did not acknowledge the email. Re-forward after checking the app.');
   }
+  log('handoff', { status: response.status, handoff_ms: Date.now() - sent });
   if (response.status !== 200 && response.status !== 201) {
+    log('handoff_rejected', { status: response.status });
     throw new Error('Minder rejected the email handoff.');
   }
-  const result = await response.json();
+  const result = await response.json().catch(() => ({}));
   if (typeof result.capture_id !== 'string' || !result.capture_id) {
+    log('handoff_failed', { error: 'NoReceipt', detail: 'response had no capture_id' });
     throw new Error('Minder returned no capture receipt.');
   }
+  log('receipt', { duplicate: response.status === 200 });
 }
 
 export default { email(message, env) { return receiveEmail(message, env); } };

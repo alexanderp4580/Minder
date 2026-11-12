@@ -89,4 +89,9 @@ Follow these steps in order. Stop at the first step that fails.
 ## Email capture
 
 `email extraction completed` reports source ID, revision and candidate count. Failure and cleanup events use safe codes, never source bodies, subject lines, forwarding addresses or attachment content.
+Ingestion is traced end to end by one ID, which the Worker sends as `X-Minder-Email-ID`:
+
+- Worker (Cloudflare tail or Workers Logs): one JSON line per stage with `event=email`, `id` and `ms`. Stages: `received` (raw size, whether the trusted authentication header exists), `config_ok`, `admitted`, `read`, `handoff` (HTTP status and timing), `receipt` (duplicate flag). Failures are `rejected` (a reason naming the failing check), `handoff_failed` (error type and message) and `handoff_rejected` (status).
+- Server: `email ingest rejected` (WARN, reason code such as `bad_signature`, `bad_timestamp`, `sender_not_allowed`, `dmarc_not_pass`, `recipient_mismatch`, `too_large`), `email ingest failed` and `email ingest accepted` (capture ID, duplicate flag, byte count). The HTTP response stays generic.
+
 Use the source ID to follow ingestion through the owner review. Operational recovery: [email capture operations](email-capture-operations.md).
