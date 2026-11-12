@@ -1,7 +1,7 @@
 # Handoff
 
-State on 2026-11-12. Branch `main` at `2033008`, deployed. Branch `m0-chat` points at the same commit.
-Worktree `Minder-m0-chat` is clean.
+State on 2026-11-12. Production runs commit `2033008` from branch `main`.
+Branch `m0-chat` is merged into `main`. Worktree `Minder-m0-chat` is clean.
 
 ## Current source
 
