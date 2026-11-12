@@ -98,7 +98,13 @@ Each list or project can be opened in any view. The view choice is remembered pe
 - Extracts: title, date/time, end time, location, deadlines, reference numbers, links.
 - Handles: booking confirmations, appointments, invoices/bills (due date), deliveries, meeting invites (.ics), school/club newsletters (multiple dates).
 - The original email is kept as an attachment on the item.
-- Confirmation happens in the app before saving. Optional auto-accept when confidence is high.
+- Always review and confirm in Minder before creating or changing items. No automatic acceptance.
+- Ask follow-up questions in Minder when material details are missing or ambiguous.
+- Receive at `assistant@minder.liveleds.io` through Cloudflare Email Routing. Parse with the existing OpenRouter model setup; the owner accepts those services processing the forwarded content.
+- Accept forwards only from the required comma-separated environment parameter `EMAIL_ALLOWED_SENDERS`, with authenticated sender checks. Configure actual addresses privately through deployment environment settings. Missing or invalid configuration fails closed; no hardcoded sender addresses. The original sender inside a forward is unrestricted.
+- Use a direct Worker-to-server handoff with no temporary Cloudflare content buffer. If no capture appears in the app, the owner checks and re-forwards; offline delivery recovery is not required.
+- Parse and retain attachments as well as the original email. Include flight segments, hotel stays, booking changes and cancellations.
+- Complete subsystem specification: [email capture](superpowers/specs/2026-11-12-email-capture-design.md). Written-spec review precedes implementation planning.
 - Unparseable emails go to the Inbox with a flag.
 
 ## 6. Reminders & notifications
@@ -181,7 +187,7 @@ Each list or project can be opened in any view. The view choice is remembered pe
 - Single user. The server accepts requests only from the owner, who signs in through Cloudflare Access (§17).
 - Daily automatic backup, with export of everything to an open format (JSON + .ics).
 - Import from common task apps (CSV at minimum).
-- Clearly state which external services (if any) see email content, and allow a fully local parsing option.
+- State which external services see email content. The email capture slice uses Cloudflare and OpenRouter by owner choice; keep parsing behind a provider interface so a local adapter can follow.
 
 ## 14. Non-functional
 
@@ -206,9 +212,7 @@ Each list or project can be opened in any view. The view choice is remembered pe
 
 ## 16. Open questions
 
-- Auto-accept parsed emails above a confidence threshold, or always confirm?
 - Shared lists with others (e.g. partner) in the future?
-- Is fully local email parsing a hard requirement or a preference?
 - Do we keep Projects, now that the Kanban board shows all items?
 - What are the default reminder times, loudness and nag settings of each built-in profile?
 - Does a profile attach to an item, to a list, or to both?
@@ -238,6 +242,7 @@ Each list or project can be opened in any view. The view choice is remembered pe
 | Live updates | The open app listens to a server-sent event stream. Push through Firebase covers a closed app. Polling is the fallback if the M0 test fails |
 | Preview | A preview card never expires. Confirm fails with an error if the item changed after the preview |
 | Backup | Coolify backups of a backup directory. A daily job writes a SQLite snapshot and a JSON and .ics export into it. Backups stay on the same server |
+| Email capture | Cloudflare Email Routing at `assistant@minder.liveleds.io`; existing OpenRouter parsing; always review, retain originals/attachments, and ask follow-up questions |
 | Speech | A speech model through OpenRouter, English only. The endpoint exists; the model is chosen in M4 |
 | State management | Riverpod in the Flutter app |
 | Budget | At most €10 per month |

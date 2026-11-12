@@ -82,6 +82,7 @@ Source: https://github.com/agent0ai/dox. License: [docs/dox-license.txt](docs/do
 - Write concise English. Use active voice, familiar words and short sentences. Use stop-slop for prose.
 - Write verified facts; mark unverified claims as such. Describe current contracts rather than change history.
 - Keep secrets in TokenCrypt or process variables. Do not put credentials in files, commits, logs or chat.
+- Treat personal forwarding addresses as sensitive deployment data. Keep their values out of Git, documentation, examples and defaults; document only environment parameter names and validation rules.
 - Keep architecture boundaries small and explicit. Preserve existing behaviour during refactors.
 - Keep Cloudflare configuration and identity values out of `cmd/minder`.
 - Never add co-author trailers. Git hooks in `.githooks/` strip them; configure `core.hooksPath` in fresh clones.

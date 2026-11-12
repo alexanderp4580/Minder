@@ -16,7 +16,7 @@ Product requirements and design docs for Minder.
 - `mockups/`: HTML phone mockups of every screen with rendered PNGs (own AGENTS.md)
 - `evidence/`: local and hosted verification results, architecture checks and calendar layout checks
 - `dox-license.txt`: Agent0ai DOX MIT notice
-- `superpowers/`: approved architecture designs and execution plans
+- `superpowers/`: draft and approved subsystem/architecture designs and execution plans
 
 - `m0-execution.md`: approved execution order and checks
 
@@ -42,4 +42,4 @@ Re-read a whole doc after editing and fix contradictions. Use stop-slop for pros
 
 - `mockups/AGENTS.md`: phone mockups, shared styles and rendering
 - `evidence/AGENTS.md`: observed verification results and screenshots
-- `superpowers/AGENTS.md`: approved designs and implementation plans
+- `superpowers/AGENTS.md`: draft and approved designs, plus implementation plans

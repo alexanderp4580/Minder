@@ -1,10 +1,10 @@
 # Purpose
 
-Approved designs and implementation plans.
+Draft and approved designs, plus implementation plans.
 
 # Ownership
 
-specs/ contains architecture constraints. plans/ contains task order and acceptance checks.
+specs/ contains architecture constraints and subsystem designs. Each spec states its review status; a draft does not authorize implementation. plans/ contains task order and acceptance checks.
 
 # Local Contracts
 

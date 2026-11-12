@@ -33,6 +33,7 @@ Decided (see requirements §17):
 | Assistant | Confirm first for every request that creates or changes data |
 | Access | Public HTTPS behind Cloudflare Access with a browser sign-in. The server verifies the token |
 | Model | Claude Haiku 5.5 through OpenRouter |
+| Email capture | Cloudflare Email Routing at `assistant@minder.liveleds.io`; existing OpenRouter parsing; always review, retain originals/attachments, and ask follow-up questions |
 | Speech | A speech model through OpenRouter, English only |
 | Live updates | Server-sent events for the open app. Polling is the fallback |
 | Backup | Coolify backups of a snapshot directory |
@@ -71,6 +72,11 @@ The milestones follow the P0 list in the requirements. Sizes are not estimated y
 | M3 Chat summaries | Today, upcoming and list answers in chat. Other views only if you ask |
 | M4 Voice and Edit | Voice recording, the speech model on OpenRouter, and Edit in the preview card |
 | M5 Backup | Daily snapshot and export, Coolify backup, one tested restore |
+
+Email capture accepts authenticated forwards only from `EMAIL_ALLOWED_SENDERS`, a required comma-separated environment parameter on the Worker and Go server. Configure actual addresses privately through deployment environment settings. Missing or invalid configuration fails closed; no hardcoded sender fallback.
+Email delivery uses a direct Worker-to-server handoff without a temporary Cloudflare content buffer. The owner can re-forward if no capture appears; Minder persists and retries work after ingestion.
+
+Email capture now has an agreed direction and a [complete subsystem specification](superpowers/specs/2026-11-12-email-capture-design.md). Written-spec review and implementation planning remain pending.
 
 P1 follows: email forwarding, List, Today and Calendar views, Kanban and Table views, digests, voice capture, day/week/month summaries and phone calendar sync.
 
