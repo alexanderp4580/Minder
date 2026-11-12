@@ -310,6 +310,15 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
 .calendar-example-wrap{max-width:100%;overflow-x:auto;margin-top:24px}
 .calendar-caption{font-size:13px;color:var(--muted);margin:12px 0 0}
 
+
+/* Orbital surfaces: static halo, three slow vector ellipses. */
+.orbit-surface{position:relative;overflow:hidden;background-color:var(--void);background-image:radial-gradient(ellipse at 92% 5%,rgba(242,242,242,.075),rgba(242,242,242,.015) 43%,transparent 90%)}
+.orbit-surface > :not(.orbit-lines){position:relative;z-index:1}
+.orbit-surface > .orbit-lines{position:absolute;inset:0;width:100%;height:892px;pointer-events:none;z-index:0;fill:none;stroke:rgba(242,242,242,.12);stroke-width:.7}
+.orbit-lines g{transform-box:view-box;transform-origin:350px 160px;animation:orbit-drift 180s linear infinite}
+.orbit-chat g{transform-origin:350px 71px}
+@keyframes orbit-drift{to{rotate:360deg}}
+@media(prefers-reduced-motion:reduce){.orbit-lines g{animation:none}}
 </style>
 </head>
 <body>
@@ -514,6 +523,10 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
    <tr><td>24 px</td><td>Calendar side gutters; navigation and weekday labels.</td></tr>
    <tr><td>32 px</td><td>Major sections: screen header, month navigation and agenda.</td></tr>
   </table></div>
+  <h3>Orbital background</h3>
+  <p>Three fine neutral ellipses give each screen its own composition. Calendar uses broad orbits; Chat uses tighter arcs near the header.</p>
+  <p>Keep the halo static and rotate the lines once every 180 seconds. Cards stay opaque. Decoration does not use Signal red.</p>
+  <p>Pause motion on hidden screens and when the app is in the background. Reduced motion shows a still composition.</p>
   <h3>Calendar</h3>
   <p>Give the month a 24 px heading and the year its own 14 px line. Group the two arrows on the right.</p>
   <p>Place Today beside the agenda date. Keep it outside the month navigation group.</p>
@@ -521,7 +534,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
   <p>Give agenda cards 20 px padding, an 18 px title and 16 px between cards. Use Line for their outlines.</p>
   <p>Keep the calendar column at most 520 px wide. Use 24 px side gutters from 360 px upward.</p>
   <p>On narrower screens, reduce gutters to preserve 44 px day targets. Let the page scroll with larger text or shorter screens.</p>
-  <div class="calendar-example-wrap"><div class="calendar-layout" aria-label="Calendar spacing example">
+  <div class="calendar-example-wrap"><div class="calendar-layout orbit-surface" aria-label="Calendar spacing example"><svg class="orbit-lines orbit-calendar" viewBox="0 0 412 892" preserveAspectRatio="none" aria-hidden="true"><g><ellipse cx="350" cy="160" rx="309" ry="290" transform="rotate(-20 350 160)"/><ellipse cx="350" cy="160" rx="402" ry="379" transform="rotate(-6.9 350 160)"/><ellipse cx="350" cy="160" rx="494" ry="468" transform="rotate(6.3 350 160)"/></g></svg>
  <div class="cal-header"><div class="cal-title">CALENDAR</div><span class="cal-control" aria-label="Chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v13H9l-5 4V4Z"/></svg></span></div>
  <div class="cal-month-bar"><div><div class="cal-month">November</div><div class="cal-year">2026</div></div><div class="cal-arrows"><span class="cal-control" aria-label="Previous month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></span><span class="cal-control" aria-label="Next month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></span></div></div>
  <div class="cal-weekdays"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>

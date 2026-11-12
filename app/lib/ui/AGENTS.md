@@ -4,7 +4,7 @@ Flutter screens and presentation.
 
 # Ownership
 
-ChatScreen, CalendarScreen, EntryView, time/cost labels and Tokens.theme.
+ChatScreen, CalendarScreen, EntryView, OrbitalBackground, time/cost labels and Tokens.theme.
 
 # Local Contracts
 
@@ -13,6 +13,9 @@ Theme controls buttons, fields and standard visual density. Preserve 44 px contr
 Screens use Material icons and bundled fonts.
 CalendarTokens owns calendar dimensions. The calendar uses a centered, scrolling column with grouped month arrows and Today beside the agenda date.
 Day targets stay at least 44 px wide; row height expands for enlarged text. Calendar goldens change only with an approved design.
+
+OrbitalBackground owns decorative painting and animation lifecycle. Use distinct OrbitScene values for chat and calendar.
+Keep halo and foreground isolated from animated arc repaints. Stop motion for reduced motion, hidden routes and backgrounded apps.
 
 # Work Guidance
 

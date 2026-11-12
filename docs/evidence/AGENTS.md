@@ -4,7 +4,7 @@ Verification evidence.
 
 # Ownership
 
-M0/M1 checks, architecture evidence, calendar layout checks and generated browser screenshots.
+M0/M1 checks, architecture evidence, calendar layout checks, orbital animation/APK checks and generated browser screenshots.
 
 # Local Contracts
 

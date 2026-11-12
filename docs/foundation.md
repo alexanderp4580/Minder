@@ -83,6 +83,15 @@ The calendar follows the Layout section of the brand guide.
 - Leave 32 px between the grid and agenda, and 16 px between the agenda heading and cards.
 - Agenda cards use 20 px padding, an 18 px title and a Line outline. Leave 16 px between cards.
 
+## Orbital background
+
+- Three thin neutral ellipses sit behind the content, over a static white halo on Void.
+- Calendar uses broad, offset ellipses. Chat uses tighter arcs near the upper-right header.
+- Lines use Text at 12% opacity, with a 0.7 px stroke. The halo peaks at 7.5% opacity.
+- Rotate the ellipses over 180 seconds. The static halo and foreground have separate repaint boundaries.
+- Reduced motion keeps the composition still. Hidden routes and backgrounded apps stop animation.
+- Cards stay opaque. Background decoration does not intercept taps or add screen-reader content.
+
 ## Icons
 
 Carbon icons, pinned version @carbon/icons 11.92.0, loaded from jsDelivr. 18 to 22 px. They follow the text colour. An icon never stands alone without a label, except the gear and the microphone.
@@ -127,7 +136,7 @@ Each state needs a design before the build:
 - ? How you leave the conversation (settings, lists, board). The gear is the only exit today.
 - ? Escalating nag wording and loudness. Defaults are in requirements §16.
 - ? Whether the nag frame keeps its Done as the primary button when a preview card is also open.
-- ? Motion: the countdown ticks and the squares fill. No other motion is planned.
+- Orbital motion follows the background rules above. Countdown and progress motion remain design drafts.
 
 ## Mockup
 

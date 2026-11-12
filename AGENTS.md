@@ -89,7 +89,7 @@ Source: https://github.com/agent0ai/dox. License: [docs/dox-license.txt](docs/do
 - Current work runs inline without sub-agents. Use the existing `Minder-m0-chat` worktree on `m0-chat`.
 - Outside inline execution, delegated workers use Sonnet 5 or 5.5 unless the owner names another model.
 - Preserve unrelated edits. Do not reset, clean, discard work, merge or publish without authorization.
-- Phone approval gates merging to `main`. Keep the stopped APK 0.4.0 build stopped until the owner asks.
+- Phone approval gates merging to `main`. The owner authorized APK 0.4.0 with animated orbital backgrounds and Telegram delivery.
 - Authorized APK delivery uses the existing Telegram bot and chat. Application ID: `io.liveleds.minder`.
 - Do not change global agent settings during project work.
 

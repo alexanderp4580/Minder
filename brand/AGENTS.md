@@ -13,6 +13,7 @@ This `brand/` folder owns `index.html`, `app-icon.svg` and its PNG preview. The 
 - Signal red has five uses: focus frame, overdue or urgent state, primary action, selected or active state, live recording. Everything else is neutral. No text is below 12 px. Every control has a 44 × 44 px hit area. `--edge` is for outlines only, never text.
 - The Components section mirrors the component rules of `docs/mockups/common.css`; change both in the same edit.
 - The calendar example defines 8/16/24/32 px spacing, grouped month arrows, an inset selection frame and a scrolling agenda. Keep it aligned with Flutter and the shared mockup styles.
+- Orbital surfaces use a static neutral halo and three ellipses rotating over 180 seconds. Calendar and Chat use distinct compositions. Honour reduced motion.
 - Items not yet verified carry "to check" or "Design pending".
 - Fonts load from Google Fonts. Icons load from jsDelivr (@carbon/icons, pinned version). The primary logo is the word Minder. App launchers and OAuth consent use the M badge in `app-icon.svg`.
 

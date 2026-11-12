@@ -63,6 +63,17 @@ class PendingItems implements ItemRepository {
 }
 
 void main() {
+  setUp(() {
+    TestWidgetsFlutterBinding.ensureInitialized()
+        .platformDispatcher
+        .accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+      disableAnimations: true,
+    );
+  });
+  tearDown(() {
+    TestWidgetsFlutterBinding.instance.platformDispatcher
+        .clearAccessibilityFeaturesTestValue();
+  });
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     final icons = FontLoader('MaterialIcons')

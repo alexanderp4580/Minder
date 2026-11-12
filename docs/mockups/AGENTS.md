@@ -9,7 +9,7 @@
 - `chat.html` and `chat.png`: the chat design draft (spec in `../screens.md`); Flutter goldens record current rendering
 - `calendar.html` and `calendar.png`: the approved month grid and agenda layout. The illustrative marker sits above the app frame.
 - `today`, `today-states`, `board`, `lists`, `item`, `profiles`, `assistant`, `settings`: design drafts that do not define current app behaviour. Use `../screens.md` and the Flutter calendar golden for the implemented calendar
-- `common.css`: shared tokens and components for every mockup, including the calendar layout mirrored in the brand guide
+- `common.css`: shared tokens and components for every mockup, including calendar layout and orbital surfaces mirrored in the brand guide
 
 ## Local Contracts
 
@@ -17,6 +17,7 @@
 - Mockups use the brand tokens, fonts and Carbon icons of `../../brand/index.html`: square corners, one cut corner on the primary button. Signal red appears only for the focus frame, overdue or urgent state, the primary action, the selected or active state and live recording. No text is below 12 px and every control has a 44 × 44 px hit area
 - Data is illustrative. Each mockup shows one `.demo` tag in its status bar, or above the calendar frame. That tag is the only place the word "illustrative" appears in a mockup. Counts agree on every screen. Unknown details show as "?"
 - A file with two states shows two phones side by side (`lists`, `profiles`)
+- Chat and Calendar have distinct orbital compositions. Capture stills with reduced motion; Flutter owns app lifecycle pauses.
 - Every PNG is re-rendered after its HTML or `common.css` changes
 
 ## Work Guidance

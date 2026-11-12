@@ -14,7 +14,7 @@ The current app uses Material icons; Carbon remains a design-guide difference.
 
 # Work Guidance
 
-The runner starts in app/. Use format paths `lib test`. Keep the stopped APK build stopped.
+The runner starts in app/. Use format paths `lib test`. APK 0.4.0 with orbital backgrounds is authorized; preserve the cached signing key.
 
 # Verification
 

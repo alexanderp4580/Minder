@@ -10,6 +10,7 @@ Keep this file current until the owner merges.
 - Start, deadline, duration, priority and location fields.
 - Read-only calendar with a month grid, spaced week rows and a scrolling day agenda.
 - Theme spacing, standard visual density, shared Material styles and golden tests.
+- Animated orbital backgrounds with distinct Calendar and Chat compositions.
 - Private `/branding/` guide and public OAuth logo.
 
 The owner approved M0 and reminder delivery on a phone.
@@ -47,14 +48,28 @@ Today sits beside the agenda date. The whole page scrolls on short screens.
 Narrow-screen checks cover 320 and 360 px with 1.4× text; day targets remain at least 44 px wide.
 Evidence: [docs/evidence/calendar-spacing.md](docs/evidence/calendar-spacing.md).
 
+## Orbital backgrounds
+
+The owner chose Orbital and approved animated backgrounds for Chat and Calendar, plus APK delivery.
+`OrbitalBackground` paints three ellipses over a static halo. Each screen has its own composition.
+The arcs rotate over 180 seconds. Halo and foreground are isolated from animation repaints.
+Reduced motion keeps the scene still. Hidden routes and backgrounded apps stop ticking.
+Tests verify movement, lifecycle pauses, distinct scenes and stable foreground builds.
+Brand guide, foundation, mockups and goldens follow the approved direction.
+Phone frame timing and battery use remain unmeasured.
+Compared with the generated concept, this implementation has much dimmer arcs and less lighting depth.
+Stronger lighting and varied orbit centres are recommended refinements, outside this APK.
+
 ## Deployment and APK status
 
 The prior handoff records production commit `1c0efe9`, with calendar fields and `/branding/`.
 This review did not check the live deployment or deploy changes.
 The spacing and architecture changes remain local to `m0-chat`.
 
-APK 0.3.3 was sent through Telegram. APK 0.4.0 is not built.
-The owner stopped that build. Build it only when the owner asks.
+APK 0.4.0 with orbital backgrounds was sent through the existing Telegram bot and chat.
+Telegram confirmed document delivery. Phone approval remains pending.
+The release arm64 APK built successfully and its signing certificate matches the prior APK.
+Evidence: [docs/evidence/orbital-backgrounds.md](docs/evidence/orbital-backgrounds.md).
 
 The Coolify app is `ciw3jk5gkgiql8kfdomeyys2`.
 A Git push does not deploy. Deployment needs an explicit POST to `/deploy`.

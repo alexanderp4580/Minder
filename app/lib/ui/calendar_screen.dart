@@ -6,6 +6,7 @@ import '../application/calendar_controller.dart';
 import '../domain/item.dart';
 import 'format.dart';
 import 'tokens.dart';
+import 'orbital_background.dart';
 
 const _months = [
   'JANUARY',
@@ -71,47 +72,53 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = math.min(constraints.maxWidth, CalendarTokens.maxWidth);
-          final gutter = math.min(
-            CalendarTokens.gutter,
-            math.max(0.0, (width - 7 * Tokens.minTarget) / 2),
-          );
-          return SingleChildScrollView(
-            child: Center(
-              child: SizedBox(
-                width: width,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    gutter,
-                    Tokens.sectionGap,
-                    gutter,
-                    Tokens.blockGap,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _header(),
-                      const SizedBox(height: Tokens.blockGap),
-                      _monthBar(),
-                      const SizedBox(height: Tokens.sectionGap),
-                      _weekdayRow(),
-                      const SizedBox(height: 12),
-                      for (var w = 0; w < 6; w++) ...[
-                        if (w > 0) const SizedBox(height: Tokens.gap),
-                        _week(w),
+    body: OrbitalBackground(
+      scene: OrbitScene.calendar,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = math.min(
+              constraints.maxWidth,
+              CalendarTokens.maxWidth,
+            );
+            final gutter = math.min(
+              CalendarTokens.gutter,
+              math.max(0.0, (width - 7 * Tokens.minTarget) / 2),
+            );
+            return SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: width,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      gutter,
+                      Tokens.sectionGap,
+                      gutter,
+                      Tokens.blockGap,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _header(),
+                        const SizedBox(height: Tokens.blockGap),
+                        _monthBar(),
+                        const SizedBox(height: Tokens.sectionGap),
+                        _weekdayRow(),
+                        const SizedBox(height: 12),
+                        for (var w = 0; w < 6; w++) ...[
+                          if (w > 0) const SizedBox(height: Tokens.gap),
+                          _week(w),
+                        ],
+                        const SizedBox(height: Tokens.blockGap),
+                        _agenda(),
                       ],
-                      const SizedBox(height: Tokens.blockGap),
-                      _agenda(),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     ),
   );
