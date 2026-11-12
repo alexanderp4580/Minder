@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
+	"time"
 )
 
 var safeID = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,128}$`)
@@ -98,4 +100,48 @@ func (s *Store) DeleteSource(source string) error {
 		return e
 	}
 	return os.RemoveAll(filepath.Dir(p))
+}
+
+// Cleanup removes only stale, unreferenced source directories and interrupted writes.
+func (s *Store) Cleanup(known map[string]bool, now time.Time) error {
+	entries, e := os.ReadDir(s.root)
+	if e != nil {
+		return e
+	}
+	stale := func(info os.FileInfo) bool { return now.Sub(info.ModTime()) > 24*time.Hour }
+	for _, entry := range entries {
+		if !entry.IsDir() || !safeID.MatchString(entry.Name()) {
+			continue
+		}
+		path := filepath.Join(s.root, entry.Name())
+		info, e := entry.Info()
+		if e != nil {
+			return e
+		}
+		if !known[entry.Name()] && stale(info) {
+			if e = os.RemoveAll(path); e != nil {
+				return e
+			}
+			continue
+		}
+		files, e := os.ReadDir(path)
+		if e != nil {
+			return e
+		}
+		for _, file := range files {
+			if !strings.HasPrefix(file.Name(), ".write-") || file.IsDir() {
+				continue
+			}
+			info, e := file.Info()
+			if e != nil {
+				return e
+			}
+			if stale(info) {
+				if e = os.Remove(filepath.Join(path, file.Name())); e != nil {
+					return e
+				}
+			}
+		}
+	}
+	return nil
 }

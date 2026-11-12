@@ -24,13 +24,14 @@ type Invalid struct {
 func (e *Invalid) Error() string { return e.Message }
 
 type Item struct {
-	Kind          string `json:"kind,omitempty"`
-	EndAt         string `json:"end_at,omitempty"`
-	StartTimezone string `json:"start_timezone,omitempty"`
-	EndTimezone   string `json:"end_timezone,omitempty"`
-	StartDate     string `json:"start_date,omitempty"`
-	EndDate       string `json:"end_date,omitempty"`
-	DueDate       string `json:"due_date,omitempty"`
+	SourceIDs     []string `json:"source_ids,omitempty"`
+	Kind          string   `json:"kind,omitempty"`
+	EndAt         string   `json:"end_at,omitempty"`
+	StartTimezone string   `json:"start_timezone,omitempty"`
+	EndTimezone   string   `json:"end_timezone,omitempty"`
+	StartDate     string   `json:"start_date,omitempty"`
+	EndDate       string   `json:"end_date,omitempty"`
+	DueDate       string   `json:"due_date,omitempty"`
 
 	StartAt         string      `json:"start_at,omitempty"`
 	DurationMinutes int         `json:"duration_minutes,omitempty"`
@@ -118,7 +119,8 @@ type Change struct {
 	UndoID    string  `json:"undo_id,omitempty"`
 }
 type Entry struct {
-	Capture *Capture `json:"capture,omitempty"`
+	CaptureID string   `json:"capture_id,omitempty"`
+	Capture   *Capture `json:"capture,omitempty"`
 
 	CostEUR   float64   `json:"cost_eur,omitempty"`
 	Reminder  *Reminder `json:"reminder,omitempty"`

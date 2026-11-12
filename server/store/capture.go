@@ -138,7 +138,7 @@ func (t *Tx) QueueCaptureNotifications(id string, revision int) error {
 	return e
 }
 func (s *Store) CaptureDeliveries(now time.Time) ([]domain.CaptureDelivery, error) {
-	rows, e := s.db.Query("SELECT n.source_id,n.revision,n.device_id,d.token FROM capture_push n JOIN push_device d ON d.id=n.device_id JOIN capture c ON c.id=n.source_id WHERE n.sent=0 AND n.next_at<=? AND coalesce(json_extract(c.body,'$.deleted'),0)=0", now.Unix())
+	rows, e := s.db.Query("SELECT n.source_id,n.revision,n.device_id,d.token FROM capture_push n JOIN push_device d ON d.id=n.device_id JOIN capture c ON c.id=n.source_id WHERE n.sent=0 AND n.next_at<=? AND coalesce(json_extract(c.body,'$.deleted'),0)=0 AND json_extract(c.body,'$.status') IN ('needs-answer','ready-for-review') AND n.revision=json_extract(c.body,'$.revision')", now.Unix())
 	if e != nil {
 		return nil, e
 	}
@@ -167,4 +167,57 @@ func (s *Store) FinishCaptureDelivery(d domain.CaptureDelivery, invalid bool, ne
 }
 func (s *Store) DeletedCaptures() ([]domain.Capture, error) {
 	return queryAll[domain.Capture](s.db, "SELECT body FROM capture WHERE json_extract(body,'$.deleted')=1 AND coalesce(json_extract(body,'$.files_deleted'),0)=0")
+}
+
+func (s *Store) CaptureIDs() (map[string]bool, error) {
+	rows, e := s.db.Query("SELECT id FROM capture")
+	if e != nil {
+		return nil, e
+	}
+	defer rows.Close()
+	known := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if e = rows.Scan(&id); e != nil {
+			return nil, e
+		}
+		known[id] = true
+	}
+	return known, rows.Err()
+}
+
+func (s *Store) PendingEmailCandidates(exclude string) ([]domain.CaptureCandidate, error) {
+	sources, e := queryAll[domain.Capture](s.db, "SELECT body FROM capture WHERE id<>? AND coalesce(json_extract(body,'$.deleted'),0)=0 ORDER BY rowid DESC LIMIT 200", exclude)
+	if e != nil {
+		return nil, e
+	}
+	out := []domain.CaptureCandidate{}
+	for _, source := range sources {
+		for _, candidate := range source.Candidates {
+			if candidate.State == "pending" || candidate.State == "needs-answer" {
+				out = append(out, candidate)
+				if len(out) >= 50 {
+					return out, nil
+				}
+			}
+		}
+	}
+	return out, nil
+}
+
+func (s *Store) itemSourceIDs(item string) ([]string, error) {
+	rows, e := s.db.Query("SELECT link.source_id FROM item_source link JOIN capture c ON c.id=link.source_id WHERE link.item_id=? AND coalesce(json_extract(c.body,'$.deleted'),0)=0 ORDER BY link.source_id", item)
+	if e != nil {
+		return nil, e
+	}
+	defer rows.Close()
+	out := []string{}
+	for rows.Next() {
+		var id string
+		if e = rows.Scan(&id); e != nil {
+			return nil, e
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
 }

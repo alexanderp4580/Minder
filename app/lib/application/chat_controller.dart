@@ -40,7 +40,7 @@ class ChatController extends ChangeNotifier {
       _entries[index] = e;
     }
     if (e.cursor > cursor) cursor = e.cursor;
-    if (e.kind != EntryKind.user) {
+    if (e.kind != EntryKind.user && e.captureId.isEmpty) {
       waiting = false;
     }
     connected = true;
@@ -129,6 +129,11 @@ class ChatController extends ChangeNotifier {
     } catch (e) {
       _failed(e);
     }
+    _notify();
+  }
+
+  void receiveCaptureEntry(Entry entry) {
+    _merge(entry);
     _notify();
   }
 

@@ -31,3 +31,27 @@ func TestEventPreviewConfirm(t *testing.T) {
 		t.Fatal("undo failed")
 	}
 }
+
+func TestChangingEventEndRecomputesDerivedDuration(t *testing.T) {
+	commands, db := setup(t)
+	created, e := commands.Preview(domain.Proposal{Action: "create_item", Title: "Flight", Kind: "event", StartAt: "2026-11-12T09:00:00Z", EndAt: "2026-11-12T10:00:00Z"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = commands.Confirm(created.Change.ID); e != nil {
+		t.Fatal(e)
+	}
+	items, _ := db.Items()
+	item := items[0]
+	updated, e := commands.Preview(domain.Proposal{Action: "update_item", ItemID: item.ID, ExpectedVersion: item.Version, EndAt: "2026-11-12T11:00:00Z"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = commands.Confirm(updated.Change.ID); e != nil {
+		t.Fatal(e)
+	}
+	items, _ = db.Items()
+	if items[0].DurationMinutes != 120 {
+		t.Fatal("old derived duration retained", items[0].DurationMinutes)
+	}
+}

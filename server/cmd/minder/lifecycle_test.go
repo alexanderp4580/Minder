@@ -41,3 +41,23 @@ func TestServeWaitsForWorkerShutdown(t *testing.T) {
 		t.Fatal("server did not stop")
 	}
 }
+
+func TestAllWorkersStopBeforeReturning(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	started := make(chan struct{}, 2)
+	stopped := make(chan struct{}, 2)
+	worker := func(ctx context.Context) { started <- struct{}{}; <-ctx.Done(); stopped <- struct{}{} }
+	done := make(chan struct{})
+	go func() { runWorkers(ctx, worker, worker); close(done) }()
+	<-started
+	<-started
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("workers did not stop")
+	}
+	if len(stopped) != 2 {
+		t.Fatal("returned before workers finished")
+	}
+}

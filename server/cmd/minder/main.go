@@ -16,9 +16,13 @@ import (
 	"github.com/alexanderp4580/Minder/server/access"
 	"github.com/alexanderp4580/Minder/server/api"
 	"github.com/alexanderp4580/Minder/server/assistant"
+	"github.com/alexanderp4580/Minder/server/capture"
 	"github.com/alexanderp4580/Minder/server/command"
 	"github.com/alexanderp4580/Minder/server/config"
 	"github.com/alexanderp4580/Minder/server/conversation"
+	"github.com/alexanderp4580/Minder/server/mailauth"
+	"github.com/alexanderp4580/Minder/server/mailfiles"
+	"github.com/alexanderp4580/Minder/server/mailparse"
 	"github.com/alexanderp4580/Minder/server/openrouter"
 	"github.com/alexanderp4580/Minder/server/push"
 	"github.com/alexanderp4580/Minder/server/reminder"
@@ -79,12 +83,33 @@ func run(logger *slog.Logger) error {
 		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 	worker := &reminder.Worker{Repository: database, Scheduler: reminders}
+	var emailService *capture.Service
+	if settings.Email.Enabled {
+		verifier, e := mailauth.FromEnvironment(os.Getenv)
+		if e != nil {
+			return e
+		}
+		files, e := mailfiles.New(settings.Email.SourceDir)
+		if e != nil {
+			return errors.New("Email source storage is unavailable")
+		}
+		emailService = capture.New(database, files, assistantService)
+		emailService.Parser = &mailparse.Parser{}
+		emailService.Preview = command.PreviewIn
+		handler.EmailVerifier = verifier
+		handler.EmailIngestor = emailService
+		handler.Captures = emailService
+		slog.Info("email capture configured", "enabled", true)
+	}
 	if raw := settings.FirebaseServiceAccount; raw != "" {
 		sender, err := push.NewFCM(raw)
 		if err != nil {
 			return errors.New("Firebase service account configuration is invalid")
 		}
 		worker.Sender = sender
+		if emailService != nil {
+			emailService.Sender = sender
+		}
 		slog.Info("firebase push configured", "project_id", sender.ProjectID)
 		pushConfig, err := api.ParsePushConfig(settings.FirebaseAndroidConfig)
 		if err != nil || pushConfig == nil || pushConfig.ProjectID != sender.ProjectID {
@@ -99,5 +124,9 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 	slog.Info("Minder listening", "addr", listener.Addr().String())
-	return serve(ctx, srv, listener, worker.Run)
+	workers := []func(context.Context){worker.Run}
+	if emailService != nil {
+		workers = append(workers, emailService.Run)
+	}
+	return serve(ctx, srv, listener, func(ctx context.Context) { runWorkers(ctx, workers...) })
 }

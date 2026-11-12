@@ -104,7 +104,7 @@ Each list or project can be opened in any view. The view choice is remembered pe
 - Accept forwards only from the required comma-separated environment parameter `EMAIL_ALLOWED_SENDERS`, with authenticated sender checks. Configure actual addresses privately through deployment environment settings. Missing or invalid configuration fails closed; no hardcoded sender addresses. The original sender inside a forward is unrestricted.
 - Use a direct Worker-to-server handoff with no temporary Cloudflare content buffer. If no capture appears in the app, the owner checks and re-forwards; offline delivery recovery is not required.
 - Parse and retain attachments as well as the original email. Include flight segments, hotel stays, booking changes and cancellations.
-- Complete subsystem specification: [email capture](superpowers/specs/2026-11-12-email-capture-design.md). Written-spec review precedes implementation planning.
+- Complete subsystem specification: [email capture](superpowers/specs/2026-11-12-email-capture-design.md). The owner approved implementation; local verification and rollout limits are recorded in [evidence](evidence/email-capture.md).
 - Unparseable emails go to the Inbox with a flag.
 
 ## 6. Reminders & notifications

@@ -1,7 +1,7 @@
 # Handoff
 
 State on 2026-11-12. Production runs commit `2033008` from branch `main`.
-Branch `m0-chat` is merged into `main`. Worktree `Minder-m0-chat` is clean.
+Branch `m0-chat` is merged into `main`. Local email work is on `notification-body-tap`; it is not merged or deployed.
 
 ## Current source
 
@@ -64,6 +64,19 @@ Phone frame timing and battery use remain unmeasured.
 The owner approved reconstructing the artwork and moving highlights along its fixed paths.
 The SVGs own geometry and lighting; toolchain/export-orbits.py keeps Flutter and HTML exports aligned.
 The calendar spacing and opaque cards remain unchanged.
+
+## Email capture implementation
+
+Local app version: 0.5.0+18 on `notification-body-tap`. Production remains `2033008`; no email infrastructure is live.
+The owner approved the specification and inline implementation. The Worker, Go ingestion/parser/review pipeline, Flutter review flow and deployment runbook are present.
+
+Minder retains originals and attachments, asks targeted follow-up questions and requires Confirm for each item change. Travel items preserve both time zones and hotel checkout dates. Sources remain accessible from calendar items.
+The Worker delivers directly to Minder without a Cloudflare content buffer. Both ends require private `EMAIL_ALLOWED_SENDERS` configuration and aligned sender authentication; source values stay outside Git.
+
+Verification and limits: [email capture evidence](docs/evidence/email-capture.md).
+Activation, private environment parameters, persistence and rollback: [operations](docs/email-capture-operations.md).
+Live Cloudflare/DNS/Access setup, provider account readback and phone approval remain pending. No emulator is available for native attachment opening.
+Keep the branch for phone review; preserve the earlier keyboard and notification work.
 
 ## Navigation, header and composer
 
@@ -140,8 +153,7 @@ Run `toolchain/check` from the worktree root. Individual checks include:
 - `toolchain/run flutter dart format --set-exit-if-changed lib test`
 - Build web, then run chat, reminder and calendar browser checks.
 
-`toolchain/local-check` needs `toolchain/model_fixture.py` on port 8181.
-The reminder and calendar scripts start their own fixture. Run these checks in sequence.
+The chat, reminder, calendar and email browser scripts start their own isolated fixtures. Run them in sequence.
 
 ## Secrets and access
 

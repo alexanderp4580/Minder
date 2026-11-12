@@ -1,3 +1,5 @@
+import 'capture.dart';
+
 /// The kinds of chat entry the server sends.
 abstract final class EntryKind {
   static const user = 'user',
@@ -54,6 +56,8 @@ class Entry {
     required this.text,
     required this.createdAt,
     this.change,
+    this.capture,
+    this.captureId = '',
     this.reminder,
     this.costEur = 0,
   });
@@ -61,6 +65,8 @@ class Entry {
   final String id, kind, text;
   final int cursor;
   final DateTime createdAt;
+  final Capture? capture;
+  final String captureId;
   final Change? change;
   final ReminderInfo? reminder;
   final double costEur;

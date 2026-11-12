@@ -76,7 +76,7 @@ The milestones follow the P0 list in the requirements. Sizes are not estimated y
 Email capture accepts authenticated forwards only from `EMAIL_ALLOWED_SENDERS`, a required comma-separated environment parameter on the Worker and Go server. Configure actual addresses privately through deployment environment settings. Missing or invalid configuration fails closed; no hardcoded sender fallback.
 Email delivery uses a direct Worker-to-server handoff without a temporary Cloudflare content buffer. The owner can re-forward if no capture appears; Minder persists and retries work after ingestion.
 
-Email capture now has an agreed direction and a [complete subsystem specification](superpowers/specs/2026-11-12-email-capture-design.md). The owner approved implementation; the [implementation plan](superpowers/plans/2026-11-12-email-capture.md) is complete for review. Code execution and live provisioning have not started.
+The owner approved the [email capture specification](superpowers/specs/2026-11-12-email-capture-design.md) and [implementation plan](superpowers/plans/2026-11-12-email-capture.md). Local code and the deployment package are complete. See [verification and remaining live checks](evidence/email-capture.md). Cloudflare provisioning and production activation remain pending.
 
 P1 follows: email forwarding, List, Today and Calendar views, Kanban and Table views, digests, voice capture, day/week/month summaries and phone calendar sync.
 

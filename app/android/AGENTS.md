@@ -16,6 +16,8 @@ Done and Snooze send a broadcast to `ReminderActionReceiver`. `BackgroundAction`
 Debug builds allow plain HTTP to localhost, 127.0.0.1 and 10.0.2.2 for emulator checks (`src/debug`).
 Generate launcher icons from brand/app-icon.svg; do not hand-edit generated icon files.
 
+The minder/attachments channel opens authenticated downloads from a narrowly scoped cache FileProvider and reports the device timezone. Capture review notifications use generic copy and open chat; reminder body/button behaviour stays unchanged.
+
 # Work Guidance
 
 Preserve the cached debug signing key for installable updates. Native checks use disposable emulators only.

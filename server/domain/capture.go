@@ -116,7 +116,7 @@ func (c *Capture) UpdateReviewState() {
 	}
 	if needs {
 		c.Status = "needs-answer"
-	} else if !active {
+	} else if !active && len(c.Candidates) > 0 {
 		c.Status = "reviewed"
 	}
 }

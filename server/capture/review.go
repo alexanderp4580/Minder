@@ -11,12 +11,12 @@ import (
 )
 
 func (s *Service) Answer(ctx context.Context, id string, revision int, text string) (domain.Entry, error) {
-	return s.answer(ctx, id, revision, text, false)
+	return s.answer(ctx, id, revision, text, false, "")
 }
 func (s *Service) Acknowledge(ctx context.Context, id string, revision int) (domain.Entry, error) {
-	return s.answer(ctx, id, revision, "Continue with the readable content.", true)
+	return s.answer(ctx, id, revision, "Continue with the readable content.", true, "")
 }
-func (s *Service) answer(ctx context.Context, id string, revision int, text string, ack bool) (out domain.Entry, err error) {
+func (s *Service) answer(ctx context.Context, id string, revision int, text string, ack bool, target string) (out domain.Entry, err error) {
 	text = strings.TrimSpace(text)
 	if utf8.RuneCountInString(text) < 1 || utf8.RuneCountInString(text) > 4000 {
 		return out, &domain.Invalid{Field: "answer", Message: "Use an answer with 1 to 4,000 characters."}
@@ -29,14 +29,25 @@ func (s *Service) answer(ctx context.Context, id string, revision int, text stri
 		if c.Deleted || c.Revision != revision || c.Status == "processing" || c.Status == "received" || c.Status == "reviewed" {
 			return domain.ErrConflict
 		}
-		c.Answers = append(c.Answers, domain.CaptureAnswer{Revision: revision, Text: text})
+		if target != "" {
+			found := false
+			for _, candidate := range c.Candidates {
+				if candidate.ID == target && (candidate.State == "pending" || candidate.State == "needs-answer") {
+					found = true
+				}
+			}
+			if !found {
+				return domain.ErrConflict
+			}
+		}
+		c.Answers = append(c.Answers, domain.CaptureAnswer{Revision: revision, CandidateID: target, Text: text})
 		c.Revision++
 		if ack {
 			c.CoverageAcknowledged = true
 		}
 		for n := range c.Candidates {
 			candidate := &c.Candidates[n]
-			if candidate.State == "confirmed" || candidate.State == "discarded" || candidate.State == "pending" {
+			if candidate.State == "confirmed" || candidate.State == "discarded" || candidate.State == "superseded" || (target != "" && candidate.ID != target) || (target == "" && candidate.State == "pending") {
 				continue
 			}
 			candidate.State = "superseded"
@@ -118,3 +129,7 @@ func (s *Service) Attachment(id, attachmentID string) (io.ReadCloser, domain.Cap
 
 // Reserved for typed non-transient extraction failures.
 var ErrDocument = errors.New("The email could not be parsed. The original is available.")
+
+func (s *Service) AnswerCandidate(ctx context.Context, id string, revision int, candidateID, text string) (domain.Entry, error) {
+	return s.answer(ctx, id, revision, text, false, candidateID)
+}

@@ -16,7 +16,7 @@ GO = {
     'push': set(), 'access': set(), 'config': set(),
     'api': {'domain', 'conversation'},
     'cmd/minder': {'domain', 'access', 'api', 'assistant', 'command', 'config',
-                   'conversation', 'openrouter', 'push', 'reminder', 'store'},
+                   'conversation', 'openrouter', 'push', 'reminder', 'store', 'capture', 'mailauth', 'mailfiles', 'mailparse'},
 }
 INNER = {'domain', 'port', 'command', 'assistant', 'reminder', 'conversation', 'capture'}
 INFRASTRUCTURE = {'net', 'database/sql', 'os', 'syscall'}

@@ -30,7 +30,7 @@ class CalendarController extends ChangeNotifier {
 
   DateTime get today => _day(_now());
   List<Item> itemsOn(DateTime day) {
-    final out = _items.where((i) => _day(i.placedAt!) == _day(day)).toList()
+    final out = _items.where((i) => i.occursOn(day)).toList()
       ..sort((a, b) => a.placedAt!.compareTo(b.placedAt!));
     return out;
   }

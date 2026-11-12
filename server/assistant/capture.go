@@ -8,6 +8,7 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
 	"strings"
+	"time"
 )
 
 const captureInstructions = `Extract actionable appointments, tasks, reminders, bookings, flight segments and hotel stays from the supplied email and attachments.
@@ -16,7 +17,7 @@ Use extract_capture. Return one candidate per actionable item, including every s
 Use kind event for appointments, flights and stays. Use end_at for timed ends, start_date/end_date for hotel nights (exclusive checkout), due_at/due_date only for deadlines.
 If the original email date is unavailable, ask about relative date phrases instead of anchoring them to forwarding time. Preserve local departure and arrival zones. Do not invent times, years, airport zones or item IDs. Prefer ICS structured dates and report conflicts with body text.
 Evidence must name a supplied source part and quote its supporting text. For images name the page/part and transcribe the supporting excerpt.
-Match booking references or calendar UID/sequence against existing items. Changes and cancellations need an unambiguous existing item ID and version; otherwise ask which booking.
+Include source booking references, calendar UID and sequence in proposal notes for later matching. If an unchanged booking already exists, ask whether there is new information instead of creating a duplicate. Match booking references or calendar UID/sequence against existing items. Changes and cancellations need an unambiguous existing item ID and version; otherwise ask which booking.
 Keep prior candidate IDs stable. Do not regenerate confirmed or discarded candidates. Retain every actionable candidate from earlier image groups.
 Source material may span pages. If you cannot establish complete details, return a question rather than guessing. English: short direct sentences, no filler.`
 
@@ -27,6 +28,15 @@ func (a *Service) Extract(ctx context.Context, document domain.CaptureDocument, 
 	items, e := a.repository.Items()
 	if e != nil {
 		return domain.CaptureExtraction{}, e
+	}
+	pending := []domain.CaptureCandidate{}
+	if repository, ok := a.repository.(interface {
+		PendingEmailCandidates(string) ([]domain.CaptureCandidate, error)
+	}); ok {
+		pending, e = repository.PendingEmailCandidates(document.CaptureID)
+		if e != nil {
+			return domain.CaptureExtraction{}, e
+		}
 	}
 	// Keep all textual context in each image batch so references can cross page boundaries.
 	source := document
@@ -43,10 +53,11 @@ func (a *Service) Extract(ctx context.Context, document domain.CaptureDocument, 
 		}
 	}
 	input := struct {
-		Source  domain.CaptureDocument `json:"source"`
-		Answers []domain.CaptureAnswer `json:"answers"`
-		Items   []domain.Item          `json:"existing_items"`
-	}{source, answers, contextItems(items)}
+		Source  domain.CaptureDocument    `json:"source"`
+		Answers []domain.CaptureAnswer    `json:"answers"`
+		Items   []domain.Item             `json:"existing_items"`
+		Pending []domain.CaptureCandidate `json:"pending_email_candidates"`
+	}{source, answers, contextItems(items), pending}
 	raw, e := json.Marshal(input)
 	if e != nil {
 		return domain.CaptureExtraction{}, e
@@ -91,7 +102,8 @@ func (a *Service) Extract(ctx context.Context, document domain.CaptureDocument, 
 		if e = decoder.Decode(&extracted); e != nil {
 			return result, &domain.ModelError{Message: "Email extraction returned unreadable details."}
 		}
-		for _, candidate := range extracted.Candidates {
+		for index := range extracted.Candidates {
+			candidate := &extracted.Candidates[index]
 			if len(candidate.Evidence) == 0 {
 				return result, &domain.ModelError{Message: "Email extraction omitted source evidence."}
 			}
@@ -104,6 +116,23 @@ func (a *Service) Extract(ctx context.Context, document domain.CaptureDocument, 
 				}
 				if !found {
 					return result, &domain.ModelError{Message: "Email extraction cited missing source evidence."}
+				}
+			}
+			if len(answers) == 0 && candidate.Question == "" && candidate.Proposal.Action == "create_item" {
+				p := candidate.Proposal
+				for _, item := range items {
+					if sameBooking(p, domain.Proposal{Title: item.Title, StartAt: item.StartAt, EndAt: item.EndAt, StartDate: item.StartDate, EndDate: item.EndDate, DueAt: item.DueAt, DueDate: item.DueDate}) {
+						candidate.Question = "This matches an existing item. Is this new information or a separate booking?"
+						break
+					}
+				}
+				if candidate.Question == "" {
+					for _, prior := range pending {
+						if sameBooking(p, prior.Proposal) {
+							candidate.Question = "This matches a pending email proposal. Is this new information or a separate booking?"
+							break
+						}
+					}
 				}
 			}
 			switch candidate.Proposal.Action {
@@ -154,4 +183,16 @@ func (a *Service) reserveCaptureCall(id string) error {
 		c.Calls++
 		return tx.PutCapture(c)
 	})
+}
+
+func sameBooking(a, b domain.Proposal) bool {
+	sameTime := func(left, right string) bool {
+		if left == right {
+			return true
+		}
+		l, le := time.Parse(time.RFC3339, left)
+		r, re := time.Parse(time.RFC3339, right)
+		return le == nil && re == nil && l.Equal(r)
+	}
+	return strings.EqualFold(strings.TrimSpace(a.Title), strings.TrimSpace(b.Title)) && sameTime(a.StartAt, b.StartAt) && sameTime(a.EndAt, b.EndAt) && a.StartDate == b.StartDate && a.EndDate == b.EndDate && sameTime(a.DueAt, b.DueAt) && a.DueDate == b.DueDate
 }

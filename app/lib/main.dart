@@ -138,7 +138,10 @@ class _MinderAppState extends ConsumerState<MinderApp>
               unawaited(calendar.goToday());
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => CalendarScreen(controller: calendar),
+                  builder: (_) => CalendarScreen(
+                    controller: calendar,
+                    sourceRepository: ref.read(apiProvider),
+                  ),
                 ),
               );
             },

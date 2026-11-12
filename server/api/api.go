@@ -68,6 +68,7 @@ func New(s Queries, c Commands, messages Messages, reminders ReminderActions, v 
 	})
 	srv.public.HandleFunc("GET "+logoPath, serveLogo)
 	m := http.NewServeMux()
+	m.HandleFunc("POST /v1/email/ingest", srv.ingestEmail)
 	m.HandleFunc("GET /v1/captures/{id}", srv.getCapture)
 	m.HandleFunc("POST /v1/captures/{id}/answers", srv.answerCapture)
 	m.HandleFunc("POST /v1/captures/{id}/retry", srv.retryCapture)
@@ -209,7 +210,7 @@ func (s *Server) items(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	note(w, "from", from.Format(time.RFC3339), "to", to.Format(time.RFC3339), "items", len(items))
-	write(w, http.StatusOK, items)
+	write(w, http.StatusOK, calendarResponse(items))
 }
 
 // confirm applies a preview. If the item changed since, it answers 409 with a fresh preview.

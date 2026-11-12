@@ -144,7 +144,7 @@ func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 	}
 	fields := itemFields(t, old, after)
 	var e error
-	*out, e = t.PutEntry(domain.Entry{Kind: "preview", Text: "Review this change.", Change: &domain.Change{ID: id, Action: p.Action, ItemTitle: after.Title, Fields: fields, State: "pending"}})
+	*out, e = t.PutEntry(domain.Entry{CaptureID: p.CaptureID, Kind: "preview", Text: "Review this change.", Change: &domain.Change{ID: id, Action: p.Action, ItemTitle: after.Title, Fields: fields, State: "pending"}})
 	if e != nil {
 		return e
 	}
@@ -203,7 +203,7 @@ func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 		if _, e = t.PutEntry(preview); e != nil {
 			return e
 		}
-		out, e = t.PutEntry(domain.Entry{Kind: "result", Text: "Saved: " + p.After.Title + ".", Change: &domain.Change{ID: p.ID, Action: p.Proposal.Action, ItemTitle: p.After.Title, Fields: preview.Change.Fields, State: "confirmed", UndoID: audit.ID}})
+		out, e = t.PutEntry(domain.Entry{CaptureID: p.Proposal.CaptureID, Kind: "result", Text: "Saved: " + p.After.Title + ".", Change: &domain.Change{ID: p.ID, Action: p.Proposal.Action, ItemTitle: p.After.Title, Fields: preview.Change.Fields, State: "confirmed", UndoID: audit.ID}})
 		if e != nil {
 			return e
 		}

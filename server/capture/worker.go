@@ -11,6 +11,22 @@ import (
 )
 
 func (s *Service) Run(ctx context.Context) {
+	if repository, ok := s.repository.(interface {
+		CaptureIDs() (map[string]bool, error)
+	}); ok {
+		if files, ok := s.files.(interface {
+			Cleanup(map[string]bool, time.Time) error
+		}); ok {
+			known, err := repository.CaptureIDs()
+			if err == nil {
+				err = files.Cleanup(known, time.Now())
+			}
+			if err != nil {
+				slog.Warn("email orphan cleanup failed")
+			}
+		}
+	}
+
 	timer := time.NewTicker(time.Second)
 	defer timer.Stop()
 	for {
@@ -31,6 +47,10 @@ func (s *Service) Run(ctx context.Context) {
 	}
 }
 func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
+	parent := ctx
+	if err := parent.Err(); err != nil {
+		return err
+	}
 	c, e := s.repository.ClaimCapture(now)
 	if errors.Is(e, domain.ErrNotFound) {
 		return nil
@@ -40,31 +60,56 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 	}
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
+	failed := func(cause error, permanent bool) error {
+		if parent.Err() != nil {
+			if err := s.releaseClaim(c); err != nil {
+				return err
+			}
+			return parent.Err()
+		}
+		return s.fail(c, now, cause, permanent)
+	}
 	if s.Parser == nil || s.extractor == nil || s.Preview == nil {
-		return s.fail(c, now, ErrDocument, true)
+		return failed(ErrDocument, true)
 	}
 	f, e := s.files.Open(c.ID, "original")
 	if e != nil {
-		return s.fail(c, now, e, false)
+		return failed(e, false)
 	}
 	document, e := s.Parser.Parse(ctx, f)
 	f.Close()
 	if e != nil {
-		return s.fail(c, now, ErrDocument, true)
+		return failed(ErrDocument, true)
 	}
-	for _, part := range document.Parts {
-		if part.Attachment {
-			if _, _, e = s.files.Save(ctx, c.ID, part.ID, bytes.NewReader(part.Data), 10<<20); e != nil {
-				return s.fail(c, now, e, false)
+	e = s.repository.Transact(func(tx port.Transaction) error {
+		current, err := tx.Capture(c.ID)
+		if err != nil {
+			return err
+		}
+		if current.Deleted || current.Revision != c.Revision || current.LeaseUntil != c.LeaseUntil {
+			return domain.ErrConflict
+		}
+		// Serialize file publication against deletion so cleanup cannot race a later write.
+		for _, part := range document.Parts {
+			if part.Attachment {
+				if _, _, err = s.files.Save(ctx, c.ID, part.ID, bytes.NewReader(part.Data), 10<<20); err != nil {
+					return err
+				}
 			}
 		}
+		return nil
+	})
+	if e != nil {
+		return failed(e, false)
 	}
+
 	document.CaptureID = c.ID
 	document.PreviousCandidates = c.Candidates
 	extraction, e := s.extractor.Extract(ctx, document, c.Answers)
 	if e != nil {
-		return s.fail(c, now, e, errors.Is(e, domain.ErrLimit))
+		return failed(e, errors.Is(e, domain.ErrLimit))
 	}
+	slog.Info("email extraction completed", "source_id", c.ID, "revision", c.Revision, "candidates", len(extraction.Candidates))
 	e = s.repository.Transact(func(tx port.Transaction) error {
 		current, e := tx.Capture(c.ID)
 		if e != nil {
@@ -86,6 +131,23 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		for _, candidate := range current.Candidates {
 			if candidate.State == "confirmed" || candidate.State == "discarded" {
 				terminal[candidate.ID] = true
+			}
+		}
+		previousByID := map[string]domain.CaptureCandidate{}
+		for _, candidate := range current.Candidates {
+			previousByID[candidate.ID] = candidate
+		}
+		returned := map[string]bool{}
+		for n, candidate := range extraction.Candidates {
+			id := candidate.ID
+			if id == "" {
+				id = stableCandidateID(candidate, n)
+			}
+			returned[id] = true
+		}
+		for id, candidate := range previousByID {
+			if candidate.State == "superseded" && !returned[id] {
+				return &domain.ModelError{Message: "The model omitted an item awaiting clarification."}
 			}
 		}
 		for n, candidate := range extraction.Candidates {
@@ -145,7 +207,7 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		return e
 	})
 	if e != nil {
-		return s.fail(c, now, e, false)
+		return failed(e, false)
 	}
 	return nil
 }
@@ -243,4 +305,20 @@ func (s *Service) deliverNotifications(ctx context.Context, now time.Time) error
 		}
 	}
 	return nil
+}
+
+func (s *Service) releaseClaim(claim domain.Capture) error {
+	return s.repository.Transact(func(tx port.Transaction) error {
+		current, e := tx.Capture(claim.ID)
+		if e != nil {
+			return e
+		}
+		if current.Deleted || current.Revision != claim.Revision || current.LeaseUntil != claim.LeaseUntil {
+			return nil
+		}
+		current.Status = "received"
+		current.LeaseUntil = 0
+		current.NextAt = 0
+		return tx.PutCapture(current)
+	})
 }

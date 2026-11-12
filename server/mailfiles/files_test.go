@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestOriginalBytesAndPaths(t *testing.T) {
@@ -34,5 +37,26 @@ func TestOriginalBytesAndPaths(t *testing.T) {
 	}
 	if _, e = s.Open("source", "original"); e == nil {
 		t.Fatal("deleted content accessible")
+	}
+}
+
+func TestStaleUnreferencedFilesAreRemoved(t *testing.T) {
+	root := t.TempDir()
+	files, e := New(root)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, _, e = files.SaveOriginal(context.Background(), "orphan", bytes.NewBufferString("mail")); e != nil {
+		t.Fatal(e)
+	}
+	old := time.Now().Add(-48 * time.Hour)
+	if e = os.Chtimes(filepath.Join(root, "orphan"), old, old); e != nil {
+		t.Fatal(e)
+	}
+	if e = files.Cleanup(map[string]bool{}, time.Now()); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = files.Open("orphan", "original"); e == nil {
+		t.Fatal("orphan retained")
 	}
 }

@@ -1,3 +1,6 @@
+import '../domain/capture_repository.dart';
+import 'item_sources.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -48,7 +51,12 @@ String _duration(int minutes) {
 String _two(int n) => n.toString().padLeft(2, '0');
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key, required this.controller});
+  const CalendarScreen({
+    super.key,
+    required this.controller,
+    this.sourceRepository,
+  });
+  final CaptureRepository? sourceRepository;
   final CalendarController controller;
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -327,8 +335,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Widget _entry(Item item) {
     final at = item.placedAt!;
-    final time = item.startAt != null ? clock(at) : 'Due ${clock(at)}';
+    final time = item.startDate != null
+        ? 'All day'
+        : item.dueDate != null
+        ? 'Due today'
+        : item.startAt != null
+        ? clock(at)
+        : 'Due ${clock(at)}';
     final chips = [
+      if (item.startLocal.isNotEmpty)
+        'Departs ${item.startLocal.replaceFirst('T', ' ')} ${item.startTimezone}',
+      if (item.endLocal.isNotEmpty)
+        'Arrives ${item.endLocal.replaceFirst('T', ' ')} ${item.endTimezone}',
+      if (item.endDate != null)
+        'Checkout ${item.endDate!.year}-${item.endDate!.month.toString().padLeft(2, '0')}-${item.endDate!.day.toString().padLeft(2, '0')}',
+
       if (item.durationMinutes > 0) _duration(item.durationMinutes),
       if (item.priority > 0) 'P${item.priority}',
       if (item.location.isNotEmpty) item.location,
@@ -363,6 +384,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
               decoration: item.done ? TextDecoration.lineThrough : null,
             ),
           ),
+          if (item.sourceIds.isNotEmpty && widget.sourceRepository != null)
+            TextButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => ItemSources(
+                  repository: widget.sourceRepository!,
+                  sourceIds: item.sourceIds,
+                ),
+              ),
+              child: const Text('Email and attachments'),
+            ),
           if (chips.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(

@@ -10,8 +10,16 @@ import '../domain/item.dart';
 import '../domain/item_repository.dart';
 import '../domain/push_repository.dart';
 import 'wire.dart';
+import '../domain/capture.dart';
+import '../domain/capture_repository.dart';
+import 'attachment_download.dart' as downloads;
 
-class ChatApi implements ChatRepository, PushRepository, ItemRepository {
+class ChatApi
+    implements
+        ChatRepository,
+        PushRepository,
+        ItemRepository,
+        CaptureRepository {
   ChatApi(this.base, {http.Client? client, this.authorization})
     : _client = client ?? http.Client();
   final String base;
@@ -94,12 +102,15 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
   }
 
   @override
-  Future<List<Item>> itemsBetween(DateTime from, DateTime to) async =>
-      ((await _request(
-        'GET',
-        '/v1/items?from=${from.toUtc().toIso8601String()}'
-            '&to=${to.toUtc().toIso8601String()}',
-      )) as List).map((j) => itemFromJson(j as Map<String, dynamic>)).toList();
+  Future<List<Item>> itemsBetween(
+    DateTime from,
+    DateTime to,
+  ) async => ((await _request(
+    'GET',
+    '/v1/items?from=${from.toUtc().toIso8601String()}'
+        '&to=${to.toUtc().toIso8601String()}'
+        '&timezone=${Uri.encodeQueryComponent(await downloads.deviceTimezone())}',
+  )) as List).map((j) => itemFromJson(j as Map<String, dynamic>)).toList();
   Future<Entry> _post(String route) async =>
       entryFromJson(await _request('POST', route) as Map<String, dynamic>);
   @override
@@ -159,6 +170,75 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
     }
   }
 
+  @override
+  Future<Capture> getCapture(String id) async => captureFromJson(
+    await _request('GET', '/v1/captures/${Uri.encodeComponent(id)}')
+        as Map<String, dynamic>,
+  );
+  @override
+  Future<Entry> answerCapture(
+    String id,
+    int revision,
+    String text, {
+    bool acknowledgeCoverage = false,
+    String? candidateId,
+  }) async => entryFromJson(
+    await _request(
+      'POST',
+      '/v1/captures/${Uri.encodeComponent(id)}/answers',
+      body: {
+        'revision': revision,
+        'text': text,
+        'acknowledge_coverage': acknowledgeCoverage,
+        'candidate_id': ?candidateId,
+      },
+    ) as Map<String, dynamic>,
+  );
+  @override
+  Future<Entry> retryCapture(String id) =>
+      _post('/v1/captures/${Uri.encodeComponent(id)}/retry');
+  @override
+  Future<Entry> deleteCapture(String id, int revision) async => entryFromJson(
+    await _request(
+      'POST',
+      '/v1/captures/${Uri.encodeComponent(id)}/delete',
+      body: {'revision': revision},
+    ) as Map<String, dynamic>,
+  );
+  @override
+  Future<AttachmentDownload> downloadAttachment(
+    String captureId,
+    CaptureAttachment attachment,
+  ) async {
+    try {
+      final response = await _client
+          .get(
+            _uri(
+              '/v1/captures/${Uri.encodeComponent(captureId)}/attachments/${Uri.encodeComponent(attachment.id)}',
+            ),
+            headers: await _headers(),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) {
+        throw const RepositoryFailure(
+          'The attachment could not be downloaded.',
+        );
+      }
+      return AttachmentDownload(
+        attachment.name,
+        attachment.mediaType,
+        response.bodyBytes,
+      );
+    } on RepositoryFailure {
+      rethrow;
+    } catch (_) {
+      throw const RepositoryFailure('Check your connection. Then try again.');
+    }
+  }
+
+  @override
+  Future<void> saveAttachment(AttachmentDownload attachment) =>
+      downloads.saveAttachment(attachment);
   void close() {
     for (final client in _streamClients.toList()) {
       client.close();

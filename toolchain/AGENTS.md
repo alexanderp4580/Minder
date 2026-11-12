@@ -17,7 +17,8 @@ Pinned Podman runners, build helpers and verification scripts.
 - Named volumes cache dependencies, Android tools and the debug signing key. Preserve them for installable APK updates.
 - Flutter uses Java 17, at most two Gradle workers and cached NDK 28.2.13676358.
 - `model_fixture.py` supplies the test OpenRouter endpoint on loopback port 8181. Never run it in production.
-- `local-check` needs the fixture running. Reminder/calendar scripts start their own fixture; run them in sequence.
+- Chat, reminder, calendar and email local checks each start an isolated model fixture on a temporary port. Run browser scenarios in sequence.
+- `email-local-check` and `email-check.cjs` cover signed ingestion, compiled-web answers/downloads/review and real SQLite provenance.
 - Real-model checks use temporary databases and provider cost values. `real-model-multi-check.py [runs]` checks two proposals.
 - `android-callback-check.py` uses a disposable emulator and rejects physical device serials.
 - `export-orbits.py` exports canonical brand SVG geometry/lighting to Flutter data and inline guide/mockup artwork. Its --check mode rejects stale exports in toolchain/check.

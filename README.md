@@ -45,3 +45,9 @@ Evidence: [docs/evidence/m0.md](docs/evidence/m0.md).
 Architecture: [docs/architecture.md](docs/architecture.md).
 Architecture checks: [docs/evidence/architecture-cleanup.md](docs/evidence/architecture-cleanup.md).
 Brand: [brand/index.html](brand/index.html).
+
+## Forwarded email capture
+
+Email capture is opt-in. It uses direct Cloudflare Worker delivery, a private source directory and the existing model budget.
+Configure the environment privately and follow [email capture operations](docs/email-capture-operations.md).
+Personal sender values belong only in deployment environment/secrets; they are absent from this repository's examples.

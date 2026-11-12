@@ -4,6 +4,12 @@ Status 2026-11-11. Derived from [requirements.md](requirements.md). The app has 
 
 All names, dates, counts and times in the text and in the mockup are illustrative.
 
+## Email capture in chat
+
+The [email capture spec](superpowers/specs/2026-11-12-email-capture-design.md) defines source summaries, attachments, coverage warnings and candidate-specific follow-up questions inside Chat.
+A source keeps its own answer field. Each item uses the existing Confirm/Discard preview; clarifying one item leaves independent previews valid.
+Source deletion first creates an irreversible preview. Mockup: [email capture](mockups/email-capture.html).
+
 ## UX rules
 
 - Chat is the main workspace. Minder answers requests and posts reminders there. The calendar shows dates.

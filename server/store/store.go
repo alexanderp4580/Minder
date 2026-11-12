@@ -293,7 +293,18 @@ func (s *Store) AddEntry(e domain.Entry) (out domain.Entry, err error) {
 	return
 }
 func (s *Store) Items() ([]domain.Item, error) {
-	return queryAll[domain.Item](s.db, "SELECT body FROM item ORDER BY id")
+	items, e := queryAll[domain.Item](s.db, "SELECT body FROM item ORDER BY id")
+	if e != nil {
+		return nil, e
+	}
+	for n := range items {
+		ids, e := s.itemSourceIDs(items[n].ID)
+		if e != nil {
+			return nil, e
+		}
+		items[n].SourceIDs = ids
+	}
+	return items, nil
 }
 
 // ItemsBetween returns items placed in [from, to), sorted by their placement time.

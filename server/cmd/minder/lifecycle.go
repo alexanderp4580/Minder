@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -47,4 +48,13 @@ func serve(parent context.Context, server *http.Server, listener net.Listener, w
 		return nil
 	}
 	return err
+}
+
+func runWorkers(ctx context.Context, workers ...func(context.Context)) {
+	var group sync.WaitGroup
+	for _, worker := range workers {
+		group.Add(1)
+		go func(run func(context.Context)) { defer group.Done(); run(ctx) }(worker)
+	}
+	group.Wait()
 }

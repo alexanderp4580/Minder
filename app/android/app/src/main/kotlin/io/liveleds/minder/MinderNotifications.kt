@@ -89,6 +89,23 @@ object MinderNotifications {
             .build()
         context.getSystemService(NotificationManager::class.java).notify(id, 1, notification)
     }
+    fun showCapture(context: Context, data: Map<String, String>) {
+        val id = data["capture_id"] ?: return
+        if (!id.matches(Regex("^[a-f0-9]{64}$"))) return
+        channel(context)
+        if (!granted(context)) return
+        val intent = Intent(context, MainActivity::class.java)
+            .setAction("io.liveleds.minder.CAPTURE_REVIEW")
+            .setData(Uri.parse("minder-capture://$id"))
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val open = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, CHANNEL) else Notification.Builder(context)
+        val notification = builder.setSmallIcon(R.drawable.ic_minder_notification)
+            .setContentTitle("Minder").setContentText("An email needs your review.")
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setContentIntent(open).setAutoCancel(true).build()
+        context.getSystemService(NotificationManager::class.java).notify("capture-$id", 2, notification)
+    }
     fun capture(context: Context, intent: Intent?) {
         if (intent?.action != "io.liveleds.minder.NOTIFICATION") return
         val id = intent.getStringExtra("reminder_id") ?: return

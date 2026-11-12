@@ -12,6 +12,8 @@ Implement domain interfaces. Keep routes, wire keys, native method names and ser
 ProviderScope owns shared API/auth clients. Channel callbacks detach when their controller disposes.
 Do not embed server secrets in the client. Public Firebase identifiers are runtime data.
 
+Capture routes use owner authentication. Attachment bytes download through the shared authenticated client; web Blob and Android FileProvider adapters save/open them without public URLs.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.

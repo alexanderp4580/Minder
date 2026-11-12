@@ -11,6 +11,8 @@ Entry/item values, repository failures, chat/item/push repositories and native d
 Import only domain files and Dart SDK libraries. No Flutter, HTTP, JSON factories or platform channels.
 Use typed values for server and notification data.
 
+Capture/source values and repository methods are typed; dates without times stay date-only and event overlap excludes checkout.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.

@@ -85,3 +85,8 @@ Follow these steps in order. Stop at the first step that fails.
 3. `model request failed` shows the provider status and the first 512 bytes of its error body.
    `model reply rejected` shows why the server refused a reply: `unreadable`, `truncated`, `no_choice` or `cost_missing`.
 4. `assistant reply blocked` with `reason=monthly_limit` shows the spend and the limit.
+
+## Email capture
+
+`email extraction completed` reports source ID, revision and candidate count. Failure and cleanup events use safe codes, never source bodies, subject lines, forwarding addresses or attachment content.
+Use the source ID to follow ingestion through the owner review. Operational recovery: [email capture operations](email-capture-operations.md).

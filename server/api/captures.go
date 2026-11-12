@@ -49,6 +49,7 @@ func (s *Server) ingestEmail(w http.ResponseWriter, r *http.Request) {
 type CaptureReviewer interface {
 	Get(string) (domain.Capture, error)
 	Answer(context.Context, string, int, string) (domain.Entry, error)
+	AnswerCandidate(context.Context, string, int, string, string) (domain.Entry, error)
 	Acknowledge(context.Context, string, int) (domain.Entry, error)
 	Retry(string) (domain.Entry, error)
 	Attachment(string, string) (io.ReadCloser, domain.CaptureAttachment, error)
@@ -73,6 +74,7 @@ func (s *Server) answerCapture(w http.ResponseWriter, r *http.Request) {
 	}
 	var answer struct {
 		Revision    int    `json:"revision"`
+		CandidateID string `json:"candidate_id"`
 		Text        string `json:"text"`
 		Acknowledge bool   `json:"acknowledge_coverage"`
 	}
@@ -86,6 +88,8 @@ func (s *Server) answerCapture(w http.ResponseWriter, r *http.Request) {
 	var e error
 	if answer.Acknowledge {
 		entry, e = s.Captures.Acknowledge(r.Context(), r.PathValue("id"), answer.Revision)
+	} else if answer.CandidateID != "" {
+		entry, e = s.Captures.AnswerCandidate(r.Context(), r.PathValue("id"), answer.Revision, answer.CandidateID, answer.Text)
 	} else {
 		entry, e = s.Captures.Answer(r.Context(), r.PathValue("id"), answer.Revision, answer.Text)
 	}

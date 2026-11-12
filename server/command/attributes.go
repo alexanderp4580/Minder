@@ -12,6 +12,11 @@ import (
 
 // setAttributes applies optional item fields to a proposal preview.
 func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error {
+	// A duration previously derived from the event range is not a new constraint.
+	if i.EndAt != "" && (p.StartAt != "" || p.EndAt != "" || p.ClearEnd) && p.DurationMinutes == 0 {
+		i.DurationMinutes = 0
+	}
+
 	if p.Kind != "" {
 		i.Kind = p.Kind
 	}

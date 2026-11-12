@@ -8,7 +8,8 @@ Design tokens: [foundation.md](foundation.md). Screens: [screens.md](screens.md)
 The Flutter client runs on Android and web. One Go process serves the web build and HTTP API.
 SQLite holds items, profiles, chat entries, pending changes, audit records, reminder schedules, devices and usage.
 The reminder worker sends Android notifications through Firebase Cloud Messaging.
-The assistant calls OpenRouter for text replies and proposed changes.
+The assistant calls OpenRouter for text replies and proposed changes. Opt-in email capture uses the same model budget for isolated source extraction.
+A Cloudflare Email Worker hands raw MIME directly to machine-authenticated ingress; the Go worker reads persisted sources and publishes reviewed candidates in chat.
 
 The client needs a server connection. The server validates item changes before saving them.
 Model and Firebase service account keys stay on the server.
@@ -30,6 +31,10 @@ Coolify runs the container with a persistent database volume.
 | `access` | Owner authentication and Cloudflare JWT adapter | None |
 | `config` | Process settings and startup validation | None |
 | `api` | HTTP routes, responses, event stream and static files | `domain`, `conversation` |
+| `capture` | Durable source ingestion, extraction jobs, isolated questions and review publication | `domain`, `port` |
+| `mailparse` | Bounded MIME, calendar, PDF and image conversion | `domain` |
+| `mailfiles` | Private atomic original/attachment files | None |
+| `mailauth` | Signed Worker envelope/body admission and environment allowlists | `domain`, `config` |
 | `cmd/minder` | Composition, signals and shutdown | Application services and adapters |
 
 Only `store` executes SQL. Application services use repository interfaces and `port.Transaction`.
@@ -54,7 +59,7 @@ Numbered SQL files in `store/migrations/` define schema upgrades.
 Item, profile and chat rows contain JSON. Reminder and delivery tables hold scheduling state.
 A durable event cursor records entry updates for reconnects.
 
-The server stores timestamps in UTC and retains the item's IANA timezone.
+The server stores timestamps in UTC and retains the item's IANA timezone. Events can retain separate start/end zones and an explicit end; date-only ranges remain local calendar dates and use an exclusive end. Calendar queries include overlap, with an optional viewing timezone.
 The default item timezone is Europe/Amsterdam.
 `domain.Anchor` uses the deadline, then the start, for reminders and recurrence.
 `domain.PlacedAt` uses the start, then the deadline, for the calendar.
@@ -100,6 +105,8 @@ FCM delivery failures retain retry state. An unregistered FCM token disables tha
 | `GET /v1/push/config` | Public Android Firebase identifiers, after sign-in |
 | `POST /v1/push/devices` | Register a device token |
 
+The opt-in `POST /v1/email/ingest` route requires dedicated Worker authentication: signed envelope/body, recipient and sender admission, plus the path-scoped Access service-token policy. It never grants owner privileges.
+`GET /v1/captures/{id}`, its owner answer/retry/deletion-preview routes, and source attachment downloads use owner authentication.
 All other routes require owner authentication in production, including the web client and `/branding/`.
 The branding route serves three named assets from `BRAND_DIR`.
 API writes with an Origin header must come from the same origin.
@@ -150,3 +157,12 @@ Architecture cleanup evidence: [evidence/architecture-cleanup.md](evidence/archi
 `toolchain/architecture-check` enforces package and layer imports. `toolchain/dox-check` validates documentation ownership.
 Product verification: [evidence/m0.md](evidence/m0.md) and [evidence/m1.md](evidence/m1.md).
 Phone approval gates merging. The handoff records deployment and APK status.
+
+## Email source lifecycle
+
+The complete contract is in [email capture](superpowers/specs/2026-11-12-email-capture-design.md); operating steps are in [email capture operations](email-capture-operations.md).
+SQLite capture rows hold job leases, candidate revisions, answers and attachment manifests. Unique receipts and item-source links share the existing transaction boundary.
+The source directory holds opaque private files. Ingress commits source and job before acknowledgment; there is no Cloudflare content buffer.
+Extraction creates previews, never final items. Targeted answers invalidate affected previews. Confirm/Discard update capture state, audit, source links and reminders atomically.
+Source deletion commits a tombstone/redaction before restart-safe file cleanup. Generic review notifications use a durable per-revision/device outbox.
+CaptureController and typed client repositories keep transport details out of the UI. Source updates do not clear an unrelated chat request's waiting state.

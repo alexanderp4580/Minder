@@ -30,6 +30,8 @@ String cost(double eur) =>
 /// The heading of a preview card.
 String actionLabel(String action) => switch (action) {
   'create_item' => 'CREATE ITEM',
+  'delete_capture' => 'DELETE EMAIL SOURCE',
+  'cancel_item' => 'CANCEL ITEM',
   'complete_item' => 'COMPLETE ITEM',
   'create_profile' => 'ADD PROFILE',
   'update_profile' => 'CHANGE PROFILE',
@@ -39,6 +41,13 @@ String actionLabel(String action) => switch (action) {
 /// The name of a changed field, as the preview shows it.
 String fieldLabel(String name) => switch (name) {
   'start_at' => 'Starts',
+  'end_at' => 'Ends',
+  'start_date' => 'Start date',
+  'end_date' => 'End date / checkout',
+  'due_date' => 'Due date',
+  'kind' => 'Type',
+  'start_timezone' => 'Departure / start timezone',
+  'end_timezone' => 'Arrival / end timezone',
   'duration_minutes' => 'Duration (minutes)',
   'priority' => 'Priority',
   'location' => 'Location',

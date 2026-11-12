@@ -1,6 +1,6 @@
 # Forwarded email capture
 
-Status: the owner approved implementation on 2026-11-12. The [implementation plan](../plans/2026-11-12-email-capture.md) awaits review; infrastructure changes have not started.
+Status: the owner approved the spec and implementation plan on 2026-11-12. Local implementation is complete; see [verification and limits](../../evidence/email-capture.md). Live infrastructure setup remains pending.
 Requirements: [../../requirements.md](../../requirements.md). Current system: [../../architecture.md](../../architecture.md).
 
 ## Intent and agreed choices

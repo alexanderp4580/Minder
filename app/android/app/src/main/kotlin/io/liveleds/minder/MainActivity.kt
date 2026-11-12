@@ -24,6 +24,9 @@ class MainActivity : FlutterActivity() {
     }
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "minder/attachments").setMethodCallHandler { call, result ->
+            AttachmentDownloads.handle(this, call, result)
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "minder/notifications").setMethodCallHandler { call, result ->
             when (call.method) {
                 "enable" -> {

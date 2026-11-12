@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Exercise signed ingress against a real local server, database and compiled web client."""
+import base64
+import json
+import os
+from pathlib import Path
+import secrets
+import socket
+import subprocess
+import tempfile
+import time
+import urllib.request
+
+ROOT=Path(__file__).resolve().parent.parent
+
+def port():
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1',0))
+        return sock.getsockname()[1]
+
+def main():
+    subprocess.run([str(ROOT/'toolchain/run'),'go','go','build','-o','/workspace/.local/minder','./cmd/minder'],cwd=ROOT,check=True)
+    with tempfile.TemporaryDirectory(prefix='minder-email-check-') as directory:
+        app_port,model_port=port(),port()
+        key=base64.b64encode(secrets.token_bytes(32)).decode()
+        env={**os.environ,'ENV':'test','AUTH_MODE':'dev','DATABASE_PATH':directory+'/db','LISTEN_ADDR':f'127.0.0.1:{app_port}','WEB_DIR':str(ROOT/'app/build/web'),'OPENROUTER_API_KEY':'local-fixture','OPENROUTER_URL':f'http://127.0.0.1:{model_port}','EMAIL_CAPTURE_ENABLED':'true','EMAIL_ALLOWED_SENDERS':'owner@example.com','EMAIL_RECIPIENT':'assistant@example.net','EMAIL_SOURCE_DIR':directory+'/sources','EMAIL_INGEST_HMAC_KEY':key,'MODEL_FIXTURE_PORT':str(model_port),'MINDER_EMAIL_TEST_KEY':key,'MINDER_URL':f'http://127.0.0.1:{app_port}'}
+        processes=[]
+        with open(directory+'/server.log','w+') as log:
+            try:
+                processes.append(subprocess.Popen(['python3','toolchain/model_fixture.py'],cwd=ROOT,env=env,stdout=log,stderr=log))
+                processes.append(subprocess.Popen([str(ROOT/'.local/minder')],cwd=ROOT,env=env,stdout=log,stderr=log))
+                for _ in range(100):
+                    try:
+                        urllib.request.urlopen(env['MINDER_URL']+'/v1/health',timeout=1).close()
+                        break
+                    except OSError:
+                        if any(p.poll() is not None for p in processes):
+                            raise RuntimeError('Local email server or fixture stopped during startup')
+                        time.sleep(.1)
+                else: raise RuntimeError('Local email server did not start')
+                subprocess.run(['node','toolchain/email-check.cjs'],cwd=ROOT,env=env,check=True)
+                import sqlite3
+                connection=sqlite3.connect(directory+'/db')
+                items=[json.loads(row[0]) for row in connection.execute('select body from item')]
+                assert len(items)==2,items
+                assert any(item.get('end_date')=='2026-11-15' for item in items)
+                assert connection.execute('select count(*) from item_source').fetchone()[0]>=2
+                connection.close()
+                print('PASS: email item provenance and date ranges persisted in real SQLite.')
+            except Exception:
+                log.flush()
+                (ROOT/'.local/email-check-debug.log').write_text(Path(directory+'/server.log').read_text())
+                raise
+            finally:
+                for process in processes: process.terminate()
+                for process in processes:
+                    try: process.wait(timeout=5)
+                    except subprocess.TimeoutExpired: process.kill();process.wait()
+if __name__=='__main__': main()

@@ -5,6 +5,7 @@ import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
 import 'format.dart';
 import 'tokens.dart';
+import 'capture_view.dart';
 
 const _meta = TextStyle(fontSize: 12, color: Tokens.muted, letterSpacing: 1.2);
 
@@ -58,7 +59,9 @@ class EntryView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (change != null && entry.kind == EntryKind.preview)
+        if (entry.capture != null)
+          CaptureView(capture: entry.capture!, chat: controller)
+        else if (change != null && entry.kind == EntryKind.preview)
           _Preview(change: change, controller: controller)
         else
           Text(

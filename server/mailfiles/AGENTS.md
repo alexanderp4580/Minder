@@ -11,6 +11,8 @@ Atomic raw/decoded file writes, safe source identifiers, reads and deletion.
 Never use sender filenames as paths. Enforce byte limits, write privately and sync before acknowledging persistence.
 Application services own authorization, metadata and lifecycle. No SQL, model calls or HTTP belong here.
 
+Startup cleanup removes unreferenced source directories and interrupted writes only after 24 hours; referenced originals remain until explicit deletion.
+
 # Work Guidance
 
 Use temporary directories and binary fixtures for tests.

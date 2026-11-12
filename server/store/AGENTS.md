@@ -19,6 +19,8 @@ Capture rows persist jobs, leases, revisions and provenance. Ingestion receipts 
 
 Capture review push outbox rows are unique per source revision/device. Source deletion redacts history and retains minimal replay tombstones; file cleanup resumes after restart.
 
+Item reads derive source IDs from live provenance links; deleted sources never appear as downloadable item attachments.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

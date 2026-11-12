@@ -1,3 +1,4 @@
+import '../domain/capture.dart';
 import '../domain/entry.dart';
 import '../domain/item.dart';
 import '../domain/push_repository.dart';
@@ -35,13 +36,23 @@ Entry entryFromJson(Map<String, dynamic> j) => Entry(
   reminder: j['reminder'] == null
       ? null
       : reminderInfoFromJson(j['reminder'] as Map<String, dynamic>),
+  capture: j['capture'] is Map<String, dynamic>
+      ? captureFromJson(j['capture'] as Map<String, dynamic>)
+      : null,
+  captureId:
+      j['capture_id'] as String? ??
+      ((j['capture'] as Map<String, dynamic>?)?['id'] as String? ?? ''),
   costEur: (j['cost_eur'] as num?)?.toDouble() ?? 0,
 );
 
 Item itemFromJson(Map<String, dynamic> j) {
   DateTime? time(String key) {
     final raw = j[key] as String?;
-    return raw == null || raw.isEmpty ? null : DateTime.parse(raw).toLocal();
+    return raw == null || raw.isEmpty
+        ? null
+        : (raw.contains('T')
+              ? DateTime.parse(raw).toLocal()
+              : DateTime.parse(raw));
   }
 
   return Item(
@@ -49,6 +60,15 @@ Item itemFromJson(Map<String, dynamic> j) {
     title: j['title'] as String,
     status: j['status'] as String,
     startAt: time('start_at'),
+    endAt: time('end_at'),
+    sourceIds: [for (final id in j['source_ids'] as List? ?? []) id as String],
+    startDate: time('start_date'),
+    endDate: time('end_date'),
+    dueDate: time('due_date'),
+    startLocal: j['start_local'] as String? ?? '',
+    endLocal: j['end_local'] as String? ?? '',
+    startTimezone: j['start_timezone'] as String? ?? '',
+    endTimezone: j['end_timezone'] as String? ?? '',
     dueAt: time('due_at'),
     durationMinutes: (j['duration_minutes'] as num?)?.toInt() ?? 0,
     priority: (j['priority'] as num?)?.toInt() ?? 0,
@@ -78,3 +98,44 @@ PushConfiguration pushConfigurationFromJson(Map<String, dynamic> json) =>
       projectId: json['project_id'] as String? ?? '',
       senderId: json['sender_id'] as String? ?? '',
     );
+
+Capture captureFromJson(Map<String, dynamic> j) => Capture(
+  id: j['id'] as String,
+  status: j['status'] as String,
+  revision: (j['revision'] as num?)?.toInt() ?? 0,
+  sender: j['sender'] as String? ?? '',
+  subject: j['subject'] as String? ?? '',
+  error: j['error'] as String? ?? '',
+  deleted: j['deleted'] == true,
+  coverageAcknowledged: j['coverage_acknowledged'] == true,
+  questions: [for (final q in j['questions'] as List? ?? []) q as String],
+  coverage: [
+    for (final p in j['coverage'] as List? ?? [])
+      if (p['status'] != 'parsed' && p['status'] != 'not-actionable')
+        '${p['name'] ?? p['part']}: ${p['detail'] ?? p['status']}',
+  ],
+  attachments: [
+    for (final a in j['attachments'] as List? ?? [])
+      CaptureAttachment(
+        id: a['id'] as String,
+        name: a['name'] as String,
+        mediaType: a['media_type'] as String,
+        size: (a['size'] as num).toInt(),
+      ),
+  ],
+  candidates: [
+    for (final c in j['candidates'] as List? ?? [])
+      if (c['state'] != 'superseded')
+        CaptureCandidate(
+          id: c['id'] as String,
+          state: c['state'] as String,
+          title: c['proposal']['title'] as String? ?? '',
+          changeId: c['change_id'] as String? ?? '',
+          question: c['question'] as String? ?? '',
+          evidence: [
+            for (final e in c['evidence'] as List? ?? [])
+              '${e['part']}: ${e['excerpt']}',
+          ],
+        ),
+  ],
+);

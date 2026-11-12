@@ -8,6 +8,7 @@ import (
 	"github.com/alexanderp4580/Minder/server/mailfiles"
 	"github.com/alexanderp4580/Minder/server/mailparse"
 	"github.com/alexanderp4580/Minder/server/store"
+	"io"
 	"path/filepath"
 	"testing"
 	"time"
@@ -159,5 +160,172 @@ func TestAnswerPreservesIndependentCandidate(t *testing.T) {
 	}
 	if pending != 1 {
 		t.Fatal("answer lost or duplicated candidates", c.Candidates)
+	}
+}
+
+func TestTargetedAnswerSupersedesChosenPreview(t *testing.T) {
+	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer db.Close()
+	files, _ := mailfiles.New(t.TempDir())
+	svc := capture.New(db, files, questionsExtractor{})
+	svc.Parser = &mailparse.Parser{}
+	svc.Preview = command.PreviewIn
+	id, _, _ := svc.Ingest(context.Background(), domain.CaptureEnvelope{RequestID: "edit"}, []byte("From: owner@example.com\r\n\r\nHotel"))
+	if e = svc.ProcessNext(context.Background(), time.Now()); e != nil {
+		t.Fatal(e)
+	}
+	c, _ := svc.Get(id)
+	old := c.Candidates[0].ChangeID
+	if _, e = svc.AnswerCandidate(context.Background(), id, c.Revision, "ready", "Change the deadline"); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = command.New(db).Confirm(old); e == nil {
+		t.Fatal("stale preview accepted")
+	}
+}
+
+type blockedFiles struct {
+	capture.Files
+	entered, release chan struct{}
+}
+
+func (f *blockedFiles) Save(ctx context.Context, source, id string, raw io.Reader, limit int64) (string, int64, error) {
+	close(f.entered)
+	<-f.release
+	return f.Files.Save(ctx, source, id, raw, limit)
+}
+func TestDeleteDuringAttachmentWriteDoesNotResurrectFiles(t *testing.T) {
+	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer db.Close()
+	files, _ := mailfiles.New(t.TempDir())
+	blocked := &blockedFiles{Files: files, entered: make(chan struct{}), release: make(chan struct{})}
+	svc := capture.New(db, blocked, extracted{})
+	svc.Parser = &mailparse.Parser{}
+	svc.Preview = command.PreviewIn
+	raw := []byte("From: owner@example.com\r\nContent-Type: application/octet-stream\r\nContent-Disposition: attachment; filename=ticket.bin\r\n\r\nAttachment")
+	id, _, e := svc.Ingest(context.Background(), domain.CaptureEnvelope{RequestID: "race-delete"}, raw)
+	if e != nil {
+		t.Fatal(e)
+	}
+	c, _ := svc.Get(id)
+	commands := command.New(db)
+	preview, e := commands.Preview(domain.Proposal{Action: "delete_capture", CaptureID: id, ExpectedVersion: c.Revision})
+	if e != nil {
+		t.Fatal(e)
+	}
+	processed := make(chan struct{})
+	go func() { defer close(processed); _ = svc.ProcessNext(context.Background(), time.Now()) }()
+	<-blocked.entered
+	confirmed := make(chan struct{})
+	go func() { defer close(confirmed); _, _ = commands.Confirm(preview.Change.ID) }()
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	select {
+	case <-confirmed:
+		svc.Run(canceled)
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(blocked.release)
+	<-processed
+	<-confirmed
+	svc.Run(canceled)
+	if f, e := files.Open(id, "1"); e == nil {
+		f.Close()
+		t.Fatal("attachment was recreated after deletion")
+	}
+}
+
+type cancelExtraction struct{ entered chan struct{} }
+
+func (e cancelExtraction) Extract(ctx context.Context, _ domain.CaptureDocument, _ []domain.CaptureAnswer) (domain.CaptureExtraction, error) {
+	close(e.entered)
+	<-ctx.Done()
+	return domain.CaptureExtraction{}, ctx.Err()
+}
+func TestShutdownReleasesCaptureWithoutConsumingRetry(t *testing.T) {
+	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer db.Close()
+	files, _ := mailfiles.New(t.TempDir())
+	extractor := cancelExtraction{make(chan struct{})}
+	svc := capture.New(db, files, extractor)
+	svc.Parser = &mailparse.Parser{}
+	svc.Preview = command.PreviewIn
+	id, _, e := svc.Ingest(context.Background(), domain.CaptureEnvelope{RequestID: "cancel"}, []byte("From: owner@example.com\r\n\r\nHotel"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- svc.ProcessNext(ctx, time.Now()) }()
+	<-extractor.entered
+	cancel()
+	<-done
+	c, e := svc.Get(id)
+	if e != nil || c.Status != "received" || c.Attempts != 0 || c.LeaseUntil != 0 || c.NextAt != 0 {
+		t.Fatalf("shutdown consumed retry: %+v %v", c, e)
+	}
+}
+
+type omittingExtractor struct{}
+
+func (omittingExtractor) Extract(ctx context.Context, doc domain.CaptureDocument, answers []domain.CaptureAnswer) (domain.CaptureExtraction, error) {
+	if len(answers) > 0 {
+		return domain.CaptureExtraction{}, nil
+	}
+	return (questionsExtractor{}).Extract(ctx, doc, answers)
+}
+func TestFollowupCannotSilentlyOmitQuestionedItem(t *testing.T) {
+	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer db.Close()
+	files, _ := mailfiles.New(t.TempDir())
+	svc := capture.New(db, files, omittingExtractor{})
+	svc.Parser = &mailparse.Parser{}
+	svc.Preview = command.PreviewIn
+	id, _, _ := svc.Ingest(context.Background(), domain.CaptureEnvelope{RequestID: "omit"}, []byte("From: owner@example.com\r\n\r\nHotel"))
+	if e = svc.ProcessNext(context.Background(), time.Now()); e != nil {
+		t.Fatal(e)
+	}
+	c, _ := svc.Get(id)
+	if _, e = svc.Answer(context.Background(), id, c.Revision, "21 November"); e != nil {
+		t.Fatal(e)
+	}
+	if e = svc.ProcessNext(context.Background(), time.Now()); e == nil {
+		t.Fatal("questioned item disappeared without a failure")
+	}
+}
+
+func TestConfirmedItemExposesItsEmailSources(t *testing.T) {
+	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer db.Close()
+	files, _ := mailfiles.New(t.TempDir())
+	svc := capture.New(db, files, extracted{})
+	svc.Parser = &mailparse.Parser{}
+	svc.Preview = command.PreviewIn
+	id, _, _ := svc.Ingest(context.Background(), domain.CaptureEnvelope{RequestID: "source-link"}, []byte("From: owner@example.com\r\n\r\nHotel"))
+	if e = svc.ProcessNext(context.Background(), time.Now()); e != nil {
+		t.Fatal(e)
+	}
+	c, _ := svc.Get(id)
+	if _, e = command.New(db).Confirm(c.Candidates[0].ChangeID); e != nil {
+		t.Fatal(e)
+	}
+	items, e := db.Items()
+	if e != nil || len(items) != 1 || len(items[0].SourceIDs) != 1 || items[0].SourceIDs[0] != id {
+		t.Fatal("item has no retrievable source", items, e)
 	}
 }

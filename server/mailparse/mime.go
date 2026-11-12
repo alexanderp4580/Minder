@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/alexanderp4580/Minder/server/domain"
+	"golang.org/x/net/html/charset"
 )
 
 type Parser struct{}
@@ -89,6 +90,13 @@ func (w *traversal) part(ctx context.Context, header mail.Header, body io.Reader
 			}
 		}
 		return nil
+	}
+	if strings.HasPrefix(media, "text/") && params["charset"] != "" {
+		decoded, err := charset.NewReaderLabel(params["charset"], reader)
+		if err != nil {
+			return errors.New("An email text charset is unsupported")
+		}
+		reader = decoded
 	}
 	data, e := io.ReadAll(io.LimitReader(reader, (10<<20)+1))
 	if e != nil {

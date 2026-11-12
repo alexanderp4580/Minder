@@ -87,3 +87,11 @@ func TestEventRecurrence(t *testing.T) {
 		t.Fatal("end not advanced", flight.EndAt)
 	}
 }
+
+func TestEmptyCaptureRemainsOpenForClarification(t *testing.T) {
+	capture := Capture{ID: "empty", Status: "processing"}
+	capture.UpdateReviewState()
+	if capture.Status != "ready-for-review" {
+		t.Fatal("no way to clarify a zero-item email", capture.Status)
+	}
+}
