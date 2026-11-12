@@ -11,6 +11,7 @@ Gradle configuration, manifest, Kotlin activities, FCM integration and generated
 Application ID is `io.liveleds.minder`. Callback uses the auth management activity and empty callback task affinity.
 The auth manager uses singleTask. Firefox callbacks must return their result to Minder.
 Keep native notification method payloads compatible with data/notification_device.dart.
+A reminder notification has no content intent: tapping its body does not open the app. Only the Done, Snooze and Open buttons open it.
 Generate launcher icons from brand/app-icon.svg; do not hand-edit generated icon files.
 
 # Work Guidance

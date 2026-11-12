@@ -75,7 +75,6 @@ object MinderNotifications {
             .setStyle(Notification.BigTextStyle().bigText(content))
             .setVisibility(Notification.VISIBILITY_PRIVATE).setCategory(Notification.CATEGORY_REMINDER)
             .setPriority(Notification.PRIORITY_HIGH).setAutoCancel(false).setOnlyAlertOnce(false)
-            .setContentIntent(action(context, id, "ack"))
             .addAction(Notification.Action.Builder(null, "Done", action(context, id, "done")).build())
             .addAction(Notification.Action.Builder(null, "Snooze 15m", action(context, id, "snooze15")).build())
             .addAction(Notification.Action.Builder(null, "Open", action(context, id, "ack")).build())
