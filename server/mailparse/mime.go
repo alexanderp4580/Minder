@@ -43,9 +43,7 @@ func (p *Parser) Parse(ctx context.Context, raw io.Reader) (domain.CaptureDocume
 		subject = decoded
 	}
 	walk := &traversal{document: domain.CaptureDocument{Subject: subject, Parts: []domain.CapturePart{}, Attachments: []domain.CaptureAttachment{}, Coverage: []domain.CaptureCoverage{}}}
-	if date, e := message.Header.Date(); e == nil {
-		walk.document.OriginalDate = date.UTC().Format("2006-01-02T15:04:05Z")
-	}
+
 	e = walk.part(ctx, message.Header, message.Body, "1", 0)
 	return walk.document, e
 }

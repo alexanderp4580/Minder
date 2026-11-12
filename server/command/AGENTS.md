@@ -14,6 +14,8 @@ Pending changes do not expire. Undo refuses a changed current version. Preserve 
 
 Event kind, end, zones and date-only attributes participate in previews, Confirm and Undo like existing item fields.
 
+Capture-bound previews validate candidate revision on Confirm. Confirm/Discard update source state and provenance atomically. Source deletion requires a separate irreversible preview and redacts captured history before file cleanup.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

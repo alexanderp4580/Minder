@@ -12,26 +12,28 @@ type CaptureEnvelope struct {
 	RequestID string `json:"-"`
 }
 type Capture struct {
-	ID           string              `json:"id"`
-	Status       string              `json:"status"`
-	Revision     int                 `json:"revision"`
-	Sender       string              `json:"sender,omitempty"`
-	Subject      string              `json:"subject,omitempty"`
-	ReceivedAt   string              `json:"received_at"`
-	OriginalDate string              `json:"original_date,omitempty"`
-	EntryID      string              `json:"entry_id"`
-	Attachments  []CaptureAttachment `json:"attachments"`
-	Coverage     []CaptureCoverage   `json:"coverage"`
-	Candidates   []CaptureCandidate  `json:"candidates"`
-	Answers      []CaptureAnswer     `json:"answers,omitempty"`
-	Questions    []string            `json:"questions,omitempty"`
-	Error        string              `json:"error,omitempty"`
-	Attempts     int                 `json:"attempts"`
-	Calls        int                 `json:"calls"`
-	NextAt       int64               `json:"next_at,omitempty"`
-	LeaseUntil   int64               `json:"lease_until,omitempty"`
-	Deleted      bool                `json:"deleted,omitempty"`
-	CostEUR      float64             `json:"cost_eur,omitempty"`
+	FilesDeleted         bool                `json:"files_deleted,omitempty"`
+	CoverageAcknowledged bool                `json:"coverage_acknowledged,omitempty"`
+	ID                   string              `json:"id"`
+	Status               string              `json:"status"`
+	Revision             int                 `json:"revision"`
+	Sender               string              `json:"sender,omitempty"`
+	Subject              string              `json:"subject,omitempty"`
+	ReceivedAt           string              `json:"received_at"`
+	OriginalDate         string              `json:"original_date,omitempty"`
+	EntryID              string              `json:"entry_id"`
+	Attachments          []CaptureAttachment `json:"attachments"`
+	Coverage             []CaptureCoverage   `json:"coverage"`
+	Candidates           []CaptureCandidate  `json:"candidates"`
+	Answers              []CaptureAnswer     `json:"answers,omitempty"`
+	Questions            []string            `json:"questions,omitempty"`
+	Error                string              `json:"error,omitempty"`
+	Attempts             int                 `json:"attempts"`
+	Calls                int                 `json:"calls"`
+	NextAt               int64               `json:"next_at,omitempty"`
+	LeaseUntil           int64               `json:"lease_until,omitempty"`
+	Deleted              bool                `json:"deleted,omitempty"`
+	CostEUR              float64             `json:"cost_eur,omitempty"`
 }
 type CaptureAttachment struct {
 	ID        string `json:"id"`
@@ -75,12 +77,14 @@ type CapturePart struct {
 	Data       []byte `json:"-"`
 }
 type CaptureDocument struct {
-	Subject      string              `json:"subject"`
-	OriginalDate string              `json:"original_date,omitempty"`
-	Parts        []CapturePart       `json:"parts"`
-	Attachments  []CaptureAttachment `json:"attachments"`
-	Coverage     []CaptureCoverage   `json:"coverage"`
-	Questions    []string            `json:"questions,omitempty"`
+	CaptureID          string              `json:"capture_id,omitempty"`
+	PreviousCandidates []CaptureCandidate  `json:"previous_candidates,omitempty"`
+	Subject            string              `json:"subject"`
+	OriginalDate       string              `json:"original_date,omitempty"`
+	Parts              []CapturePart       `json:"parts"`
+	Attachments        []CaptureAttachment `json:"attachments"`
+	Coverage           []CaptureCoverage   `json:"coverage"`
+	Questions          []string            `json:"questions,omitempty"`
 }
 type CaptureExtraction struct {
 	Candidates []CaptureCandidate `json:"candidates"`
@@ -89,4 +93,35 @@ type CaptureExtraction struct {
 
 func (c Capture) Due(now time.Time) bool {
 	return !c.Deleted && (c.Status == "received" || c.Status == "processing") && c.NextAt <= now.Unix() && c.LeaseUntil <= now.Unix()
+}
+
+// UpdateReviewState derives review status without reopening terminal candidates.
+func (c *Capture) UpdateReviewState() {
+	c.Status = "ready-for-review"
+	needs := len(c.Questions) > 0
+	active := false
+	for _, candidate := range c.Candidates {
+		switch candidate.State {
+		case "needs-answer":
+			needs = true
+			active = true
+		case "pending":
+			active = true
+		}
+	}
+	for _, part := range c.Coverage {
+		if part.Status != "parsed" && part.Status != "not-actionable" && !c.CoverageAcknowledged {
+			needs = true
+		}
+	}
+	if needs {
+		c.Status = "needs-answer"
+	} else if !active {
+		c.Status = "reviewed"
+	}
+}
+
+type CaptureDelivery struct {
+	CaptureID, DeviceID, Token string
+	Revision                   int
 }

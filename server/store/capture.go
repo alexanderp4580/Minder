@@ -81,3 +81,90 @@ func (s *Store) ClaimCapture(now time.Time) (out domain.Capture, err error) {
 	})
 	return
 }
+
+func (t *Tx) RedactCapture(id string) error {
+	for _, table := range []string{"chat_entry", "event"} {
+		rows, e := queryAll[domain.Entry](t.tx, "SELECT body FROM "+table+" WHERE json_extract(body,'$.capture.id')=?", id)
+		if e != nil {
+			return e
+		}
+		for _, entry := range rows {
+			entry.Capture = &domain.Capture{ID: id, Status: "reviewed", Deleted: true}
+			entry.Text = "Email source deleted. Confirmed items remain."
+			raw, e := json.Marshal(entry)
+			if e != nil {
+				return e
+			}
+			key, column := entry.ID, "id"
+			if table == "event" {
+				key, column = entry.ID, "entry_id"
+			}
+			if _, e = t.tx.Exec("UPDATE "+table+" SET body=? WHERE "+column+"=?", string(raw), key); e != nil {
+				return e
+			}
+		}
+	}
+	pending, e := queryAll[domain.Pending](t.tx, "SELECT body FROM pending_change WHERE json_extract(body,'$.Proposal.capture_id')=?", id)
+	if e != nil {
+		return e
+	}
+	for _, p := range pending {
+		if p.State == "confirmed" || p.Proposal.Action == "delete_capture" {
+			continue
+		}
+		p.State = "failed"
+		p.Proposal = domain.Proposal{CaptureID: id}
+		p.Before = nil
+		p.After = domain.Item{}
+		if e = t.PutPending(p); e != nil {
+			return e
+		}
+		entry, e := t.Entry(p.EntryID)
+		if e != nil {
+			return e
+		}
+		entry.Text = "Email source deleted."
+		entry.Change.State = "failed"
+		entry.Change.Fields = nil
+		if _, e = t.PutEntry(entry); e != nil {
+			return e
+		}
+	}
+	_, e = t.tx.Exec("DELETE FROM capture_push WHERE source_id=?", id)
+	return e
+}
+func (t *Tx) QueueCaptureNotifications(id string, revision int) error {
+	_, e := t.tx.Exec("INSERT OR IGNORE INTO capture_push(source_id,revision,device_id) SELECT ?,?,id FROM push_device", id, revision)
+	return e
+}
+func (s *Store) CaptureDeliveries(now time.Time) ([]domain.CaptureDelivery, error) {
+	rows, e := s.db.Query("SELECT n.source_id,n.revision,n.device_id,d.token FROM capture_push n JOIN push_device d ON d.id=n.device_id JOIN capture c ON c.id=n.source_id WHERE n.sent=0 AND n.next_at<=? AND coalesce(json_extract(c.body,'$.deleted'),0)=0", now.Unix())
+	if e != nil {
+		return nil, e
+	}
+	defer rows.Close()
+	out := []domain.CaptureDelivery{}
+	for rows.Next() {
+		var d domain.CaptureDelivery
+		if e = rows.Scan(&d.CaptureID, &d.Revision, &d.DeviceID, &d.Token); e != nil {
+			return nil, e
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+func (s *Store) FinishCaptureDelivery(d domain.CaptureDelivery, invalid bool, next time.Time) error {
+	if invalid {
+		_, e := s.db.Exec("DELETE FROM push_device WHERE id=? AND token=?", d.DeviceID, d.Token)
+		return e
+	}
+	sent := 1
+	if !next.IsZero() {
+		sent = 0
+	}
+	_, e := s.db.Exec("UPDATE capture_push SET sent=?,next_at=? WHERE source_id=? AND revision=? AND device_id=?", sent, next.Unix(), d.CaptureID, d.Revision, d.DeviceID)
+	return e
+}
+func (s *Store) DeletedCaptures() ([]domain.Capture, error) {
+	return queryAll[domain.Capture](s.db, "SELECT body FROM capture WHERE json_extract(body,'$.deleted')=1 AND coalesce(json_extract(body,'$.files_deleted'),0)=0")
+}

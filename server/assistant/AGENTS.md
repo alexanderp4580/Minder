@@ -12,6 +12,8 @@ No HTTP client or provider SDK belongs here. Model implementations live in adapt
 Keep at most 200 open items in context. Never apply proposed changes. Reserve cost before calling the model.
 Settle known provider costs; retain reservations for unknown costs. Put a reply cost on its first entry only.
 
+Email extraction uses capture-only context, source evidence and structured candidates/questions. Share usage accounting with normal chat; external text cannot authorize writes.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

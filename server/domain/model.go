@@ -130,6 +130,8 @@ type Entry struct {
 	Change    *Change   `json:"change,omitempty"`
 }
 type Pending struct {
+	BeforeCapture *Capture
+
 	BeforeProfile *Profile
 	AfterProfile  *Profile
 	ID            string
@@ -141,6 +143,8 @@ type Pending struct {
 	ResultID      string
 }
 type Audit struct {
+	DeletedCaptureID string
+
 	BeforeProfile *Profile
 	AfterProfile  *Profile
 	ID            string

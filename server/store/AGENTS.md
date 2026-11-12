@@ -17,6 +17,8 @@ ItemsBetween selects overlapping event/date ranges, including stays that start b
 
 Capture rows persist jobs, leases, revisions and provenance. Ingestion receipts and source links are unique; ClaimCapture serializes lease acquisition.
 
+Capture review push outbox rows are unique per source revision/device. Source deletion redacts history and retains minimal replay tombstones; file cleanup resumes after restart.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

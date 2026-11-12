@@ -25,7 +25,8 @@ type ImageURL struct {
 	URL string `json:"url"`
 }
 type Message struct {
-	Parts []ContentPart `json:"-"`
+	Purpose string        `json:"-"`
+	Parts   []ContentPart `json:"-"`
 
 	Role    string `json:"role"`
 	Content string `json:"content"`

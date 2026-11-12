@@ -1,0 +1,1 @@
+CREATE TABLE capture_push(source_id TEXT NOT NULL REFERENCES capture(id),revision INTEGER NOT NULL,device_id TEXT NOT NULL,sent INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(source_id,revision,device_id));

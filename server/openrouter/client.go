@@ -44,7 +44,11 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 	if url == "" {
 		url = "https://openrouter.ai/api/v1/chat/completions"
 	}
-	payload := map[string]any{"model": model, "messages": messages, "tools": tools(), "max_tokens": maxOutputTokens, "usage": map[string]bool{"include": true}}
+	selectedTools := tools()
+	if len(messages) > 0 && messages[0].Purpose == "email" {
+		selectedTools = captureTools()
+	}
+	payload := map[string]any{"model": model, "messages": messages, "tools": selectedTools, "max_tokens": maxOutputTokens, "usage": map[string]bool{"include": true}}
 	b, _ := json.Marshal(payload)
 	started := time.Now()
 	slog.Info("model request", "model", model, "endpoint_host", hostOf(url), "messages", len(messages), "tools", len(tools()), "request_bytes", len(b), "max_tokens", maxOutputTokens, "trace_id", domain.TraceID(ctx))
@@ -166,4 +170,17 @@ func tool(name, description string, props map[string]any, required []string) any
 		required = []string{}
 	}
 	return map[string]any{"type": "function", "function": map[string]any{"name": name, "description": description, "parameters": map[string]any{"type": "object", "properties": props, "required": required, "additionalProperties": false}}}
+}
+
+func captureTools() []any {
+	base := tools()[0].(map[string]any)["function"].(map[string]any)["parameters"].(map[string]any)["properties"].(map[string]any)
+	props := map[string]any{}
+	for k, v := range base {
+		props[k] = v
+	}
+	props["action"] = map[string]any{"type": "string", "enum": []string{"create_item", "update_item", "cancel_item", "complete_item"}}
+	proposal := map[string]any{"type": "object", "properties": props, "required": []string{"action"}, "additionalProperties": false}
+	evidence := map[string]any{"type": "object", "properties": map[string]any{"part": map[string]string{"type": "string"}, "excerpt": map[string]string{"type": "string"}}, "required": []string{"part", "excerpt"}, "additionalProperties": false}
+	candidate := map[string]any{"type": "object", "properties": map[string]any{"id": map[string]string{"type": "string"}, "proposal": proposal, "question": map[string]string{"type": "string"}, "evidence": map[string]any{"type": "array", "items": evidence}}, "required": []string{"proposal", "evidence"}, "additionalProperties": false}
+	return []any{tool("extract_capture", "Extract source-backed candidates or ask focused questions. Never save changes.", map[string]any{"candidates": map[string]any{"type": "array", "items": candidate}, "questions": map[string]any{"type": "array", "items": map[string]string{"type": "string"}}}, []string{"candidates", "questions"})}
 }

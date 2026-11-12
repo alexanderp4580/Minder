@@ -69,12 +69,16 @@ func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 	var before *domain.Item
 	var after domain.Item
 	switch p.Action {
+	case "delete_capture":
+		entry, e := previewCaptureDeletion(t, p)
+		*out = entry
+		return e
 	case "create_item":
 		after = domain.Item{ID: domain.NewID(), Title: p.Title, DueAt: p.DueAt, Timezone: p.Timezone, Notes: p.Notes, RemindAt: p.RemindAt, NagMinutes: p.NagMinutes, Status: "open", Version: 1, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}
 		if e := setAttributes(t, p, &after); e != nil {
 			return e
 		}
-	case "update_item", "complete_item":
+	case "update_item", "complete_item", "cancel_item":
 		i, e := t.Item(p.ItemID)
 		if e != nil {
 			return e
@@ -86,7 +90,9 @@ func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 		after = i
 		after.Version++
 		after.UpdatedAt = domain.Now()
-		if p.Action == "complete_item" {
+		if p.Action == "cancel_item" {
+			after.Status = "cancelled"
+		} else if p.Action == "complete_item" {
 			if e := domain.Complete(&after, time.Now()); e != nil {
 				return e
 			}
@@ -161,6 +167,12 @@ func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 			slog.Warn("change confirm blocked", "change_id", id, "state", p.State)
 			return domain.ErrConflict
 		}
+		if p.BeforeCapture != nil {
+			return confirmCaptureDeletion(t, &p, &out)
+		}
+		if e = validateCaptureRevision(t, p.Proposal); e != nil {
+			return e
+		}
 		if p.AfterProfile != nil {
 			return confirmProfile(t, &p, &out)
 		}
@@ -197,6 +209,9 @@ func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 		}
 		p.State = "confirmed"
 		p.ResultID = out.ID
+		if e = updateCaptureCandidate(t, p, "confirmed"); e != nil {
+			return e
+		}
 		return t.PutPending(p)
 	})
 	switch {
@@ -237,6 +252,9 @@ func (c *Service) Discard(id string) (out domain.Entry, err error) {
 			return e
 		}
 		p.State = "discarded"
+		if e = updateCaptureCandidate(t, p, "discarded"); e != nil {
+			return e
+		}
 		return t.PutPending(p)
 	})
 	if err != nil {
