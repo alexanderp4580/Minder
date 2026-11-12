@@ -182,6 +182,15 @@ func (s *Server) items(w http.ResponseWriter, r *http.Request) {
 		fail(w, &domain.Invalid{Field: "range", Message: "Send from and to as times, at most 62 days apart."})
 		return
 	}
+	if name := r.URL.Query().Get("timezone"); name != "" {
+		zone, err := time.LoadLocation(name)
+		if err != nil {
+			fail(w, &domain.Invalid{Field: "timezone", Message: "Choose a valid timezone."})
+			return
+		}
+		from = from.In(zone)
+		to = to.In(zone)
+	}
 	items, e := s.queries.ItemsBetween(from, to)
 	if e != nil {
 		fail(w, e)

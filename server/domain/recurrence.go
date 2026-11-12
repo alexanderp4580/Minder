@@ -50,7 +50,7 @@ func validateRecurrence(i *Item) error {
 	if r.Interval < 1 || r.Interval > 365 {
 		return &Invalid{"recurrence", "Repeat every 1 to 365 periods."}
 	}
-	if i.DueAt == "" && i.StartAt == "" {
+	if i.DueAt == "" && i.StartAt == "" && i.StartDate == "" && i.DueDate == "" {
 		return &Invalid{"recurrence", "Set a start or a deadline for a repeating item."}
 	}
 	return nil
@@ -138,6 +138,50 @@ func NextDue(i Item, now time.Time) (string, error) {
 
 // Advance moves a repeating item to its next occurrence. The start, the deadline and the reminder move by the same distance.
 func Advance(i *Item, now time.Time) error {
+	if i.StartAt == "" && i.DueAt == "" && (i.StartDate != "" || i.DueDate != "") {
+		if i.Recurrence == nil {
+			return &Invalid{"recurrence", "Set a recurrence."}
+		}
+		zone, e := time.LoadLocation(i.Timezone)
+		if e != nil || zone == nil {
+			zone = time.UTC
+		}
+		date := i.DueDate
+		if date == "" {
+			date = i.StartDate
+		}
+		anchor, e := time.ParseInLocation(time.DateOnly, date, zone)
+		if e != nil {
+			return e
+		}
+		base := anchor
+		if i.Recurrence.AfterCompletion {
+			base = time.Date(now.In(zone).Year(), now.In(zone).Month(), now.In(zone).Day(), 0, 0, 0, 0, zone)
+		}
+		next := step(base, *i.Recurrence, 1)
+		for k := 2; !next.After(now); k++ {
+			next = step(base, *i.Recurrence, k)
+		}
+		days := int(time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, time.UTC).Sub(time.Date(anchor.Year(), anchor.Month(), anchor.Day(), 0, 0, 0, 0, time.UTC)).Hours() / 24)
+		for _, f := range []*string{&i.StartDate, &i.EndDate, &i.DueDate} {
+			if *f != "" {
+				v, e := time.Parse(time.DateOnly, *f)
+				if e != nil {
+					return e
+				}
+				*f = v.AddDate(0, 0, days).Format(time.DateOnly)
+			}
+		}
+		if i.RemindAt != "" {
+			v, e := time.Parse(time.RFC3339, i.RemindAt)
+			if e != nil {
+				return e
+			}
+			i.RemindAt = v.In(zone).AddDate(0, 0, days).UTC().Format(time.RFC3339)
+		}
+		return nil
+	}
+
 	next, e := NextDue(*i, now)
 	if e != nil {
 		return e
@@ -145,7 +189,7 @@ func Advance(i *Item, now time.Time) error {
 	old, _ := time.Parse(time.RFC3339, Anchor(*i))
 	nt, _ := time.Parse(time.RFC3339, next)
 	delta := nt.Sub(old)
-	for _, field := range []*string{&i.StartAt, &i.DueAt, &i.RemindAt} {
+	for _, field := range []*string{&i.StartAt, &i.EndAt, &i.DueAt, &i.RemindAt} {
 		if *field == "" {
 			continue
 		}

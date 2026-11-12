@@ -1,6 +1,6 @@
 # Forwarded email capture
 
-Status: specification complete for owner review, 2026-11-12. Implementation planning and infrastructure changes have not started.
+Status: the owner approved implementation on 2026-11-12. The [implementation plan](../plans/2026-11-12-email-capture.md) awaits review; infrastructure changes have not started.
 Requirements: [../../requirements.md](../../requirements.md). Current system: [../../architecture.md](../../architecture.md).
 
 ## Intent and agreed choices
@@ -16,7 +16,7 @@ Configure the owner-approved addresses privately at deployment. Do not put actua
 Cloudflare receives readable messages. OpenRouter and the selected model provider receive the content needed for extraction.
 The pipeline is not end-to-end encrypted. Neither confirmation nor low model confidence changes these privacy boundaries.
 
-The owner decisions above and direct delivery below are agreed. This spec supplies concrete defaults for the remaining details; written-spec approval is still pending.
+The owner decisions above and direct delivery below are agreed. This spec supplies concrete defaults for the remaining details; the owner approved the specification by requesting implementation.
 
 ## Scope and examples
 

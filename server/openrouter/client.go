@@ -132,8 +132,14 @@ func tools() []any {
 	props["clear_list"] = flag
 	props["location"] = map[string]string{"type": "string", "description": "Where the item happens, for example an address or a place name."}
 	props["clear_location"] = flag
-	props["start_at"] = map[string]string{"type": "string", "description": "When the item begins, RFC3339 with timezone. Use for appointments and meetings."}
+	props["start_at"] = map[string]string{"type": "string", "description": "When the item begins, RFC3339 with timezone. Use for appointments and meetings. Use end_at for the event end, due_at only for deadlines. For date-only bookings use start_date/end_date (exclusive checkout) or due_date. Do not invent times."}
 	props["clear_start"] = flag
+	for _, name := range []string{"kind", "end_at", "start_timezone", "end_timezone", "start_date", "end_date", "due_date"} {
+		props[name] = str
+	}
+	for _, name := range []string{"clear_end", "clear_start_date", "clear_end_date", "clear_due_date", "clear_start_timezone", "clear_end_timezone"} {
+		props[name] = flag
+	}
 	props["duration_minutes"] = map[string]string{"type": "integer", "description": "How long it takes, 1 to 10080 minutes."}
 	props["clear_duration"] = flag
 	props["priority"] = map[string]string{"type": "integer", "description": "1 (highest) to 5. Set only when the owner states importance."}

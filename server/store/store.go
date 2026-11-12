@@ -304,8 +304,7 @@ func (s *Store) ItemsBetween(from, to time.Time) ([]domain.Item, error) {
 	}
 	out := []domain.Item{}
 	for _, i := range all {
-		at, e := time.Parse(time.RFC3339, domain.PlacedAt(i))
-		if e == nil && !at.Before(from) && at.Before(to) {
+		if domain.Overlaps(i, from, to, from.Location()) {
 			out = append(out, i)
 		}
 	}

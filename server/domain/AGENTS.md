@@ -12,6 +12,8 @@ Use the standard library only. Keep HTTP, SQL, SDKs and adapter imports out.
 `Complete` advances recurrence; `SnoozeAt` uses the item zone. UTC storage times retain their item timezone.
 `ProjectReminder` derives a schedule projection; persistence writes it atomically with item/profile changes.
 
+Items distinguish event end from deadline, and date-only ranges from instants. Event ranges are half-open; Overlaps uses the viewing timezone. Travel retains start/end zones. Date-only recurrence advances local dates without creating a timed reminder.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

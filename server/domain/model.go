@@ -24,6 +24,14 @@ type Invalid struct {
 func (e *Invalid) Error() string { return e.Message }
 
 type Item struct {
+	Kind          string `json:"kind,omitempty"`
+	EndAt         string `json:"end_at,omitempty"`
+	StartTimezone string `json:"start_timezone,omitempty"`
+	EndTimezone   string `json:"end_timezone,omitempty"`
+	StartDate     string `json:"start_date,omitempty"`
+	EndDate       string `json:"end_date,omitempty"`
+	DueDate       string `json:"due_date,omitempty"`
+
 	StartAt         string      `json:"start_at,omitempty"`
 	DurationMinutes int         `json:"duration_minutes,omitempty"`
 	Priority        int         `json:"priority,omitempty"`
@@ -45,6 +53,21 @@ type Item struct {
 	CompletedAt     string      `json:"completed_at,omitempty"`
 }
 type Proposal struct {
+	Kind          string `json:"kind,omitempty"`
+	EndAt         string `json:"end_at,omitempty"`
+	StartTimezone string `json:"start_timezone,omitempty"`
+	EndTimezone   string `json:"end_timezone,omitempty"`
+	StartDate     string `json:"start_date,omitempty"`
+	EndDate       string `json:"end_date,omitempty"`
+	DueDate       string `json:"due_date,omitempty"`
+
+	ClearEnd           bool `json:"clear_end,omitempty"`
+	ClearStartDate     bool `json:"clear_start_date,omitempty"`
+	ClearEndDate       bool `json:"clear_end_date,omitempty"`
+	ClearDueDate       bool `json:"clear_due_date,omitempty"`
+	ClearStartTimezone bool `json:"clear_start_timezone,omitempty"`
+	ClearEndTimezone   bool `json:"clear_end_timezone,omitempty"`
+
 	StartAt             string      `json:"start_at,omitempty"`
 	ClearStart          bool        `json:"clear_start,omitempty"`
 	DurationMinutes     int         `json:"duration_minutes,omitempty"`
@@ -153,7 +176,10 @@ func Validate(i *Item) error {
 	if i.StartAt != "" && i.DueAt != "" && i.StartAt > i.DueAt {
 		return &Invalid{"start_at", "The start must not be after the deadline."}
 	}
-	if i.DurationMinutes < 0 || i.DurationMinutes > 10080 {
+	if err := validateEvent(i); err != nil {
+		return err
+	}
+	if i.DurationMinutes < 0 || (i.DurationMinutes > 10080 && i.EndAt == "") {
 		return &Invalid{"duration_minutes", "Use a duration from 1 minute to 1 week."}
 	}
 	if i.Priority < 0 || i.Priority > 5 {

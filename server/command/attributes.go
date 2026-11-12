@@ -12,6 +12,26 @@ import (
 
 // setAttributes applies optional item fields to a proposal preview.
 func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error {
+	if p.Kind != "" {
+		i.Kind = p.Kind
+	}
+	for _, f := range []struct {
+		dst   *string
+		value string
+		clear bool
+	}{
+		{&i.EndAt, p.EndAt, p.ClearEnd}, {&i.StartDate, p.StartDate, p.ClearStartDate},
+		{&i.EndDate, p.EndDate, p.ClearEndDate}, {&i.DueDate, p.DueDate, p.ClearDueDate},
+		{&i.StartTimezone, p.StartTimezone, p.ClearStartTimezone}, {&i.EndTimezone, p.EndTimezone, p.ClearEndTimezone},
+	} {
+		if f.clear {
+			*f.dst = ""
+		}
+		if f.value != "" {
+			*f.dst = f.value
+		}
+	}
+
 	if p.ClearStart {
 		i.StartAt = ""
 	}
@@ -105,6 +125,20 @@ func itemFields(t port.Transaction, old, now domain.Item) []domain.Field {
 		{Name: "notes", Old: old.Notes, New: now.Notes},
 		{Name: "status", Old: old.Status, New: now.Status},
 		{Name: "timezone", Old: old.Timezone, New: now.Timezone},
+	}
+	for _, f := range []domain.Field{
+		{Name: "kind", Old: old.Kind, New: now.Kind},
+		{Name: "end_at", Old: old.EndAt, New: now.EndAt},
+		{Name: "start_date", Old: old.StartDate, New: now.StartDate},
+		{Name: "end_date", Old: old.EndDate, New: now.EndDate},
+		{Name: "due_date", Old: old.DueDate, New: now.DueDate},
+		{Name: "start_timezone", Old: old.StartTimezone, New: now.StartTimezone},
+		{Name: "end_timezone", Old: old.EndTimezone, New: now.EndTimezone},
+	} {
+		if f.Name == "kind" && f.Old == "" && f.New == "task" {
+			continue
+		}
+		all = append(all, f)
 	}
 	changed := []domain.Field{}
 	for _, f := range all {

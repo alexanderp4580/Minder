@@ -13,6 +13,8 @@ Keep derived reminder schedules in the same transaction as item/profile writes. 
 Return domain not-found errors for missing rows. Keep storage failures distinct from conflicts.
 No snooze choices, reminder messages, action orchestration or provider calls belong here.
 
+ItemsBetween selects overlapping event/date ranges, including stays that start before the query window.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

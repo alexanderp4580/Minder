@@ -12,6 +12,8 @@ Implement the assistant model contract. Keep provider keys in memory.
 Use request deadlines, bounded replies and safe provider errors. Reject truncated replies and missing or negative costs.
 Provider fixtures use local HTTP servers. Real-model checks use temporary databases.
 
+Tool schemas distinguish event ends, date-only ranges and deadlines; preserve travel zones and never invent missing clock times.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.
