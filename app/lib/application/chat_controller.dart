@@ -49,7 +49,7 @@ class ChatController extends ChangeNotifier {
       _entries[index] = e;
     }
     if (e.cursor > cursor) cursor = e.cursor;
-    if (e.kind != 'user') {
+    if (e.kind != EntryKind.user) {
       waiting = false;
     }
     connected = true;
@@ -184,7 +184,7 @@ class ChatController extends ChangeNotifier {
     String text = '';
     for (final e in _entries) {
       if (e.id == entry.id) break;
-      if (e.kind == 'user') text = e.text;
+      if (e.kind == EntryKind.user) text = e.text;
     }
     return text;
   }

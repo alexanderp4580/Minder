@@ -1,8 +1,6 @@
 package store
 
 import (
-	"encoding/json"
-	"database/sql"
 	"github.com/alexanderp4580/Minder/server/domain"
 )
 
@@ -52,26 +50,7 @@ func (t *Tx) PutProfile(p domain.Profile) error {
 	if _, e = t.tx.Exec("INSERT INTO profile(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", p.ID, body(p)); e != nil {
 		return e
 	}
-	rows, e := t.tx.Query("SELECT body FROM item WHERE json_extract(body,'$.profile')=?", p.ID)
-	if e != nil {
-		return e
-	}
-	var items []domain.Item
-	for rows.Next() {
-		var raw string
-		if e = rows.Scan(&raw); e != nil {
-			rows.Close()
-			return e
-		}
-		i, e := unmarshal[domain.Item](raw)
-		if e != nil {
-			rows.Close()
-			return e
-		}
-		items = append(items, i)
-	}
-	e = rows.Err()
-	rows.Close()
+	items, e := queryAll[domain.Item](t.tx, "SELECT body FROM item WHERE json_extract(body,'$.profile')=?", p.ID)
 	if e != nil {
 		return e
 	}
@@ -96,28 +75,7 @@ func (t *Tx) DeleteProfile(id string) error {
 	return e
 }
 func (s *Store) Profiles() ([]domain.Profile, error) {
-	rows, e := s.db.Query("SELECT body FROM profile ORDER BY json_extract(body,'$.builtin') DESC, json_extract(body,'$.name')")
-	if e != nil {
-		return nil, e
-	}
-	defer rows.Close()
-	var out []domain.Profile
-	for rows.Next() {
-		var raw string
-		if e = rows.Scan(&raw); e != nil {
-			return nil, e
-		}
-		p, e := unmarshal[domain.Profile](raw)
-		if e != nil {
-			return nil, e
-		}
-		out = append(out, p)
-	}
-	return out, rows.Err()
-}
-
-type queryer interface {
-	Query(string, ...any) (*sql.Rows, error)
+	return queryAll[domain.Profile](s.db, "SELECT body FROM profile ORDER BY json_extract(body,'$.builtin') DESC, json_extract(body,'$.name')")
 }
 
 func listNames(q queryer) ([]string, error) {
@@ -136,10 +94,5 @@ func listNames(q queryer) ([]string, error) {
 	}
 	return out, rows.Err()
 }
-func (s *Store) Lists() ([]string, error) { return listNames(s.db) }
+func (s *Store) Lists() ([]string, error)  { return listNames(s.db) }
 func (t *Tx) ListNames() ([]string, error) { return listNames(t.tx) }
-
-func unmarshal[T any](raw string) (v T, e error) {
-	e = json.Unmarshal([]byte(raw), &v)
-	return
-}

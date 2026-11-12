@@ -78,7 +78,7 @@ Chat entry fields: `id`, `kind` (user, minder, preview, result, error), `text`, 
 
 Events: `entry` (a new or changed chat entry) and `ping` (every 20 seconds). The stream uses `text/event-stream`. The server sets headers that stop proxy buffering.
 
-Errors: HTTP status, `code`, `field` when it applies, and a short `message` in STE. Codes: `invalid_field`, `conflict` (item changed), `not_found`, `limit_reached`, `model_error`, `unauthorized`.
+Errors: HTTP status, `code`, `field` when it applies, and a short `message` in STE. Codes: `invalid_field`, `conflict` (item changed), `not_found`, `limit_reached`, `model_error` (HTTP 502), `internal_error` (HTTP 500), `unauthorized`.
 
 ### Command layer
 

@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS profile(id TEXT PRIMARY KEY, body TEXT NOT NULL CHECK(json_valid(body)));

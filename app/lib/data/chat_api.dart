@@ -87,13 +87,10 @@ class ChatApi implements ChatRepository, PushRepository, ItemRepository {
   @override
   Future<List<Item>> itemsBetween(DateTime from, DateTime to) async =>
       ((await _request(
-                'GET',
-                '/v1/items?from=${from.toUtc().toIso8601String()}'
-                '&to=${to.toUtc().toIso8601String()}',
-              ))
-              as List)
-          .map((j) => Item.fromJson(j as Map<String, dynamic>))
-          .toList();
+        'GET',
+        '/v1/items?from=${from.toUtc().toIso8601String()}'
+            '&to=${to.toUtc().toIso8601String()}',
+      )) as List).map((j) => Item.fromJson(j as Map<String, dynamic>)).toList();
   Future<Entry> _post(String route) async =>
       Entry.fromJson(await _request('POST', route) as Map<String, dynamic>);
   @override

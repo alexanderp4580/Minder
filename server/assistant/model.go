@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/alexanderp4580/Minder/server/domain"
 	"io"
 	"net/http"
 	"time"
 )
+
+// maxOutputTokens leaves room for the model's thinking and for up to five tool calls.
+// A reply cut off by this limit is an error, never a half-read proposal.
+const maxOutputTokens = 4000
 
 type Call struct {
 	ID        string `json:"id"`
@@ -36,13 +40,13 @@ type OpenRouter struct {
 
 func (m *OpenRouter) Ready() error {
 	if m.Key == "" {
-		return errors.New("The model key is not configured.")
+		return &domain.ModelError{Message: "The model key is not configured."}
 	}
 	return nil
 }
 func (m *OpenRouter) Complete(ctx context.Context, messages []Message) (Response, error) {
 	if m.Key == "" {
-		return Response{}, errors.New("The model key is not configured.")
+		return Response{}, &domain.ModelError{Message: "The model key is not configured."}
 	}
 	model := m.Model
 	if model == "" {
@@ -52,7 +56,7 @@ func (m *OpenRouter) Complete(ctx context.Context, messages []Message) (Response
 	if url == "" {
 		url = "https://openrouter.ai/api/v1/chat/completions"
 	}
-	payload := map[string]any{"model": model, "messages": messages, "tools": tools(), "max_tokens": 1000, "usage": map[string]bool{"include": true}}
+	payload := map[string]any{"model": model, "messages": messages, "tools": tools(), "max_tokens": maxOutputTokens, "usage": map[string]bool{"include": true}}
 	b, _ := json.Marshal(payload)
 	req, e := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(b))
 	if e != nil {
@@ -66,16 +70,17 @@ func (m *OpenRouter) Complete(ctx context.Context, messages []Message) (Response
 	}
 	res, e := client.Do(req)
 	if e != nil {
-		return Response{}, errors.New("The model could not connect. Try again.")
+		return Response{}, &domain.ModelError{Message: "The model could not connect. Try again."}
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		io.Copy(io.Discard, io.LimitReader(res.Body, 4096))
-		return Response{}, fmt.Errorf("The model returned an error (%d). Try again.", res.StatusCode)
+		return Response{}, &domain.ModelError{Message: fmt.Sprintf("The model returned an error (%d). Try again.", res.StatusCode)}
 	}
 	var wire struct {
 		Choices []struct {
-			Message struct {
+			FinishReason string `json:"finish_reason"`
+			Message      struct {
 				Content *string `json:"content"`
 				Calls   []struct {
 					ID       string `json:"id"`
@@ -89,14 +94,17 @@ func (m *OpenRouter) Complete(ctx context.Context, messages []Message) (Response
 		Usage map[string]any `json:"usage"`
 	}
 	if e = json.NewDecoder(io.LimitReader(res.Body, 2<<20)).Decode(&wire); e != nil {
-		return Response{}, errors.New("The model reply was unreadable. Try again.")
+		return Response{}, &domain.ModelError{Message: "The model reply was unreadable. Try again."}
 	}
 	if len(wire.Choices) != 1 {
-		return Response{}, errors.New("The model sent no reply. Try again.")
+		return Response{}, &domain.ModelError{Message: "The model sent no reply. Try again."}
+	}
+	if wire.Choices[0].FinishReason == "length" {
+		return Response{}, &domain.ModelError{Message: "The model reply was cut short. Try again."}
 	}
 	cost, ok := wire.Usage["cost"].(float64)
 	if !ok || cost < 0 {
-		return Response{}, errors.New("The model cost is missing. Try again later.")
+		return Response{}, &domain.ModelError{Message: "The model cost is missing. Try again later."}
 	}
 	out := Response{CostUSD: cost, RawUsage: wire.Usage}
 	if wire.Choices[0].Message.Content != nil {

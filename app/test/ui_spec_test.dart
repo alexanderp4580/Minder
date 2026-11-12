@@ -84,9 +84,9 @@ void main() {
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    await (FontLoader('MaterialIcons')
-          ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf')))
-        .load();
+    await (FontLoader(
+      'MaterialIcons',
+    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
     for (final name in ['Michroma', 'Chakra Petch']) {
       final loader = FontLoader(name);
       for (final file
@@ -205,7 +205,9 @@ void main() {
     // The reminder buttons share one row, 8 px apart, 44 px high. Done is last,
     // at the right edge.
     final done = tester.getRect(find.widgetWithText(FilledButton, 'Done'));
-    final snooze = tester.getRect(find.widgetWithText(OutlinedButton, 'Snooze'));
+    final snooze = tester.getRect(
+      find.widgetWithText(OutlinedButton, 'Snooze'),
+    );
     final open = tester.getRect(find.widgetWithText(OutlinedButton, 'Open'));
     expect(snooze.top, open.top);
     expect(open.top, done.top);
@@ -246,7 +248,10 @@ void main() {
       find.byType(IconButton),
     ]) {
       for (final e in f.evaluate()) {
-        expect(tester.getSize(find.byWidget(e.widget)).height, greaterThanOrEqualTo(44));
+        expect(
+          tester.getSize(find.byWidget(e.widget)).height,
+          greaterThanOrEqualTo(44),
+        );
       }
     }
     await tester.pumpWidget(const SizedBox());

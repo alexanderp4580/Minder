@@ -162,7 +162,6 @@ func profile(ps []domain.Profile, id string) domain.Profile {
 	return domain.Profile{}
 }
 
-
 func TestLocationIsStoredShownAndLimited(t *testing.T) {
 	c, _ := setup(t)
 	i := create(t, c, domain.Proposal{Title: "Dentist", DueAt: "2026-11-13T09:00:00Z", Location: "  Dr Smit, Damrak 1 "})
@@ -249,5 +248,26 @@ func TestEventProfileRemindsBeforeStart(t *testing.T) {
 	s.DueReminders(start.Add(-59 * time.Minute))
 	if h, _ := s.History(0, 20); countReminders(h) != 1 {
 		t.Fatal("start-based reminder missing")
+	}
+}
+
+func TestErrorCodesNameTheRealCause(t *testing.T) {
+	for _, c := range []struct {
+		err  error
+		code string
+	}{
+		{&domain.Invalid{Field: "title", Message: "x"}, "invalid_field"},
+		{domain.ErrConflict, "conflict"},
+		{domain.ErrNotFound, "not_found"},
+		{domain.ErrLimit, "limit_reached"},
+		{&domain.ModelError{Message: "The model could not connect."}, "model_error"},
+		{errors.New("database is locked"), "internal_error"},
+	} {
+		if got := ErrorCode(c.err); got != c.code {
+			t.Errorf("%v: got %q, want %q", c.err, got, c.code)
+		}
+	}
+	if Describe(errors.New("database is locked")) != "Minder could not finish. Try again." {
+		t.Fatal("an internal error must not leak its text")
 	}
 }

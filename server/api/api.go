@@ -9,6 +9,7 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/store"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,18 +25,47 @@ type Server struct {
 	// Branding is the folder that holds the brand guide. Empty turns /branding off.
 	Branding     string
 	PushConfig   *PushConfig
+	PingInterval time.Duration
 	store        *store.Store
 	commands     *command.Service
 	assistant    Replier
 	verifier     *Verifier
-	web          string
-	PingInterval time.Duration
+	web          http.Handler
+	public       *http.ServeMux // reachable without sign-in
+	private      *http.ServeMux // reachable after sign-in
 	processing   sync.Mutex
 }
 
 func New(s *store.Store, c *command.Service, a Replier, v *Verifier, web string) *Server {
-	return &Server{store: s, commands: c, assistant: a, verifier: v, web: web, PingInterval: 20 * time.Second}
+	srv := &Server{store: s, commands: c, assistant: a, verifier: v, PingInterval: 20 * time.Second}
+	if web != "" {
+		srv.web = http.FileServer(http.Dir(web))
+	}
+	srv.public = http.NewServeMux()
+	srv.public.HandleFunc("GET /v1/health", func(w http.ResponseWriter, r *http.Request) {
+		write(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+	srv.public.HandleFunc("GET "+logoPath, serveLogo)
+	m := http.NewServeMux()
+	m.HandleFunc("GET /v1/chat", srv.chat)
+	m.HandleFunc("GET /v1/items", srv.items)
+	m.HandleFunc("GET /v1/events", srv.events)
+	m.HandleFunc("POST /v1/chat/messages", srv.message)
+	m.HandleFunc("POST /v1/changes/{id}/confirm", srv.confirm)
+	m.HandleFunc("POST /v1/changes/{id}/discard", srv.discard)
+	m.HandleFunc("POST /v1/undo/{id}", srv.undo)
+	m.HandleFunc("GET /v1/reminders", srv.reminders)
+	m.HandleFunc("POST /v1/reminders/{id}/{action}", srv.reminderAction)
+	m.HandleFunc("GET /v1/push/config", srv.pushConfig)
+	m.HandleFunc("POST /v1/push/devices", srv.registerDevice)
+	m.HandleFunc("GET /branding", srv.serveBranding)
+	m.HandleFunc("GET /branding/", srv.serveBranding)
+	m.HandleFunc("/v1/", http.NotFound) // an unknown API path never falls through to the web app
+	m.HandleFunc("/", srv.serveWeb)
+	srv.private = m
+	return srv
 }
+
 func write(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
@@ -54,6 +84,8 @@ func fail(w http.ResponseWriter, err error) {
 		status = 404
 	case "limit_reached":
 		status = 429
+	case "model_error":
+		status = 502
 	}
 	body := map[string]any{"code": code, "message": command.Describe(err)}
 	var invalid *domain.Invalid
@@ -65,113 +97,101 @@ func fail(w http.ResponseWriter, err error) {
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Referrer-Policy", "same-origin")
-	if r.URL.Path == "/v1/health" && r.Method == "GET" {
-		write(w, 200, map[string]string{"status": "ok", "version": "m0"})
+	if h, pattern := s.public.Handler(r); pattern != "" {
+		h.ServeHTTP(w, r)
 		return
 	}
-	if r.URL.Path == logoPath && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		serveLogo(w, r)
+	if !s.authorized(w, r) {
 		return
 	}
+	s.private.ServeHTTP(w, r)
+}
+
+// authorized checks the owner's token, and for writes that the request comes from this site.
+func (s *Server) authorized(w http.ResponseWriter, r *http.Request) bool {
 	if s.verifier != nil {
 		if e := s.verifier.Verify(r.Header.Get("Cf-Access-Jwt-Assertion")); e != nil {
-			write(w, 401, map[string]string{"code": "unauthorized", "message": "Sign in to continue."})
-			return
+			write(w, http.StatusUnauthorized, map[string]string{"code": "unauthorized", "message": "Sign in to continue."})
+			return false
 		}
 	}
-	if strings.HasPrefix(r.URL.Path, "/v1/") && r.Method != "GET" {
+	if strings.HasPrefix(r.URL.Path, "/v1/") && r.Method != http.MethodGet {
 		if origin := r.Header.Get("Origin"); origin != "" {
 			scheme := "https"
 			if r.TLS == nil && r.Header.Get("X-Forwarded-Proto") != "https" {
 				scheme = "http"
 			}
 			if origin != scheme+"://"+r.Host {
-				write(w, 403, map[string]string{"code": "unauthorized", "message": "Use the app to send this request."})
-				return
+				write(w, http.StatusForbidden, map[string]string{"code": "unauthorized", "message": "Use the app to send this request."})
+				return false
 			}
 		}
 	}
-	if s.Branding != "" && (r.URL.Path == "/branding" || strings.HasPrefix(r.URL.Path, "/branding/")) {
-		s.serveBranding(w, r)
+	return true
+}
+func (s *Server) serveWeb(w http.ResponseWriter, r *http.Request) {
+	if s.web == nil {
+		http.NotFound(w, r)
 		return
 	}
-	if s.reminderRoutes(w, r) {
+	s.web.ServeHTTP(w, r)
+}
+func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
+	after, _ := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	entries, e := s.store.History(after, limit)
+	if e != nil {
+		fail(w, e)
 		return
 	}
-	switch {
-	case r.Method == "GET" && r.URL.Path == "/v1/chat":
-		after, _ := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
-		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-		entries, e := s.store.History(after, limit)
-		if e != nil {
-			fail(w, e)
-			return
-		}
-		write(w, 200, entries)
-	case r.Method == "GET" && r.URL.Path == "/v1/items":
-		from, e1 := time.Parse(time.RFC3339, r.URL.Query().Get("from"))
-		to, e2 := time.Parse(time.RFC3339, r.URL.Query().Get("to"))
-		if e1 != nil || e2 != nil || !to.After(from) || to.Sub(from) > 62*24*time.Hour {
-			fail(w, &domain.Invalid{Field: "range", Message: "Send from and to as times, at most 62 days apart."})
-			return
-		}
-		items, e := s.store.ItemsBetween(from, to)
-		if e != nil {
-			fail(w, e)
-			return
-		}
-		write(w, 200, items)
-	case r.Method == "GET" && r.URL.Path == "/v1/events":
-		s.events(w, r)
-	case r.Method == "POST" && r.URL.Path == "/v1/chat/messages":
-		s.message(w, r)
-	case r.Method == "POST" && strings.HasPrefix(r.URL.Path, "/v1/changes/"):
-		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/v1/changes/"), "/")
-		if len(parts) != 2 {
-			http.NotFound(w, r)
-			return
-		}
-		var entry domain.Entry
-		var e error
-		switch parts[1] {
-		case "confirm":
-			entry, e = s.commands.Confirm(parts[0])
-		case "discard":
-			entry, e = s.commands.Discard(parts[0])
-		default:
-			http.NotFound(w, r)
-			return
-		}
-		if e != nil {
-			if errors.Is(e, domain.ErrConflict) && parts[1] == "confirm" {
-				replacement, re := s.commands.Refresh(parts[0])
-				if re == nil {
-					write(w, 409, map[string]any{"code": "conflict", "message": e.Error(), "entry": replacement})
-					return
-				}
-			}
-			fail(w, e)
-			return
-		}
-		write(w, 200, entry)
-	case r.Method == "POST" && strings.HasPrefix(r.URL.Path, "/v1/undo/"):
-		entry, e := s.commands.Undo(strings.TrimPrefix(r.URL.Path, "/v1/undo/"))
-		if e != nil {
-			fail(w, e)
-			return
-		}
-		write(w, 200, entry)
-	default:
-		if strings.HasPrefix(r.URL.Path, "/v1/") {
-			http.NotFound(w, r)
-			return
-		}
-		if s.web == "" {
-			http.NotFound(w, r)
-			return
-		}
-		http.FileServer(http.Dir(s.web)).ServeHTTP(w, r)
+	write(w, http.StatusOK, entries)
+}
+func (s *Server) items(w http.ResponseWriter, r *http.Request) {
+	from, e1 := time.Parse(time.RFC3339, r.URL.Query().Get("from"))
+	to, e2 := time.Parse(time.RFC3339, r.URL.Query().Get("to"))
+	if e1 != nil || e2 != nil || !to.After(from) || to.Sub(from) > 62*24*time.Hour {
+		fail(w, &domain.Invalid{Field: "range", Message: "Send from and to as times, at most 62 days apart."})
+		return
 	}
+	items, e := s.store.ItemsBetween(from, to)
+	if e != nil {
+		fail(w, e)
+		return
+	}
+	write(w, http.StatusOK, items)
+}
+
+// confirm applies a preview. If the item changed since, it answers 409 with a fresh preview.
+func (s *Server) confirm(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	entry, e := s.commands.Confirm(id)
+	if errors.Is(e, domain.ErrConflict) {
+		if replacement, re := s.commands.Refresh(id); re == nil {
+			write(w, http.StatusConflict, map[string]any{"code": "conflict", "message": e.Error(), "entry": replacement})
+			return
+		}
+	}
+	if e != nil {
+		fail(w, e)
+		return
+	}
+	write(w, http.StatusOK, entry)
+}
+func (s *Server) discard(w http.ResponseWriter, r *http.Request) {
+	entry, e := s.commands.Discard(r.PathValue("id"))
+	if e != nil {
+		fail(w, e)
+		return
+	}
+	write(w, http.StatusOK, entry)
+}
+func (s *Server) undo(w http.ResponseWriter, r *http.Request) {
+	entry, e := s.commands.Undo(r.PathValue("id"))
+	if e != nil {
+		fail(w, e)
+		return
+	}
+	write(w, http.StatusOK, entry)
 }
 func (s *Server) message(w http.ResponseWriter, r *http.Request) {
 	var input struct {
@@ -213,6 +233,12 @@ func (s *Server) message(w http.ResponseWriter, r *http.Request) {
 	write(w, 202, map[string]any{"entry": entry, "reply_id": replyID})
 	go func() {
 		defer s.processing.Unlock()
+		defer func() {
+			if recover() != nil {
+				log.Print("The assistant stopped with an internal error")
+				s.store.AddEntry(domain.Entry{ID: replyID, Kind: "error", Text: command.Describe(errors.New("assistant panic"))})
+			}
+		}()
 		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 		defer cancel()
 		_, err := s.assistant.Reply(ctx, input.Text)

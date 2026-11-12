@@ -157,3 +157,20 @@ func Advance(i *Item, now time.Time) error {
 	}
 	return nil
 }
+
+// Complete finishes an item. A repeating item stays open and moves to its next occurrence.
+// Every path that completes an item uses it, so chat, the reminder card and the notification agree.
+func Complete(i *Item, now time.Time) error {
+	if i.Status != "open" && i.Status != "in_progress" {
+		return ErrConflict
+	}
+	if i.Recurrence != nil {
+		if e := Advance(i, now); e != nil {
+			return e
+		}
+	} else {
+		i.Status = "done"
+	}
+	i.CompletedAt = now.UTC().Format(time.RFC3339Nano)
+	return nil
+}

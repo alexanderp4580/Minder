@@ -3,9 +3,9 @@ package command
 import (
 	"errors"
 	"fmt"
-	"time"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/store"
+	"time"
 )
 
 type Service struct{ Store *store.Store }
@@ -52,17 +52,9 @@ func previewIn(t *store.Tx, p domain.Proposal, out *domain.Entry) error {
 		after.Version++
 		after.UpdatedAt = domain.Now()
 		if p.Action == "complete_item" {
-			if i.Status != "open" && i.Status != "in_progress" {
-				return domain.ErrConflict
+			if e := domain.Complete(&after, time.Now()); e != nil {
+				return e
 			}
-			if i.Recurrence != nil {
-				if e := domain.Advance(&after, time.Now()); e != nil {
-					return e
-				}
-			} else {
-				after.Status = "done"
-			}
-			after.CompletedAt = domain.Now()
 		} else {
 			if p.RemindAt != "" {
 				after.RemindAt = p.RemindAt
@@ -105,16 +97,11 @@ func previewIn(t *store.Tx, p domain.Proposal, out *domain.Entry) error {
 		return e
 	}
 	id := store.ID()
-	fields := []domain.Field{}
 	old := domain.Item{}
 	if before != nil {
 		old = *before
 	}
-	for _, f := range []domain.Field{{Name: "remind_at", Old: old.RemindAt, New: after.RemindAt}, {Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(after.NagMinutes)}, {Name: "title", Old: old.Title, New: after.Title}, {Name: "due_at", Old: old.DueAt, New: after.DueAt}, {Name: "notes", Old: old.Notes, New: after.Notes}, {Name: "status", Old: old.Status, New: after.Status}, {Name: "timezone", Old: old.Timezone, New: after.Timezone}, {Name: "start_at", Old: old.StartAt, New: after.StartAt}, {Name: "duration_minutes", Old: zeroEmpty(old.DurationMinutes), New: zeroEmpty(after.DurationMinutes)}, {Name: "priority", Old: zeroEmpty(old.Priority), New: zeroEmpty(after.Priority)}, {Name: "location", Old: old.Location, New: after.Location}, {Name: "list", Old: old.List, New: after.List}, {Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, after.ProfileID)}, {Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(after.Recurrence)}} {
-		if f.Old != f.New {
-			fields = append(fields, f)
-		}
-	}
+	fields := itemFields(t, old, after)
 	var e error
 	*out, e = t.PutEntry(domain.Entry{Kind: "preview", Text: "Review this change.", Change: &domain.Change{ID: id, Action: p.Action, ItemTitle: after.Title, Fields: fields, State: "pending"}})
 	if e != nil {
@@ -297,6 +284,7 @@ func (c *Service) Refresh(id string) (domain.Entry, error) {
 }
 func ErrorCode(e error) string {
 	var invalid *domain.Invalid
+	var model *domain.ModelError
 	switch {
 	case errors.As(e, &invalid):
 		return "invalid_field"
@@ -306,12 +294,17 @@ func ErrorCode(e error) string {
 		return "not_found"
 	case errors.Is(e, domain.ErrLimit):
 		return "limit_reached"
-	default:
+	case errors.As(e, &model):
 		return "model_error"
+	default:
+		return "internal_error"
 	}
 }
+
+// Describe gives the owner a short message. Model and internal failures show a fixed text, never their details.
 func Describe(e error) string {
-	if ErrorCode(e) == "model_error" {
+	switch ErrorCode(e) {
+	case "model_error", "internal_error":
 		return "Minder could not finish. Try again."
 	}
 	return fmt.Sprint(e)

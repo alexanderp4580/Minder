@@ -197,3 +197,23 @@ func TestReminderRestartPersistsAndDueOnlyDoesNotSchedule(t *testing.T) {
 		t.Fatal("due-only item notified")
 	}
 }
+
+func TestDoneOnARepeatingItemMovesItForwardAndUndoRestoresIt(t *testing.T) {
+	s, now, i := reminderStore(t)
+	i.DueAt = now.Format(time.RFC3339)
+	i.Recurrence = &domain.Recurrence{Every: "weekly", Interval: 1}
+	putReminder(t, s, i)
+	s.DueReminders(now)
+	active, _ := s.ActiveReminders()
+	result, e := s.ReminderAction(active[0].Reminder.ID, "done", now)
+	if e != nil {
+		t.Fatal(e)
+	}
+	items, _ := s.Items()
+	if items[0].Status != "open" || items[0].DueAt != now.AddDate(0, 0, 7).Format(time.RFC3339) || items[0].CompletedAt == "" {
+		t.Fatalf("a repeating item must roll forward: %+v", items[0])
+	}
+	if result.Change == nil || result.Change.UndoID == "" {
+		t.Fatal("Done must offer Undo")
+	}
+}

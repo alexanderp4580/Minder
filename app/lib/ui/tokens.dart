@@ -32,10 +32,7 @@ abstract final class Tokens {
       onPrimary: white,
       error: alert,
     ),
-    textTheme: const TextTheme(
-      bodyMedium: _body,
-      bodyLarge: _body,
-    ),
+    textTheme: const TextTheme(bodyMedium: _body, bodyLarge: _body),
     dividerColor: line,
     inputDecorationTheme: const InputDecorationTheme(
       isDense: true,

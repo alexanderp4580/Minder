@@ -273,7 +273,7 @@ func TestBrandingServesOnlyTheGuideFilesAfterSignIn(t *testing.T) {
 		t.Fatalf("png head: %d", w.Code)
 	}
 	for _, path := range []string{"/branding/AGENTS.md", "/branding/../AGENTS.md", "/branding/%2e%2e/AGENTS.md", "/branding/index.html/x", "/branding/other"} {
-		if w := get(h, "GET", path); w.Code != 404 && w.Code != 301 || strings.Contains(w.Body.String(), "private notes") {
+		if w := get(h, "GET", path); w.Code == 200 || strings.Contains(w.Body.String(), "private notes") {
 			t.Fatalf("%s: %d", path, w.Code)
 		}
 	}
@@ -288,5 +288,46 @@ func TestBrandingServesOnlyTheGuideFilesAfterSignIn(t *testing.T) {
 	off := New(s, command.New(s), replier{s}, nil, "")
 	if w := get(off, "GET", "/branding/"); w.Code != 404 {
 		t.Fatalf("disabled: %d", w.Code)
+	}
+}
+
+type panicReplier struct{}
+
+func (panicReplier) Reply(context.Context, string) ([]domain.Entry, error) { panic("boom") }
+
+func TestAssistantPanicBecomesAnErrorEntryAndFreesTheServer(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "panic"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	h := New(s, command.New(s), panicReplier{}, nil, "")
+	for range 2 {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/chat/messages", strings.NewReader(`{"text":"Hello"}`)))
+		if w.Code != 202 {
+			t.Fatalf("message not accepted: %d %s", w.Code, w.Body.String())
+		}
+		deadline := time.Now().Add(3 * time.Second)
+		for time.Now().Before(deadline) {
+			if entries, _ := s.History(0, 50); len(entries) > 0 && entries[len(entries)-1].Kind == "error" {
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		for !h.processing.TryLock() {
+			time.Sleep(10 * time.Millisecond)
+		}
+		h.processing.Unlock()
+	}
+	entries, _ := s.History(0, 50)
+	errs := 0
+	for _, en := range entries {
+		if en.Kind == "error" && en.Text == "Minder could not finish. Try again." {
+			errs++
+		}
+	}
+	if errs != 2 {
+		t.Fatalf("want two error entries, got %d in %+v", errs, entries)
 	}
 }

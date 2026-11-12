@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -145,5 +146,29 @@ func TestAdvanceMovesStartDeadlineAndReminderTogether(t *testing.T) {
 	only := Item{StartAt: "2026-11-13T09:00:00Z", Timezone: "Europe/Amsterdam", Recurrence: &Recurrence{Every: "daily", Interval: 1}}
 	if e := Advance(&only, at("2026-11-13T07:00:00Z")); e != nil || only.StartAt != "2026-11-14T09:00:00Z" || only.DueAt != "" {
 		t.Fatalf("start-only: %+v %v", only, e)
+	}
+}
+
+func TestCompleteFinishesAnItemOrRollsARepeatingOne(t *testing.T) {
+	now := at("2026-11-13T07:00:00Z")
+	plain := Item{Status: "open", DueAt: "2026-11-13T09:00:00Z", Timezone: "Europe/Amsterdam"}
+	if e := Complete(&plain, now); e != nil || plain.Status != "done" || plain.CompletedAt == "" || plain.DueAt != "2026-11-13T09:00:00Z" {
+		t.Fatalf("plain: %v %+v", e, plain)
+	}
+	repeating := Item{Status: "open", DueAt: "2026-11-13T09:00:00Z", Timezone: "Europe/Amsterdam", Recurrence: &Recurrence{Every: "weekly", Interval: 1}}
+	if e := Complete(&repeating, now); e != nil || repeating.Status != "open" || repeating.CompletedAt == "" || repeating.DueAt != "2026-11-20T09:00:00Z" {
+		t.Fatalf("repeating: %v %+v", e, repeating)
+	}
+	done := Item{Status: "done"}
+	if e := Complete(&done, now); !errors.Is(e, ErrConflict) {
+		t.Fatalf("finished item completed again: %v", e)
+	}
+}
+
+func TestValidateNamesTheBadStatus(t *testing.T) {
+	i := Item{Title: "x", Status: "bogus"}
+	var invalid *Invalid
+	if e := Validate(&i); !errors.As(e, &invalid) || invalid.Field != "status" {
+		t.Fatalf("got %v", e)
 	}
 }

@@ -47,10 +47,8 @@ class FakeItems implements ItemRepository {
   }
 }
 
-CalendarController controller(FakeItems repo) => CalendarController(
-  LoadItems(repo),
-  now: () => DateTime(2026, 11, 12, 10),
-);
+CalendarController controller(FakeItems repo) =>
+    CalendarController(LoadItems(repo), now: () => DateTime(2026, 11, 12, 10));
 
 void main() {
   setUpAll(() async {

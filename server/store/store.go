@@ -1,13 +1,15 @@
 package store
 
 import (
-	"sort"
 	"crypto/rand"
 	"database/sql"
-	_ "embed"
+	"embed"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
+	"sort"
 	"sync"
 	"time"
 
@@ -15,8 +17,48 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-//go:embed schema.sql
-var schema string
+//go:embed migrations/*.sql
+var migrations embed.FS
+
+// steps returns the migration files in order. File n takes the database from version n-1 to n.
+func steps() []string {
+	names, _ := fs.Glob(migrations, "migrations/*.sql")
+	sort.Strings(names)
+	return names
+}
+
+// migrate upgrades the database to the newest version. It refuses a database from a newer release.
+func migrate(db *sql.DB) error {
+	var current int
+	if e := db.QueryRow("PRAGMA user_version").Scan(&current); e != nil {
+		return e
+	}
+	all := steps()
+	if current > len(all) {
+		return errors.New("The database is newer than this server.")
+	}
+	for v := current; v < len(all); v++ {
+		script, e := migrations.ReadFile(all[v])
+		if e != nil {
+			return e
+		}
+		tx, e := db.Begin()
+		if e != nil {
+			return e
+		}
+		if _, e = tx.Exec(string(script)); e == nil {
+			_, e = tx.Exec(fmt.Sprintf("PRAGMA user_version=%d", v+1))
+		}
+		if e != nil {
+			tx.Rollback()
+			return fmt.Errorf("migration %s failed: %w", all[v], e)
+		}
+		if e = tx.Commit(); e != nil {
+			return e
+		}
+	}
+	return nil
+}
 
 type Store struct {
 	db *sql.DB
@@ -37,8 +79,7 @@ func Open(path string) (*Store, error) {
 		return nil, e
 	}
 	db.SetMaxOpenConns(1)
-	_, e = db.Exec(schema)
-	if e != nil {
+	if e = migrate(db); e != nil {
 		db.Close()
 		return nil, e
 	}
@@ -62,6 +103,38 @@ func (s *Store) Write(fn func(*Tx) error) error {
 		return e
 	}
 	return tx.Commit()
+}
+
+// queryer is what *sql.DB and *sql.Tx share.
+type queryer interface {
+	Query(string, ...any) (*sql.Rows, error)
+}
+
+func unmarshal[T any](raw string) (v T, e error) {
+	e = json.Unmarshal([]byte(raw), &v)
+	return
+}
+
+// queryAll runs a query that returns one JSON column and decodes every row into T.
+func queryAll[T any](q queryer, query string, args ...any) ([]T, error) {
+	rows, e := q.Query(query, args...)
+	if e != nil {
+		return nil, e
+	}
+	defer rows.Close()
+	out := []T{}
+	for rows.Next() {
+		var raw string
+		if e = rows.Scan(&raw); e != nil {
+			return nil, e
+		}
+		v, e := unmarshal[T](raw)
+		if e != nil {
+			return nil, e
+		}
+		out = append(out, v)
+	}
+	return out, rows.Err()
 }
 func decode[T any](row *sql.Row) (T, error) {
 	var v T
@@ -150,6 +223,7 @@ func (t *Tx) PutEntry(e domain.Entry) (domain.Entry, error) {
 	_, err = t.tx.Exec("INSERT INTO chat_entry(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", e.ID, body(e))
 	return e, err
 }
+
 // AttachCost records what the model request behind an entry cost.
 func (s *Store) AttachCost(id string, cost float64) (out domain.Entry, err error) {
 	err = s.Write(func(t *Tx) error {
@@ -168,25 +242,9 @@ func (s *Store) AddEntry(e domain.Entry) (out domain.Entry, err error) {
 	return
 }
 func (s *Store) Items() ([]domain.Item, error) {
-	rows, e := s.db.Query("SELECT body FROM item ORDER BY id")
-	if e != nil {
-		return nil, e
-	}
-	defer rows.Close()
-	out := []domain.Item{}
-	for rows.Next() {
-		var b string
-		var i domain.Item
-		if e = rows.Scan(&b); e != nil {
-			return nil, e
-		}
-		if e = json.Unmarshal([]byte(b), &i); e != nil {
-			return nil, e
-		}
-		out = append(out, i)
-	}
-	return out, rows.Err()
+	return queryAll[domain.Item](s.db, "SELECT body FROM item ORDER BY id")
 }
+
 // ItemsBetween returns items placed in [from, to), sorted by their placement time.
 func (s *Store) ItemsBetween(from, to time.Time) ([]domain.Item, error) {
 	all, e := s.Items()
@@ -207,34 +265,10 @@ func (s *Store) History(after int64, limit int) ([]domain.Entry, error) {
 	if limit < 1 || limit > 200 {
 		limit = 50
 	}
-	query := "SELECT body FROM event WHERE cursor>? ORDER BY cursor LIMIT ?"
 	if after == 0 {
-		query = "SELECT body FROM (SELECT seq,body FROM chat_entry ORDER BY seq DESC LIMIT ?) ORDER BY seq"
+		return queryAll[domain.Entry](s.db, "SELECT body FROM (SELECT seq,body FROM chat_entry ORDER BY seq DESC LIMIT ?) ORDER BY seq", limit)
 	}
-	var rows *sql.Rows
-	var err error
-	if after == 0 {
-		rows, err = s.db.Query(query, limit)
-	} else {
-		rows, err = s.db.Query(query, after, limit)
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []domain.Entry{}
-	for rows.Next() {
-		var b string
-		var e domain.Entry
-		if err = rows.Scan(&b); err != nil {
-			return nil, err
-		}
-		if err = json.Unmarshal([]byte(b), &e); err != nil {
-			return nil, err
-		}
-		out = append(out, e)
-	}
-	return out, rows.Err()
+	return queryAll[domain.Entry](s.db, "SELECT body FROM event WHERE cursor>? ORDER BY cursor LIMIT ?", after, limit)
 }
 func (s *Store) Events(after int64, limit int) ([]domain.Entry, error) {
 	if after == 0 {

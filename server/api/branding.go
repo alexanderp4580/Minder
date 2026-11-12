@@ -15,7 +15,7 @@ var brandingFiles = map[string]string{
 
 // serveBranding serves the brand guide. It runs after sign-in, so the guide is as private as the app.
 func (s *Server) serveBranding(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+	if s.Branding == "" {
 		http.NotFound(w, r)
 		return
 	}

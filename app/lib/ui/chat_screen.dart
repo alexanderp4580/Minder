@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../application/chat_controller.dart';
-import '../domain/chat_repository.dart';
-import '../domain/entry.dart';
-import 'format.dart';
+import 'entry_view.dart';
 import 'tokens.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -26,8 +24,6 @@ class ChatScreen extends StatefulWidget {
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
-
-const _meta = TextStyle(fontSize: 12, color: Tokens.muted, letterSpacing: 1.2);
 
 class _ChatScreenState extends State<ChatScreen> {
   final _text = TextEditingController();
@@ -135,7 +131,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                         ),
                         if (widget.onCalendar != null)
-                          IconButton(tooltip: 'Calendar', onPressed: widget.onCalendar, icon: const Icon(Icons.calendar_month)),
+                          IconButton(
+                            tooltip: 'Calendar',
+                            onPressed: widget.onCalendar,
+                            icon: const Icon(Icons.calendar_month),
+                          ),
                         if (c.loading)
                           const SizedBox(
                             width: 18,
@@ -154,9 +154,12 @@ class _ChatScreenState extends State<ChatScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 12),
-                          OutlinedButton(onPressed: widget.notificationsBusy
+                          OutlinedButton(
+                            onPressed: widget.notificationsBusy
                                 ? null
-                                : widget.enableNotifications, child: Text('Enable notifications')),
+                                : widget.enableNotifications,
+                            child: Text('Enable notifications'),
+                          ),
                           if (widget.notificationStatus != null)
                             Text(
                               widget.notificationStatus!,
@@ -206,7 +209,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ],
                               ),
                             ),
-                          for (final e in c.entries) _entry(e),
+                          for (final e in c.entries)
+                            EntryView(entry: e, controller: c),
                           if (c.waiting)
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 16),
@@ -243,17 +247,25 @@ class _ChatScreenState extends State<ChatScreen> {
                                       padding: const EdgeInsets.only(top: 12),
                                       child: Align(
                                         alignment: Alignment.centerRight,
-                                        child: FilledButton(onPressed: _signingIn ? null : _login, child: Text(_signingIn
-                                            ? 'Signing in…'
-                                            : 'Sign in')),
+                                        child: FilledButton(
+                                          onPressed: _signingIn ? null : _login,
+                                          child: Text(
+                                            _signingIn
+                                                ? 'Signing in…'
+                                                : 'Sign in',
+                                          ),
+                                        ),
                                       ),
                                     )
                                   else
                                     Padding(
                                       padding: const EdgeInsets.only(top: 12),
-                                      child: OutlinedButton(onPressed: c.acting || c.waiting
+                                      child: OutlinedButton(
+                                        onPressed: c.acting || c.waiting
                                             ? null
-                                            : () => c.retry(), child: Text('Retry')),
+                                            : () => c.retry(),
+                                        child: Text('Retry'),
+                                      ),
                                     ),
                                 ],
                               ),
@@ -293,9 +305,12 @@ class _ChatScreenState extends State<ChatScreen> {
                         const SizedBox(width: Tokens.gap),
                         Tooltip(
                           message: 'Send',
-                          child: FilledButton(onPressed: c.waiting || c.needsSignIn
+                          child: FilledButton(
+                            onPressed: c.waiting || c.needsSignIn
                                 ? null
-                                : _send, child: Text('Send')),
+                                : _send,
+                            child: Text('Send'),
+                          ),
                         ),
                       ],
                     ),
@@ -308,236 +323,4 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     },
   );
-  Widget _entry(Entry e) {
-    final c = widget.controller;
-    final mine = e.kind == 'user';
-    final ch = e.change;
-    final reminder = e.reminder;
-    final pending = e.kind == 'preview' && ch?['state'] == 'pending';
-    final time =
-        clock(e.createdAt.toLocal()) +
-        (e.costEur > 0 ? ' · ${cost(e.costEur)}' : '');
-    final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (ch != null && e.kind == 'preview') ...[
-          Text(
-            'PREVIEW · ${_action(ch['action'] as String)}',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Tokens.muted,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            ch['item_title'] as String? ?? '',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          for (final f in (ch['fields'] as List? ?? []))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 5),
-              child: Wrap(
-                spacing: 6,
-                children: [
-                  Text(
-                    '${_field(f['name'] as String)}:',
-                    style: const TextStyle(color: Tokens.muted),
-                  ),
-                  if ((f['old'] as String? ?? '').isNotEmpty)
-                    Text(
-                      _value(f['old'] as String),
-                      style: const TextStyle(
-                        color: Tokens.muted,
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                  Text(_value(f['new'] as String? ?? '')),
-                ],
-              ),
-            ),
-          if (pending)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 10,
-                    child: OutlinedButton(onPressed: c.acting
-                          ? null
-                          : () => c.discard(ch['id'] as String), child: Text('Discard')),
-                  ),
-                  const SizedBox(width: Tokens.gap),
-                  Expanded(
-                    flex: 13,
-                    child: FilledButton(onPressed: c.acting
-                          ? null
-                          : () => c.confirm(ch['id'] as String), child: Text('Confirm')),
-                  ),
-                ],
-              ),
-            )
-          else
-            Text(
-              ch['state'] == 'confirmed'
-                  ? 'Confirmed'
-                  : ch['state'] == 'discarded'
-                  ? 'Discarded'
-                  : 'Item changed. See the new preview.',
-              style: const TextStyle(color: Tokens.muted),
-            ),
-        ] else
-          Text(
-            e.text,
-            style: TextStyle(
-              color: e.kind == 'error' ? Tokens.alert : Tokens.text,
-            ),
-          ),
-        if (reminder != null && reminder['state'] == 'active')
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 10,
-                  child: MenuAnchor(
-                    menuChildren: [
-                      for (final (action, label) in const [
-                        (ReminderAction.snooze15, '15 minutes'),
-                        (ReminderAction.snooze60, '1 hour'),
-                        (ReminderAction.tonight, 'Tonight'),
-                        (ReminderAction.tomorrow, 'Tomorrow'),
-                      ])
-                        MenuItemButton(
-                          onPressed: () =>
-                              c.remind(reminder['id'] as String, action),
-                          child: Text(label),
-                        ),
-                    ],
-                    builder: (context, menu, _) => OutlinedButton(
-                      onPressed: c.acting
-                          ? null
-                          : () => menu.isOpen ? menu.close() : menu.open(),
-                      child: const Text('Snooze'),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: Tokens.gap),
-                Expanded(
-                  flex: 10,
-                  child: OutlinedButton(onPressed: c.acting
-                        ? null
-                        : () => c.remind(
-                            reminder['id'] as String,
-                            ReminderAction.acknowledge,
-                          ), child: Text('Open')),
-                ),
-                const SizedBox(width: Tokens.gap),
-                Expanded(
-                  flex: 11,
-                  child: FilledButton(onPressed: c.acting
-                        ? null
-                        : () => c.remind(
-                            reminder['id'] as String,
-                            ReminderAction.done,
-                          ), child: Text('Done')),
-                ),
-              ],
-            ),
-          ),
-        if (reminder != null && reminder['state'] != 'active')
-          Text(
-            reminder['state'] == 'superseded'
-                ? 'See the latest reminder.'
-                : reminder['state'] == 'cancelled'
-                ? 'Reminder cancelled.'
-                : 'Reminder handled.',
-            style: const TextStyle(color: Tokens.muted),
-          ),
-        if (e.kind == 'result' && ch?['undo_id'] != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton(onPressed: c.acting
-                    ? null
-                    : () => c.undo(ch!['undo_id'] as String), child: Text('Undo')),
-            ),
-          ),
-        if (e.kind == 'error')
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton(onPressed: c.waiting ? null : () => c.retry(text: c.retryText(e)), child: Text('Retry')),
-            ),
-          ),
-      ],
-    );
-    final boxed = mine || e.kind == 'preview';
-    return Container(
-      key: ValueKey(e.id),
-      margin: const EdgeInsets.only(top: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Align(
-            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-            child: Text('${mine ? 'YOU' : 'MINDER'} · $time', style: _meta),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            margin: EdgeInsets.only(left: mine ? 44 : 0),
-            padding: !boxed
-                ? EdgeInsets.zero
-                : mine
-                ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
-                : const EdgeInsets.all(12),
-            decoration: boxed
-                ? BoxDecoration(
-                    color: mine ? Tokens.panel : Tokens.voidColor,
-                    border: Border.all(color: Tokens.edge),
-                  )
-                : null,
-            child: body,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _action(String name) => switch (name) {
-    'create_item' => 'CREATE ITEM',
-    'complete_item' => 'COMPLETE ITEM',
-    'create_profile' => 'ADD PROFILE',
-    'update_profile' => 'CHANGE PROFILE',
-    _ => 'CHANGE ITEM',
-  };
-
-  String _field(String name) => switch (name) {
-    'start_at' => 'Starts',
-    'duration_minutes' => 'Duration (minutes)',
-    'priority' => 'Priority',
-    'location' => 'Location',
-    'list' => 'List',
-    'profile' => 'Profile',
-    'recurrence' => 'Repeats',
-    'name' => 'Name',
-    'remind_before_minutes' => 'Remind before (minutes)',
-    'due_at' => 'Due',
-    'remind_at' => 'Remind at',
-    'nag_minutes' => 'Nag interval (minutes)',
-    'title' => 'Title',
-    'notes' => 'Notes',
-    'status' => 'Status',
-    'timezone' => 'Timezone',
-    _ => name,
-  };
-  String _value(String value) {
-    if (value.isEmpty) return 'None';
-    final date = DateTime.tryParse(value);
-    if (date == null || !value.contains('T')) return value;
-    return dateTime(date.toLocal());
-  }
 }

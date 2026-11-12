@@ -133,7 +133,7 @@ void main() {
     repo.events.add(entry('p', 2, 'preview', change: preview()));
     await Future<void>.delayed(Duration.zero);
     await c.discard('p');
-    expect(c.entries.last.change?['state'], 'discarded');
+    expect(c.entries.last.change?.state, ChangeState.discarded);
     c.dispose();
   });
   test('poll fills gaps and replaces older entries by cursor', () async {
@@ -148,7 +148,7 @@ void main() {
     repo.saved.add(entry('r', 4, 'result', text: 'Saved.'));
     await c.sync();
     expect(c.entries.length, 2);
-    expect(c.entries.first.change?['state'], 'confirmed');
+    expect(c.entries.first.change?.state, ChangeState.confirmed);
     expect(c.cursor, 4);
     c.dispose();
   });

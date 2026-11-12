@@ -22,6 +22,8 @@ It clears only the emulator installation of Minder and rejects physical device s
 `app/test/native_auth_probe.dart` is its emulator-only entrypoint. The loopback fixture redirects from Firefox to the app.
 The check asserts foreground ownership and callback delivery. It creates no account or authenticated session.
 
+`real-model-multi-check.py [runs]` sends one message with two changes to the real model and checks for two previews with the right times. Run it after any change to the prompt, the tools or the context.
+
 `render-icons.py` exports launcher, web, favicon and public-logo assets from `brand/app-icon.svg`. It requires `rsvg-convert`.
 Do not edit generated icon files by hand. Rebuild exports after changing the SVG.
 

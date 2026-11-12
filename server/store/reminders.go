@@ -48,6 +48,7 @@ func (t *Tx) closeReminders(itemID, state string) error {
 	_, e = t.tx.Exec("DELETE FROM push_delivery WHERE occurrence_id IN (SELECT id FROM reminder_occurrence WHERE item_id=?)", itemID)
 	return e
 }
+
 type reminderSpec struct {
 	at     string
 	nag    int
@@ -173,24 +174,7 @@ func (s *Store) DueReminders(now time.Time) error {
 	})
 }
 func (s *Store) ActiveReminders() ([]domain.Entry, error) {
-	rows, e := s.db.Query("SELECT e.body FROM reminder_occurrence r JOIN chat_entry e ON e.id=r.entry_id WHERE r.state='active' ORDER BY e.seq")
-	if e != nil {
-		return nil, e
-	}
-	defer rows.Close()
-	out := []domain.Entry{}
-	for rows.Next() {
-		var raw string
-		if e = rows.Scan(&raw); e != nil {
-			return nil, e
-		}
-		var entry domain.Entry
-		if e = json.Unmarshal([]byte(raw), &entry); e != nil {
-			return nil, e
-		}
-		out = append(out, entry)
-	}
-	return out, rows.Err()
+	return queryAll[domain.Entry](s.db, "SELECT e.body FROM reminder_occurrence r JOIN chat_entry e ON e.id=r.entry_id WHERE r.state='active' ORDER BY e.seq")
 }
 func (s *Store) ReminderAction(id, action string, now time.Time) (out domain.Entry, err error) {
 	switch action {
@@ -226,8 +210,9 @@ func (s *Store) ReminderAction(id, action string, now time.Time) (out domain.Ent
 		text := "Reminder acknowledged: " + i.Title + "."
 		if action == "done" {
 			before := i
-			i.Status = "done"
-			i.CompletedAt = now.UTC().Format(time.RFC3339)
+			if e = domain.Complete(&i, now); e != nil {
+				return e
+			}
 			i.Version++
 			i.UpdatedAt = domain.Now()
 			if e = t.PutItem(i); e != nil {

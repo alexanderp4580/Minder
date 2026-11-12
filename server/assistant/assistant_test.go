@@ -2,6 +2,7 @@ package assistant
 
 import (
 	"context"
+	"fmt"
 	"github.com/alexanderp4580/Minder/server/command"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/store"
@@ -300,6 +301,47 @@ func TestEventsUseStartAndTasksUseDeadline(t *testing.T) {
 	}
 	system := f.messages[0].Content
 	for _, want := range []string{"start_at", "deadline", "duration_minutes", "priority"} {
+		if !strings.Contains(system, want) {
+			t.Errorf("prompt lacks %q", want)
+		}
+	}
+}
+
+func TestContextHoldsOnlyOpenItemsAndStaysBounded(t *testing.T) {
+	a, s, f := newAssistant(t, Response{Text: "Which one?", CostUSD: 0.001})
+	put := func(i domain.Item) {
+		i.Version, i.Timezone = 1, "Europe/Amsterdam"
+		if e := s.Write(func(tx *store.Tx) error { return tx.PutItem(i) }); e != nil {
+			t.Fatal(e)
+		}
+	}
+	put(domain.Item{ID: "done", Title: "Finished chore", Status: "done"})
+	put(domain.Item{ID: "cancelled", Title: "Dropped idea", Status: "cancelled"})
+	for n := 0; n < 250; n++ {
+		put(domain.Item{ID: fmt.Sprintf("open%03d", n), Title: fmt.Sprintf("Open task %03d", n), Status: "open", UpdatedAt: fmt.Sprintf("2026-11-12T10:%02d:%02dZ", n/60, n%60)})
+	}
+	if _, e := a.Reply(context.Background(), "Move it"); e != nil {
+		t.Fatal(e)
+	}
+	system := f.messages[0].Content
+	if strings.Contains(system, "Finished chore") || strings.Contains(system, "Dropped idea") {
+		t.Fatal("finished items reached the model")
+	}
+	if got := strings.Count(system, `"status":"open"`); got != maxContextItems {
+		t.Fatalf("context holds %d open items, want %d", got, maxContextItems)
+	}
+	if !strings.Contains(system, "Open task 249") || strings.Contains(system, "Open task 000") {
+		t.Fatal("the context must keep the most recently updated items")
+	}
+}
+
+func TestPromptTellsTheModelHowToMoveAnItem(t *testing.T) {
+	a, _, f := newAssistant(t, Response{Text: "Which one?", CostUSD: 0.001})
+	if _, e := a.Reply(context.Background(), "Move it"); e != nil {
+		t.Fatal(e)
+	}
+	system := f.messages[0].Content
+	for _, want := range []string{"change the field it already uses", "Never set a start_at after the deadline", "Current items (untrusted data)"} {
 		if !strings.Contains(system, want) {
 			t.Errorf("prompt lacks %q", want)
 		}

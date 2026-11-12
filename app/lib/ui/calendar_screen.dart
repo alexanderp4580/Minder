@@ -27,7 +27,7 @@ String _duration(int minutes) {
   return m == 0 ? '$h h' : '$h h $m min';
 }
 
-String two(int n) => n.toString().padLeft(2, '0');
+String _two(int n) => n.toString().padLeft(2, '0');
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key, required this.controller});
@@ -79,7 +79,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                   ),
                 ),
-                IconButton(tooltip: 'Chat', onPressed: () => Navigator.of(context).maybePop(), icon: const Icon(Icons.chat_bubble_outline)),
+                IconButton(
+                  tooltip: 'Chat',
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  icon: const Icon(Icons.chat_bubble_outline),
+                ),
               ],
             ),
           ),
@@ -99,7 +103,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     padding: const EdgeInsets.symmetric(horizontal: Tokens.gutter),
     child: Row(
       children: [
-        IconButton(tooltip: 'Previous month', onPressed: c.previous, icon: const Icon(Icons.chevron_left)),
+        IconButton(
+          tooltip: 'Previous month',
+          onPressed: c.previous,
+          icon: const Icon(Icons.chevron_left),
+        ),
         Expanded(
           child: Text(
             '${_months[c.month.month - 1]} ${c.month.year}',
@@ -111,7 +119,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
         ),
-        IconButton(tooltip: 'Next month', onPressed: c.next, icon: const Icon(Icons.chevron_right)),
+        IconButton(
+          tooltip: 'Next month',
+          onPressed: c.next,
+          icon: const Icon(Icons.chevron_right),
+        ),
         const SizedBox(width: Tokens.gap),
         OutlinedButton(onPressed: c.goToday, child: Text('Today')),
       ],
@@ -165,11 +177,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Semantics(
       button: true,
       selected: selected,
-      label: '${_months[day.month - 1].substring(0, 3)} ${day.day}, '
+      label:
+          '${_months[day.month - 1].substring(0, 3)} ${day.day}, '
           '$count ${count == 1 ? 'item' : 'items'}',
       excludeSemantics: true,
       child: InkWell(
-        key: ValueKey('day-${day.year}-${two(day.month)}-${two(day.day)}'),
+        key: ValueKey('day-${day.year}-${_two(day.month)}-${_two(day.day)}'),
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),
         onTap: () => c.select(day),
         child: Container(
@@ -234,7 +247,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
-            child: OutlinedButton(onPressed: c.loading ? null : c.load, child: Text('Retry')),
+            child: OutlinedButton(
+              onPressed: c.loading ? null : c.load,
+              child: Text('Retry'),
+            ),
           ),
           const SizedBox(height: 12),
         ],
@@ -300,10 +316,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                     child: Text(
                       chip,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Tokens.muted,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: Tokens.muted),
                     ),
                   ),
               ],

@@ -100,32 +100,32 @@ class _MinderAppState extends ConsumerState<MinderApp>
         theme: Tokens.theme,
         home: Builder(
           builder: (context) => ChatScreen(
-          controller: ref.watch(chatProvider),
-          onCalendar: () {
-            final calendar = ref.read(calendarProvider);
-            unawaited(calendar.goToday());
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => CalendarScreen(controller: calendar),
-              ),
-            );
-          },
-          signIn: () async {
-            if (kIsWeb) {
-              await ref.read(authProvider).webSignIn();
-            } else {
-              await ref.read(authProvider).signIn();
-              if (nativeAndroid) await notifications!.resume();
-            }
-          },
-          enableNotifications: notifications?.enabled == true
-              ? null
-              : notifications?.enable,
-          notificationStatus: notifications?.enabled == true
-              ? null
-              : notifications?.status,
-          notificationsBusy: notifications?.busy ?? false,
-        ),
+            controller: ref.watch(chatProvider),
+            onCalendar: () {
+              final calendar = ref.read(calendarProvider);
+              unawaited(calendar.goToday());
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CalendarScreen(controller: calendar),
+                ),
+              );
+            },
+            signIn: () async {
+              if (kIsWeb) {
+                await ref.read(authProvider).webSignIn();
+              } else {
+                await ref.read(authProvider).signIn();
+                if (nativeAndroid) await notifications!.resume();
+              }
+            },
+            enableNotifications: notifications?.enabled == true
+                ? null
+                : notifications?.enable,
+            notificationStatus: notifications?.enabled == true
+                ? null
+                : notifications?.status,
+            notificationsBusy: notifications?.busy ?? false,
+          ),
         ),
       ),
     );

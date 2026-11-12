@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -11,6 +10,11 @@ import (
 var ErrConflict = errors.New("The item changed. Request a new preview.")
 var ErrNotFound = errors.New("The item was not found.")
 var ErrLimit = errors.New("The monthly limit is reached.")
+
+// ModelError is a failure of the language model or its provider.
+type ModelError struct{ Message string }
+
+func (e *ModelError) Error() string { return e.Message }
 
 type Invalid struct {
 	Field   string
@@ -23,32 +27,32 @@ type Item struct {
 	StartAt         string      `json:"start_at,omitempty"`
 	DurationMinutes int         `json:"duration_minutes,omitempty"`
 	Priority        int         `json:"priority,omitempty"`
-	Location    string      `json:"location,omitempty"`
-	List        string      `json:"list,omitempty"`
-	ProfileID   string      `json:"profile,omitempty"`
-	Recurrence  *Recurrence `json:"recurrence,omitempty"`
-	RemindAt    string      `json:"remind_at,omitempty"`
-	NagMinutes  int         `json:"nag_minutes,omitempty"`
-	ID          string      `json:"id"`
-	Title       string      `json:"title"`
-	Status      string      `json:"status"`
-	DueAt       string      `json:"due_at,omitempty"`
-	Timezone    string      `json:"timezone"`
-	Notes       string      `json:"notes,omitempty"`
-	Version     int         `json:"version"`
-	CreatedAt   string      `json:"created_at"`
-	UpdatedAt   string      `json:"updated_at"`
-	CompletedAt string      `json:"completed_at,omitempty"`
+	Location        string      `json:"location,omitempty"`
+	List            string      `json:"list,omitempty"`
+	ProfileID       string      `json:"profile,omitempty"`
+	Recurrence      *Recurrence `json:"recurrence,omitempty"`
+	RemindAt        string      `json:"remind_at,omitempty"`
+	NagMinutes      int         `json:"nag_minutes,omitempty"`
+	ID              string      `json:"id"`
+	Title           string      `json:"title"`
+	Status          string      `json:"status"`
+	DueAt           string      `json:"due_at,omitempty"`
+	Timezone        string      `json:"timezone"`
+	Notes           string      `json:"notes,omitempty"`
+	Version         int         `json:"version"`
+	CreatedAt       string      `json:"created_at"`
+	UpdatedAt       string      `json:"updated_at"`
+	CompletedAt     string      `json:"completed_at,omitempty"`
 }
 type Proposal struct {
-	StartAt         string      `json:"start_at,omitempty"`
-	ClearStart      bool        `json:"clear_start,omitempty"`
-	DurationMinutes int         `json:"duration_minutes,omitempty"`
-	ClearDuration   bool        `json:"clear_duration,omitempty"`
-	Priority        int         `json:"priority,omitempty"`
-	ClearPriority   bool        `json:"clear_priority,omitempty"`
-	Location        string      `json:"location,omitempty"`
-	ClearLocation   bool        `json:"clear_location,omitempty"`
+	StartAt             string      `json:"start_at,omitempty"`
+	ClearStart          bool        `json:"clear_start,omitempty"`
+	DurationMinutes     int         `json:"duration_minutes,omitempty"`
+	ClearDuration       bool        `json:"clear_duration,omitempty"`
+	Priority            int         `json:"priority,omitempty"`
+	ClearPriority       bool        `json:"clear_priority,omitempty"`
+	Location            string      `json:"location,omitempty"`
+	ClearLocation       bool        `json:"clear_location,omitempty"`
 	List                string      `json:"list,omitempty"`
 	ClearList           bool        `json:"clear_list,omitempty"`
 	Profile             string      `json:"profile,omitempty"`
@@ -99,22 +103,22 @@ type Entry struct {
 type Pending struct {
 	BeforeProfile *Profile
 	AfterProfile  *Profile
-	ID       string
-	Proposal Proposal
-	Before   *Item
-	After    Item
-	State    string
-	EntryID  string
-	ResultID string
+	ID            string
+	Proposal      Proposal
+	Before        *Item
+	After         Item
+	State         string
+	EntryID       string
+	ResultID      string
 }
 type Audit struct {
 	BeforeProfile *Profile
 	AfterProfile  *Profile
-	ID     string
-	Before *Item
-	After  Item
-	Undone bool
-	Actor  string
+	ID            string
+	Before        *Item
+	After         Item
+	Undone        bool
+	Actor         string
 }
 
 func Now() string { return time.Now().UTC().Format(time.RFC3339Nano) }
@@ -179,7 +183,7 @@ func Validate(i *Item) error {
 	switch i.Status {
 	case "open", "in_progress", "done", "cancelled":
 	default:
-		return fmt.Errorf("invalid status")
+		return &Invalid{"status", "Use open, in progress, done or cancelled."}
 	}
 	return nil
 }

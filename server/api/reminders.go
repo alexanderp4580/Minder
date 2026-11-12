@@ -5,7 +5,6 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -42,51 +41,41 @@ func decodeBody(w http.ResponseWriter, r *http.Request, v any) error {
 	}
 	return nil
 }
-func (s *Server) reminderRoutes(w http.ResponseWriter, r *http.Request) bool {
-	switch {
-	case r.Method == "GET" && r.URL.Path == "/v1/reminders":
-		entries, e := s.store.ActiveReminders()
-		if e != nil {
-			fail(w, e)
-		} else {
-			write(w, 200, entries)
-		}
-		return true
-	case r.Method == "GET" && r.URL.Path == "/v1/push/config":
-		if s.PushConfig == nil {
-			write(w, 503, map[string]string{"code": "push_not_configured", "message": "Push setup is not ready on the server."})
-		} else {
-			write(w, 200, s.PushConfig)
-		}
-		return true
-	case r.Method == "POST" && r.URL.Path == "/v1/push/devices":
-		var input struct {
-			DeviceID string `json:"device_id"`
-			Token    string `json:"token"`
-		}
-		e := decodeBody(w, r, &input)
-		if e == nil {
-			e = s.store.RegisterDevice(input.DeviceID, input.Token)
-		}
-		if e != nil {
-			fail(w, e)
-		} else {
-			write(w, 200, map[string]bool{"registered": true})
-		}
-		return true
-	case r.Method == "POST" && strings.HasPrefix(r.URL.Path, "/v1/reminders/"):
-		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/v1/reminders/"), "/")
-		if len(parts) != 2 || parts[0] == "" {
-			http.NotFound(w, r)
-			return true
-		}
-		entry, e := s.store.ReminderAction(parts[0], parts[1], time.Now().UTC())
-		if e != nil {
-			fail(w, e)
-		} else {
-			write(w, 200, entry)
-		}
-		return true
+func (s *Server) reminders(w http.ResponseWriter, r *http.Request) {
+	entries, e := s.store.ActiveReminders()
+	if e != nil {
+		fail(w, e)
+		return
 	}
-	return false
+	write(w, http.StatusOK, entries)
+}
+func (s *Server) pushConfig(w http.ResponseWriter, r *http.Request) {
+	if s.PushConfig == nil {
+		write(w, http.StatusServiceUnavailable, map[string]string{"code": "push_not_configured", "message": "Push setup is not ready on the server."})
+		return
+	}
+	write(w, http.StatusOK, s.PushConfig)
+}
+func (s *Server) registerDevice(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		DeviceID string `json:"device_id"`
+		Token    string `json:"token"`
+	}
+	e := decodeBody(w, r, &input)
+	if e == nil {
+		e = s.store.RegisterDevice(input.DeviceID, input.Token)
+	}
+	if e != nil {
+		fail(w, e)
+		return
+	}
+	write(w, http.StatusOK, map[string]bool{"registered": true})
+}
+func (s *Server) reminderAction(w http.ResponseWriter, r *http.Request) {
+	entry, e := s.store.ReminderAction(r.PathValue("id"), r.PathValue("action"), time.Now().UTC())
+	if e != nil {
+		fail(w, e)
+		return
+	}
+	write(w, http.StatusOK, entry)
 }

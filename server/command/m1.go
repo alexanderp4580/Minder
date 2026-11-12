@@ -86,6 +86,33 @@ func recurrenceText(r *domain.Recurrence) string {
 	return text
 }
 
+// itemFields lists what differs between two versions of an item, for the preview.
+func itemFields(t *store.Tx, old, now domain.Item) []domain.Field {
+	all := []domain.Field{
+		{Name: "title", Old: old.Title, New: now.Title},
+		{Name: "start_at", Old: old.StartAt, New: now.StartAt},
+		{Name: "due_at", Old: old.DueAt, New: now.DueAt},
+		{Name: "duration_minutes", Old: zeroEmpty(old.DurationMinutes), New: zeroEmpty(now.DurationMinutes)},
+		{Name: "remind_at", Old: old.RemindAt, New: now.RemindAt},
+		{Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(now.NagMinutes)},
+		{Name: "priority", Old: zeroEmpty(old.Priority), New: zeroEmpty(now.Priority)},
+		{Name: "location", Old: old.Location, New: now.Location},
+		{Name: "list", Old: old.List, New: now.List},
+		{Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, now.ProfileID)},
+		{Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(now.Recurrence)},
+		{Name: "notes", Old: old.Notes, New: now.Notes},
+		{Name: "status", Old: old.Status, New: now.Status},
+		{Name: "timezone", Old: old.Timezone, New: now.Timezone},
+	}
+	changed := []domain.Field{}
+	for _, f := range all {
+		if f.Old != f.New {
+			changed = append(changed, f)
+		}
+	}
+	return changed
+}
+
 var notSlug = regexp.MustCompile(`[^a-z0-9]+`)
 
 func profileFields(old, now domain.Profile) []domain.Field {
