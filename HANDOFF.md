@@ -7,7 +7,7 @@ State on 2026-11-12. Branch `m0-chat`, worktree `Minder-m0-chat`. This file is t
 - M0 chat: server, Flutter app, Cloudflare Access, Coolify deploy. The owner approved it on a phone.
 - Reminders and push (`cce3855`): scheduling with catch-up, nagging, FCM, notification actions. The owner confirmed that it works on a phone.
 - The app uses repository interfaces and use cases. Only `data` knows API routes.
-- Production runs `124494d`. Firebase settings are runtime variables on Coolify.
+- Production runs `1c0efe9`. Firebase settings are runtime variables on Coolify.
 
 ## In progress: M1 remainder (lists, profiles, recurrence)
 
@@ -59,7 +59,8 @@ Steps:
 - [x] Docs: `docs/calendar-spec.md`, `docs/screens.md`, `docs/m1-spec.md`, AGENTS files, evidence.
 - [x] Branding hosted at `/branding/` behind sign-in (tests pass). It is private. A public page needs a Cloudflare Access bypass for that path. The owner decides.
 - Docker context: `.dockerignore` lists the folders the image build may read. A new folder needs an entry there. The first branding deploy failed for this reason. Test a new COPY with `podman build` on a small Dockerfile before a deploy.
-- [ ] Deploy `HEAD`, then the APK 0.4.0 after the owner agrees to a build. The owner stopped the APK build.
+- [x] Deployed `1c0efe9` (172 seconds; unhealthy for the first seconds, then `running:healthy`). Production has the calendar, the new fields and `/branding/`. The public address returns 401 without sign-in. The content at `/branding/` is not checked through the live host.
+- [ ] APK 0.4.0 (calendar) is not built. The owner stopped the build. Build it only when the owner asks.
 - [ ] Phone check of the calendar.
 
 ## Checks
