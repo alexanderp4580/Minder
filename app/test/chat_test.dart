@@ -42,11 +42,12 @@ class FakeRepository implements ChatRepository {
   final events = StreamController<Entry>.broadcast();
   final saved = <Entry>[];
   bool offline = false;
-  RepositoryFailure? sendFailure;
+  RepositoryFailure? sendFailure, historyFailure;
   Future<void>? sendGate;
   int sends = 0;
   @override
   Future<List<Entry>> history(int after) async {
+    if (historyFailure != null) throw historyFailure!;
     if (offline) {
       throw const RepositoryFailure('Check your connection.', transport: true);
     }
@@ -213,6 +214,37 @@ void main() {
     expect(c.entries.map((e) => e.id), ['other', 'gone']);
     c.dispose();
   });
+  test('a dropped event stream shows only the header icon', () async {
+    final repo = FakeRepository();
+    final c = ChatController(
+      repo,
+      pollInterval: const Duration(days: 1),
+      offlineGrace: const Duration(milliseconds: 20),
+    );
+    await c.start();
+    repo.events.addError(Exception('Connection reset by peer'));
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+    expect(c.error, isNull);
+    expect(c.showOffline, isTrue);
+    c.dispose();
+  });
+
+  test(
+    'a message from a background failure clears when sync succeeds',
+    () async {
+      final repo = FakeRepository();
+      final c = ChatController(repo, pollInterval: const Duration(days: 1));
+      await c.start();
+      repo.historyFailure = const RepositoryFailure('The server is busy.');
+      await c.sync();
+      expect(c.error, 'The server is busy.');
+      repo.historyFailure = null;
+      await c.sync();
+      expect(c.error, isNull);
+      c.dispose();
+    },
+  );
+
   test('poll fills gaps and replaces older entries by cursor', () async {
     final repo = FakeRepository();
     final c = ChatController(repo, pollInterval: const Duration(days: 1));

@@ -27,6 +27,7 @@ class ChatController extends ChangeNotifier {
       needsSignIn = false;
   String? error;
   String? _unsent;
+  bool _backgroundError = false;
   bool _disposed = false, _syncing = false;
   Timer? _poll, _reconnect, _offlineTimer;
 
@@ -73,6 +74,10 @@ class ChatController extends ChangeNotifier {
     _offlineTimer?.cancel();
     _offlineTimer = null;
     showOffline = false;
+    if (_backgroundError) {
+      error = null;
+      _backgroundError = false;
+    }
   }
 
   void _connectionLost() {
@@ -83,24 +88,24 @@ class ChatController extends ChangeNotifier {
     });
   }
 
-  /// A background failure: transport drops only feed the header icon.
+  /// A background failure. A dropped connection only feeds the header icon, and so does
+  /// any error the data layer did not turn into a [RepositoryFailure], such as a reset
+  /// socket on the event stream. Other messages clear when the connection works again.
   void _backgroundFailed(Object e) {
-    if (e is RepositoryFailure && e.transport) {
+    if (e is! RepositoryFailure || e.transport) {
       _connectionLost();
     } else {
       _failed(e);
+      _backgroundError = true;
     }
   }
 
   void _failed(Object e) {
-    if (e is RepositoryFailure && e.transport) _connectionLost();
     // A dropped connection shows only in the header icon, never as a message in the chat.
-    final transport = e is RepositoryFailure && e.transport;
-    error = transport
-        ? null
-        : e is RepositoryFailure
-        ? e.message
-        : 'Check your connection. Then try again.';
+    final transport = e is! RepositoryFailure || e.transport;
+    if (transport) _connectionLost();
+    error = transport ? null : e.message;
+    _backgroundError = false;
     if (e is RepositoryFailure) {
       if (e.replacement != null) _merge(e.replacement!);
       needsSignIn = e.unauthorized;
