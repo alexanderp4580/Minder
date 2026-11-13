@@ -97,7 +97,7 @@
 
 ### Task 6: App offer card
 
-**Files:** Modify `app/lib/domain/entry.dart` (`Entry.options`, default empty), `app/lib/data/wire.dart` (`entryFromJson` reads `options`), `app/lib/ui/entry_view.dart`; create `app/test/offer_card_test.dart`; update `app/pubspec.yaml` version to `0.8.0+24`, `app/lib/AGENTS.md`, `app/test/AGENTS.md`.
+**Files:** Modify `app/lib/domain/entry.dart` (`Entry.options`, default empty), `app/lib/data/wire.dart` (`entryFromJson` reads `options`), `app/lib/ui/entry_view.dart`; create `app/test/offer_card_test.dart`; update `app/pubspec.yaml` version to `0.9.2+27`, `app/lib/AGENTS.md`, `app/test/AGENTS.md`.
 
 **Interfaces:** Consumes `ChatController.send(String)` and `isLatest(Entry)`.
 
@@ -113,5 +113,5 @@
 - [ ] **Step 1:** Update every owning DOX doc and the handoff; mark the spec approved.
 - [ ] **Step 2:** Run `toolchain/check`; expect exit 0.
 - [ ] **Step 3:** Live check through TokenCrypt (`tokencrypt run --with serper_api_key`): start the server with `ENV=development`, a fake model for the offer, real Serper; confirm one call returns Witte Wereld 1. Record in evidence; no secrets.
-- [ ] **Step 4:** Build release web and run the three browser scenarios; build the orbital preview APK 0.8.0 and send it once to Telegram (authorized; credentials from TokenCrypt). Record results.
+- [ ] **Step 4:** Build release web and run the three browser scenarios; build the orbital preview APK 0.9.2 and send it once to Telegram (authorized; credentials from TokenCrypt). Record results.
 - [ ] **Step 5:** Commit `Record place-lookup verification`. Leave the branch unmerged and undeployed for the owner.

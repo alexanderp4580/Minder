@@ -87,6 +87,12 @@ func TestLookupReplyAfterAFreshOfferSearchesOnceAndFoldsInThePlaces(t *testing.T
 	}
 	last := f.messages[len(f.messages)-1]
 	prev := f.messages[len(f.messages)-2]
+	if !strings.Contains(last.Content, "website field") || strings.Contains(last.Content, "for notes") {
+		t.Fatalf("the result message must send the website to its own field: %q", last.Content)
+	}
+	if prompt := f.messages[0].Content; !strings.Contains(prompt, "website field") || strings.Contains(prompt, "website in notes") {
+		t.Fatalf("the place rule must send the website to its own field")
+	}
 	if prev.Role != "user" || prev.Content != "Look it up" || last.Role != "user" || !strings.Contains(last.Content, "Witte Wereld 1") || !strings.Contains(last.Content, "snowworld.com/landgraaf") || !strings.Contains(last.Content, "untrusted") {
 		t.Fatalf("messages end %q / %q", prev.Content, last.Content)
 	}
