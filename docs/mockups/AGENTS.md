@@ -8,6 +8,7 @@
 
 - `chat.html` and `chat.png`: the chat design draft (spec in `../screens.md`); Flutter goldens record current rendering
 - `email-capture.html` and `email-capture.png`: English source summary, expanded structured fields, attachments and targeted duration choices in existing chat; governed by the email capture spec.
+- `place-lookup.html` and `place-lookup.png`: draft of the Serper place-lookup offer, result preview and no-match states; governed by `../superpowers/specs/2026-11-13-place-lookup-design.md`
 - `calendar.html` and `calendar.png`: the approved month grid and agenda layout. The illustrative marker sits above the app frame. The agenda card shows Delete and a neutral chevron disclosure, source-zone time rows, an address block with Maps destination and white note links. Shared `.content-*` rules match the canonical guide.
 - `today`, `today-states`, `board`, `lists`, `item`, `profiles`, `assistant`, `settings`: design drafts that do not define current app behaviour. Use `../screens.md` and the Flutter calendar golden for the implemented calendar
 - `common.css`: shared tokens and components for every mockup, including calendar layout and fixed orbital surfaces mirrored in the brand guide
