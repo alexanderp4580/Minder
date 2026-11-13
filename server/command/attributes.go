@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
@@ -155,10 +156,45 @@ func itemFields(t port.Transaction, old, now domain.Item) []domain.Field {
 	changed := []domain.Field{}
 	for _, f := range all {
 		if f.Old != f.New {
+			if zone := displayZone(f.Name, now); zone != "" {
+				f.Old, f.New = inZone(f.Old, zone), inZone(f.New, zone)
+			}
 			changed = append(changed, f)
 		}
 	}
 	return changed
+}
+
+// displayZone is the zone a time field is shown in: its own timezone, else the start's, else the item's.
+func displayZone(name string, i domain.Item) string {
+	switch name {
+	case "start_at":
+		return firstOf(i.StartTimezone, i.Timezone)
+	case "end_at":
+		return firstOf(i.EndTimezone, i.StartTimezone, i.Timezone)
+	case "due_at", "remind_at":
+		return i.Timezone
+	}
+	return ""
+}
+
+func firstOf(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// inZone rewrites an RFC3339 instant with the zone's offset, so the app shows the wall clock there.
+func inZone(value, zone string) string {
+	t, e := time.Parse(time.RFC3339, value)
+	loc, le := time.LoadLocation(zone)
+	if e != nil || le != nil {
+		return value
+	}
+	return t.In(loc).Format(time.RFC3339)
 }
 
 var notSlug = regexp.MustCompile(`[^a-z0-9]+`)

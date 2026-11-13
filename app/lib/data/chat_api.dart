@@ -120,6 +120,15 @@ class ChatApi
   Future<Entry> discard(String changeId) =>
       _post('/v1/changes/$changeId/discard');
   @override
+  Future<Entry> setChangeReminders(String changeId, List<int> offsets) async =>
+      entryFromJson(
+        await _request(
+          'POST',
+          '/v1/changes/$changeId/reminders',
+          body: {'offsets': offsets},
+        ) as Map<String, dynamic>,
+      );
+  @override
   Future<Entry> undo(String undoId) => _post('/v1/undo/$undoId');
   @override
   Future<Entry> actOnReminder(String reminderId, ReminderAction action) =>

@@ -6,6 +6,7 @@ import '../domain/entry.dart';
 import 'format.dart';
 import 'tokens.dart';
 import 'capture_view.dart';
+import 'reminder_chips.dart';
 
 const _meta = TextStyle(fontSize: 12, color: Tokens.muted, letterSpacing: 1.2);
 
@@ -139,25 +140,52 @@ class _Preview extends StatelessWidget {
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       ),
       const SizedBox(height: 8),
-      for (final f in change.fields)
+      for (final row in previewRows(change))
         Padding(
           padding: const EdgeInsets.only(bottom: 5),
-          child: Wrap(
-            spacing: 6,
-            children: [
-              Text('${fieldLabel(f.name)}:', style: _muted),
-              if (f.oldValue.isNotEmpty)
-                Text(
-                  fieldValue(f.oldValue),
-                  style: const TextStyle(
-                    color: Tokens.muted,
-                    decoration: TextDecoration.lineThrough,
-                  ),
+          child: row.bullets.isNotEmpty
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${row.label}:', style: _muted),
+                    for (final line in row.bullets)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('•'),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(line)),
+                        ],
+                      ),
+                  ],
+                )
+              : Wrap(
+                  spacing: 6,
+                  children: [
+                    Text('${row.label}:', style: _muted),
+                    if (row.oldValue.isNotEmpty)
+                      Text(
+                        row.oldValue,
+                        style: const TextStyle(
+                          color: Tokens.muted,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    Text(row.newValue),
+                  ],
                 ),
-              Text(fieldValue(f.newValue)),
-            ],
-          ),
         ),
+      if (change.reminderChoices.isNotEmpty) ...[
+        const SizedBox(height: 4),
+        const Text('Remind before', style: _muted),
+        const SizedBox(height: 6),
+        ReminderChips(
+          choices: change.reminderChoices,
+          selected: change.reminderOffsets,
+          enabled: change.state == ChangeState.pending && !controller.acting,
+          onChanged: (offsets) => controller.setReminders(change.id, offsets),
+        ),
+      ],
       if (change.state == ChangeState.pending)
         _decision()
       else

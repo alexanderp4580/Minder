@@ -32,6 +32,9 @@ class Repo implements ChatRepository {
   @override
   Future<Entry> discard(String id) async => saved.first;
   @override
+  Future<Entry> setChangeReminders(String id, List<int> offsets) async =>
+      saved.first;
+  @override
   Future<Entry> undo(String id) async => saved.first;
   @override
   Future<Entry> actOnReminder(String id, ReminderAction a) async => saved.first;

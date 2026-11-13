@@ -141,6 +141,11 @@ class ChatController extends ChangeNotifier {
       _act(() => repository.confirm(changeId));
   Future<void> discard(String changeId) =>
       _act(() => repository.discard(changeId));
+  Future<void> setReminders(String changeId, List<int> offsets) async {
+    await _act(() => repository.setChangeReminders(changeId, offsets));
+    if (error != null) await sync();
+  }
+
   Future<void> undo(String undoId) => _act(() => repository.undo(undoId));
   Future<void> remind(String reminderId, ReminderAction action) =>
       _act(() => repository.actOnReminder(reminderId, action));

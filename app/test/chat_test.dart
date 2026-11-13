@@ -75,6 +75,9 @@ class FakeRepository implements ChatRepository {
     change: preview(state: 'discarded'),
   );
   @override
+  Future<Entry> setChangeReminders(String changeId, List<int> offsets) async =>
+      entry('p', 6, 'preview', change: preview());
+  @override
   Future<Entry> undo(String undoId) async =>
       entry('undo', 5, 'result', text: 'Undone: Call plumber.');
   @override

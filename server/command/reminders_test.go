@@ -89,3 +89,31 @@ func TestSetRemindersRejectsUnknownOffsets(t *testing.T) {
 		t.Fatal("unknown offset accepted", err)
 	}
 }
+
+func TestPreviewTimesAreShownInTheirOwnZones(t *testing.T) {
+	c, _ := setup(t)
+	start := time.Now().UTC().Add(96 * time.Hour).Truncate(time.Hour)
+	entry, err := c.Preview(domain.Proposal{Action: "create_item", Title: "Flight", Kind: "event",
+		StartAt: start.Format(time.RFC3339), StartTimezone: "Europe/Amsterdam",
+		EndAt: start.Add(8 * time.Hour).Format(time.RFC3339), EndTimezone: "America/New_York"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	startField, _ := field(entry, "start_at")
+	endField, _ := field(entry, "end_at")
+	wantStart := start.In(time.FixedZone("", 0)).Format("2006-01-02T15:04")
+	if len(startField.New) < 20 || startField.New[:16] == wantStart && startField.New[len(startField.New)-1] == 'Z' {
+		t.Fatal("start must carry the Amsterdam offset, not Z", startField.New)
+	}
+	startTime, _ := time.Parse(time.RFC3339, startField.New)
+	endTime, _ := time.Parse(time.RFC3339, endField.New)
+	_, startOffset := startTime.Zone()
+	_, endOffset := endTime.Zone()
+	amsterdam, _ := time.LoadLocation("Europe/Amsterdam")
+	newYork, _ := time.LoadLocation("America/New_York")
+	_, wantStartOffset := start.In(amsterdam).Zone()
+	_, wantEndOffset := start.Add(8 * time.Hour).In(newYork).Zone()
+	if startOffset != wantStartOffset || endOffset != wantEndOffset || !startTime.Equal(start) {
+		t.Fatal("zones", startField.New, endField.New)
+	}
+}

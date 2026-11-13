@@ -8,6 +8,7 @@ abstract interface class ChatRepository {
   Future<Entry> send(String text);
   Future<Entry> confirm(String changeId);
   Future<Entry> discard(String changeId);
+  Future<Entry> setChangeReminders(String changeId, List<int> offsets);
   Future<Entry> undo(String undoId);
   Future<Entry> actOnReminder(String reminderId, ReminderAction action);
 }

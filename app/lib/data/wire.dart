@@ -19,6 +19,12 @@ Change changeFromJson(Map<String, dynamic> j) => Change(
   ],
   state: ChangeState.values.asNameMap()[j['state']] ?? ChangeState.failed,
   undoId: j['undo_id'] as String?,
+  reminderOffsets: [
+    for (final m in j['reminder_offsets_minutes'] as List? ?? []) m as int,
+  ],
+  reminderChoices: [
+    for (final m in j['reminder_choices_minutes'] as List? ?? []) m as int,
+  ],
 );
 
 ReminderInfo reminderInfoFromJson(Map<String, dynamic> j) =>

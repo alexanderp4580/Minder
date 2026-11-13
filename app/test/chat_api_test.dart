@@ -121,4 +121,31 @@ void main() {
     expect(items.last.done, true);
     expect(items.last.repeat, '');
   });
+
+  test('reminder choices travel to the server and back', () async {
+    final api = ChatApi(
+      'https://example.test',
+      client: MockClient((request) async {
+        expect(request.url.path, '/v1/changes/change/reminders');
+        expect(jsonDecode(request.body), {
+          'offsets': [1440, 60],
+        });
+        return http.Response(
+          jsonEncode({
+            ...preview,
+            'change': {
+              ...(preview['change']! as Map<String, dynamic>),
+              'reminder_offsets_minutes': [1440, 60],
+              'reminder_choices_minutes': [10, 60, 1440],
+            },
+          }),
+          200,
+        );
+      }),
+    );
+    final entry = await api.setChangeReminders('change', [1440, 60]);
+    expect(entry.change!.reminderOffsets, [1440, 60]);
+    expect(entry.change!.reminderChoices, [10, 60, 1440]);
+    api.close();
+  });
 }

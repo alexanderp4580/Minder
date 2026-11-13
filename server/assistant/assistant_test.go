@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alexanderp4580/Minder/server/command"
 	"github.com/alexanderp4580/Minder/server/domain"
@@ -297,7 +298,8 @@ func TestEventsUseStartAndTasksUseDeadline(t *testing.T) {
 	for _, fl := range entries[0].Change.Fields {
 		got[fl.Name] = fl.New
 	}
-	if got["start_at"] != "2026-11-13T09:00:00Z" || got["duration_minutes"] != "30" || got["priority"] != "2" {
+	shown, parseErr := time.Parse(time.RFC3339, got["start_at"])
+	if parseErr != nil || !shown.Equal(time.Date(2026, 11, 13, 9, 0, 0, 0, time.UTC)) || got["duration_minutes"] != "30" || got["priority"] != "2" {
 		t.Fatalf("%v", got)
 	}
 	system := f.messages[0].Content

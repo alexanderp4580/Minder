@@ -17,7 +17,7 @@ Calendar spacing tests check the 8 px week gap, inset selection, Today placement
 Orbital tests cover highlight movement with a pixel-stable artwork layer, distinct scenes, stable foreground builds, reduced motion and lifecycle pauses. Screen goldens use reduced motion for deterministic captures.
 `native_auth_probe.dart` is an emulator-only callback probe.
 
-Capture tests cover source evidence, typed authenticated attachment bytes, targeted answers while normal chat waits, Do nothing and zero-item wording, and hotel-night overlap without checkout.
+Preview card tests (`preview_card_test.dart`) cover the title once, inline timezones, units, labels, inert notes and reminder chips. Capture tests cover source evidence, typed authenticated attachment bytes, targeted answers while normal chat waits, Do nothing and zero-item wording, and hotel-night overlap without checkout.
 
 # Work Guidance
 

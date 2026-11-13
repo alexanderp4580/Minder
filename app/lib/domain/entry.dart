@@ -32,12 +32,17 @@ class Change {
     required this.fields,
     required this.state,
     this.undoId,
+    this.reminderOffsets = const [],
+    this.reminderChoices = const [],
   });
 
   final String id, action, itemTitle;
   final List<FieldChange> fields;
   final ChangeState state;
   final String? undoId;
+
+  /// Minutes before the start or deadline; [reminderChoices] lists what can be picked.
+  final List<int> reminderOffsets, reminderChoices;
 }
 
 /// One firing of a reminder. [state] is active until you act on it.
