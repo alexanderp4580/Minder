@@ -1,6 +1,6 @@
 # Minder screens (draft)
 
-Status 2026-11-11. Derived from [requirements.md](requirements.md). The app has two screens: Chat and a read-only Calendar ([calendar-spec.md](calendar-spec.md)). The owner decided that no other screen is needed now. Design rules are in [foundation.md](foundation.md). The first build slice is in [m0-spec.md](m0-spec.md).
+Status 2026-11-11. Derived from [requirements.md](requirements.md). The app has two screens: Chat and a Calendar that shows and deletes items ([calendar-spec.md](calendar-spec.md)). The owner decided that no other screen is needed now. Design rules are in [foundation.md](foundation.md). The first build slice is in [m0-spec.md](m0-spec.md).
 
 All names, dates, counts and times in the text and in the mockup are illustrative.
 
@@ -70,7 +70,7 @@ Serves: requirements §1.2, §5.2, §6.2, §7.
 
 ## Calendar
 
-Read-only month grid and agenda, with the fixed Calendar orbital artwork behind the content. The month heading and year sit beside grouped month arrows.
+Month grid and agenda with a Delete control on each card, with the fixed Calendar orbital artwork behind the content. The month heading and year sit beside grouped month arrows.
 Today sits beside the selected date in the agenda header.
 The whole page scrolls on short screens. Spacing and selection rules are in [foundation.md](foundation.md).
 Behaviour is in [calendar-spec.md](calendar-spec.md). The mockup is `mockups/calendar.html` with `mockups/calendar.png`.

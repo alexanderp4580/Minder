@@ -8,7 +8,7 @@ Local `main` holds `m0-chat`, `notification-body-tap` and `app-icon-orbital` (fa
 - Chat, item and profile previews, Confirm, Discard, Undo and open-item queries.
 - Lists, profiles, recurrence, reminders, nagging and Android FCM actions.
 - Start, deadline, duration, priority and location fields.
-- Read-only calendar with a month grid, spaced week rows and a scrolling day agenda.
+- Calendar with a month grid, spaced week rows, a scrolling day agenda and a Delete control on each card (it only deletes; creating and changing items stay in chat).
 - Theme spacing, standard visual density, shared Material styles and golden tests.
 - Animated orbital backgrounds with distinct Calendar and Chat compositions, 60 percent dimmer than in APK 0.4.2.
 - A two-item bottom bar (Chat, Calendar). Headers show a title and a rule that fades left to right.

@@ -18,6 +18,8 @@ The calendar items route accepts an optional validated IANA timezone for date-on
 
 Email ingress is a separate machine-authenticated POST route with signed envelope/body verification; machine credentials never authorize owner routes. `POST /v1/changes/{id}/reminders` (body `{offsets}`) edits a pending change's reminders. Ingestion acknowledges only durable sources/jobs. Owner capture routes include answers, retry, delete and dismiss (`POST /v1/captures/{id}/dismiss`, body `{revision}`). Ingestion logs `email ingest accepted/rejected/failed` with reason codes and counts, never content.
 
+`POST /v1/items/{id}/delete` (body `{expected_version}`, no other fields) returns a pending `delete_item` preview for the calendar. 404 for an unknown item, 409 for a stale version. The calendar confirms or discards it through the change routes.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

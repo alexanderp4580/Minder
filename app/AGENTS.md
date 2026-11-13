@@ -9,7 +9,7 @@ Package/build configuration and the source, tests, native platform and asset fol
 # Local Contracts
 
 Business validation runs on the server. The client displays typed results and errors.
-The app has chat and a read-only calendar. Preserve current API contracts, spacing and notification actions.
+The app has chat and a calendar that views items and deletes them (with a confirm step). Preserve current API contracts, spacing and notification actions.
 The current app uses Material icons; Carbon remains a design-guide difference.
 
 # Work Guidance

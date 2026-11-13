@@ -17,7 +17,7 @@ Calendar spacing tests check the 8 px week gap, inset selection, Today placement
 Orbital tests cover the 68.571 s highlight loop, ease in and out, highlight movement with a pixel-stable artwork layer, distinct scenes, stable foreground builds, reduced motion and lifecycle pauses. Screen goldens use reduced motion for deterministic captures.
 `native_auth_probe.dart` is an emulator-only callback probe.
 
-Connection status tests cover the grace period, the header icon, recovery, no banner for background drops and the inline Retry for failed sends. Question tests (`question_view_test.dart`) cover the found-items card, quick replies and typed replies. Preview card tests (`preview_card_test.dart`) cover the title once, inline timezones, units, labels, inert notes and reminder chips. Capture tests cover source evidence, typed authenticated attachment bytes, targeted answers while normal chat waits, Do nothing and zero-item wording, and hotel-night overlap without checkout.
+Connection status tests cover the grace period, the header icon, recovery, no banner for background drops, the restored composer text after a failed send (also with newer typed text), a server refusal message without Retry, and removal of deleted cards. Calendar tests cover the 44 px Delete control, its preview dialog, Confirm and Keep it. Question tests (`question_view_test.dart`) cover the found-items card, quick replies and typed replies. Preview card tests (`preview_card_test.dart`) cover the title once, inline timezones, units, labels, inert notes and reminder chips. Capture tests cover source evidence, typed authenticated attachment bytes, targeted answers while normal chat waits, Do nothing and zero-item wording, and hotel-night overlap without checkout.
 
 # Work Guidance
 

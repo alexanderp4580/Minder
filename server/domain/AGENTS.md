@@ -16,6 +16,8 @@ Items distinguish event end from deadline, and date-only ranges from instants. E
 
 Capture values carry source metadata, attachment manifests, coverage, candidate revisions and follow-up answers without provider or storage code.
 
+`Change.RemovedEntryIDs` (`removed_entry_ids`) lists chat entries a delete removed. `Audit.ItemDeleted` marks the audit row that lets Undo restore a deleted item.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

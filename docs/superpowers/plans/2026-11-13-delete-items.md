@@ -13,8 +13,8 @@
 ## Global Constraints
 
 - Test first. `toolchain/check` must pass. DOX updated for each touched folder.
-- No migration. Logs carry IDs and counts only, never titles or text.
-- Never push or deploy. Commit without co-author trailers.
+- No migration. Logs carry IDs and counts, not titles or text.
+- Do not push or deploy. Commit without co-author trailers.
 - Existing cancel behaviour of `cancel_item` (status `cancelled`) is unchanged.
 
 ## Review Focus
@@ -56,7 +56,7 @@
 **Files:** Test `server/assistant/assistant_test.go`.
 
 - [ ] Failing test: after Confirm of a delete, `History(0, 20)` holds none of the item's earlier previews or results and `contextItems` excludes the item.
-- [ ] Fix only what the test shows. Commit.
+- [ ] Fix what the test shows and nothing else. Commit.
 
 ### Task 4: Calendar preview endpoint
 
@@ -71,7 +71,7 @@
 
 **Files:** Modify `app/lib/application/chat_controller.dart`, `app/lib/ui/chat_screen.dart`; Test `app/test/chat_test.dart`.
 
-**Interfaces:** Produces `ChatController.unsentText` (`String?`, set when a send fails; the screen moves it into an empty composer and clears it). `error` holds a message for non-transport failures only, with no Retry button, and clears on the next successful sync or send. Sign-in block unchanged.
+**Interfaces:** Produces `ChatController.takeUnsentText()` (returns the text of a failed send once) and `hasUnsentText`. The screen puts that text in front of anything typed since. `error` holds a message for non-transport failures only, with no Retry button, and clears on the next send or action. The sign-in block is unchanged.
 
 - [ ] Failing tests: a transport-failed send sets no `error`, shows no `Retry`, and the composer holds the text; the Retry block does not appear after recovery; a non-transport failure shows its message and no Retry; text typed while offline is kept.
 - [ ] Implement; remove `_lastText`/`_retryAction` guard logic. Update the existing "a failed send keeps its inline Retry" test to the new rule. Commit.

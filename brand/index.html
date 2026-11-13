@@ -310,6 +310,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
 .calendar-layout .cal-date{font-size:16px;font-weight:600;line-height:24px;letter-spacing:.01em}
 .calendar-layout .cal-today{width:auto;padding:0 16px}
 .calendar-layout .cal-event{margin-top:16px;padding:20px;background:var(--panel);border:1px solid var(--line)}
+.calendar-layout .cal-event-top{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .calendar-layout .cal-time{color:var(--muted);font-size:13px;line-height:18px;letter-spacing:.06em}
 .calendar-layout .cal-event-title{margin-top:8px;font-size:18px;font-weight:600;line-height:26px}
 .calendar-example-wrap{max-width:100%;overflow-x:auto;margin-top:24px}
@@ -606,7 +607,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
   <div class="cal-day other"><div class="cal-face"><span class="cal-number">5</span><span class="cal-marker"></span></div></div>
   <div class="cal-day other"><div class="cal-face"><span class="cal-number">6</span><span class="cal-marker"></span></div></div>
  </div>
- <div class="cal-agenda"><div class="cal-agenda-header"><div class="cal-date">Thursday, 12 Nov</div><span class="cal-control cal-today">Today</span></div><div class="cal-event"><div class="cal-time">Due 10:00</div><div class="cal-event-title">Call plumber</div></div></div>
+ <div class="cal-agenda"><div class="cal-agenda-header"><div class="cal-date">Thursday, 12 Nov</div><span class="cal-control cal-today">Today</span></div><div class="cal-event"><div class="cal-event-top"><div class="cal-time">Due 10:00</div><span class="cal-control cal-delete" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13M10 11v6M14 11v6"/></svg></span></div><div class="cal-event-title">Call plumber</div></div></div>
 </div>
 <div class="nav two"><div><i class="cb i-chat"></i>Chat</div><div class="on"><i class="cb i-cal"></i>Calendar</div></div>
 </div></div>

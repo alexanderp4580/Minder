@@ -1,6 +1,6 @@
 # Calendar page
 
-Status 2026-11-12. The owner asked for a calendar page. The page is read-only. Chat stays the place where you create and change items. Design rules: [foundation.md](foundation.md). Evidence: [evidence/m1.md](evidence/m1.md).
+Status 2026-11-12. The owner asked for a calendar page. The page shows items and can delete them. Chat stays the place where you create and change items. Design rules: [foundation.md](foundation.md). Evidence: [evidence/m1.md](evidence/m1.md).
 
 ## Behaviour
 
@@ -8,7 +8,7 @@ Status 2026-11-12. The owner asked for a calendar page. The page is read-only. C
 - The page shows one month as a grid. Weeks start on Monday. The grid always shows six weeks, so days of the next and last month show dimmed.
 - Day targets are 56 px high, with 8 px gaps between weeks and an inset 44 px selection frame. Each day shows up to three small squares for its items. Today is underlined. The selected day has a red frame. Opening the page selects today.
 - The month and year have separate lines. Grouped arrows on the right move one month. Today sits beside the agenda date and returns to the current month. Moving the month selects its first day.
-- Under the grid, the agenda lists the items of the selected day, earliest first. Each entry shows the time, the title and small tags for duration, priority, location, list and repeat. A finished item is struck through.
+- Under the grid, the agenda lists the items of the selected day, earliest first. Each entry shows the time, the title and small tags for duration, priority, location, list and repeat. A finished item is struck through. Each card has a Delete control (a 44 px square at the top right). It opens a dialog with the server preview of what the delete removes, with Delete and Keep it. Delete removes the item and its data and cannot be undone from the calendar; Undo is on the chat result card.
 - An item sits on its start day, else its deadline day. An item with neither does not show. An item with a start shows "09:00". An item with only a deadline shows "Due 17:00".
 - An empty day says "Nothing planned."
 - Without a connection, the page keeps its last items and shows the error with a Retry button.

@@ -13,6 +13,8 @@ Transaction handles stay inside their callback. Read methods must return storage
 
 Captures, ingestion receipts and item-source links participate in the same transaction as previews and confirmed items.
 
+`PurgeItem` belongs to the item capability and returns `Purged` (removed entry IDs, orphaned sources). The caller decides what to do with orphaned sources.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

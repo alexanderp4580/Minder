@@ -21,6 +21,8 @@ Capture review push outbox rows are unique per source revision/device. Source de
 
 Item reads derive source IDs from live provenance links; deleted sources never appear as downloadable item attachments.
 
+`PurgeItem(id, keepPending)` deletes an item with its reminder schedule, occurrences and push deliveries, earlier pending changes, audit rows, chat entries, events and source links in one transaction. It returns the removed entry IDs and the sources left without an item. It logs counts, never titles.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

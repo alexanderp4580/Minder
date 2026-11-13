@@ -8,7 +8,7 @@
 
 - `chat.html` and `chat.png`: the chat design draft (spec in `../screens.md`); Flutter goldens record current rendering
 - `email-capture.html` and `email-capture.png`: source summary, attachments and targeted follow-up in existing chat; governed by the email capture spec.
-- `calendar.html` and `calendar.png`: the approved month grid and agenda layout. The illustrative marker sits above the app frame.
+- `calendar.html` and `calendar.png`: the approved month grid and agenda layout. The illustrative marker sits above the app frame. The agenda card shows the Delete control.
 - `today`, `today-states`, `board`, `lists`, `item`, `profiles`, `assistant`, `settings`: design drafts that do not define current app behaviour. Use `../screens.md` and the Flutter calendar golden for the implemented calendar
 - `common.css`: shared tokens and components for every mockup, including calendar layout and fixed orbital surfaces mirrored in the brand guide
 
