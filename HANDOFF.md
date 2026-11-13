@@ -3,9 +3,22 @@
 State on 2026-11-13. Production runs commit `ab94726`, the head of `main` and of `notification-body-tap`.
 `main` holds `m0-chat`, `notification-body-tap`, `app-icon-orbital` and `delete-items`. The owner asked for the merge and the deployment on 2026-11-13. `origin/main` and `origin/notification-body-tap` are both at `ab94726`. The worktree `Minder-m0-chat` is on `fix-connection-message`.
 
-## Current client work
+## Current work: approved controls and booking fields
 
-The owner approved calendar details and links with “Fix all”, asked to continue the current work, and requested a clearer Confirmed footer. Work runs inline on `fix-connection-message`; keep this branch for phone review. No server change or deployment is needed.
+The owner approved the brand guide and clarified that phone, email, website and booking reference belong in separate fields like Address, not Notes. App version is 0.9.0+25 on `fix-connection-message`.
+
+The client uses neutral square text actions, chevrons, the approved address block and separate contact/reference rows. New proposals and stored items carry optional `phone`, `email`, `website` and `booking_reference` strings. Notes retain remaining instructions. Clearly labelled older note metadata is separated for display; server edits promote it before clear/Undo so cleared data cannot reappear. Conflicts and conditional instructions remain visible. Bare calendar UID/sequence Ref lines stay in Notes.
+
+HTML conversion preserves safe contact/link targets and cell separation before extraction. No schema migration is needed: item JSON already stores optional fields. The server changes require deployment; production remains at `ab94726`. Do not merge or deploy without the owner's authorization.
+
+Local checks passed: 147 Flutter tests, Go race/vet, analysis/format, all four browser scenarios, and a real-model synthetic booking confirmed into temporary SQLite with separate fields. APK 0.9.0+25 built and its signature matches 0.8.0. Telegram delivery is unconfirmed after URLError; check the pending owner answer before retrying. Source: server `03c51fd`, client/guide `04a3530`.
+
+Verification and APK status: [calendar controls evidence](docs/evidence/calendar-controls.md).
+
+
+## Calendar details 0.8.0
+
+The owner approved calendar details and links with “Fix all”, asked to continue the current work, and requested a clearer Confirmed footer. Work runs inline on `fix-connection-message`; keep this branch for phone review. That 0.8.0 slice needed no server change.
 
 - `d0f0f68` fixes the stale connection message: dropped streams feed the delayed offline icon; a successful sync clears background error copy. Failed sends retain composer text.
 - `4f45e7e`: calendar cards expand on a card tap or Details. Available rows retain kind, notes, reminders, source wall clocks and timezones. Starts/Ends become Departs/Arrives only across different zones. Address opens Google Maps; note links open the dialer, email app or browser. The launcher permits HTTPS, tel and mailto, and reports failed launches. Notes retain the 600-character cap.
@@ -19,7 +32,7 @@ The owner requested a brand guide proposal before app changes, and clarified tha
 
 Telegram confirmed one PDF upload (message 1999, 42,266 bytes). Local checks passed at 1280, 390 and 320 px, plus 320 px at 1.4× text; fonts, disclosure toggling and the Maps target passed. The three A4 PDF pages fit without clipping.
 
-Status: awaiting owner approval. The app and canonical `brand/index.html` retain the current implementation. After approval, promote the agreed rules into the canonical guide and shared styles, then apply them to the calendar.
+The owner approved the guide on 2026-11-13 and clarified that contact/booking values need separate fields, like Address. Canonical guide and shared styles now include the approved treatment. Current implementation and verification: [calendar controls](docs/evidence/calendar-controls.md).
 
 
 ## Current source
