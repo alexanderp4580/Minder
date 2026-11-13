@@ -6,6 +6,8 @@ Brand guide website for Minder: colour, type, icons, layout, actions, cards, com
 
 This `brand/` folder owns `index.html`, `app-icon.svg`, its PNG preview and the canonical `orbital-calendar.svg` / `orbital-chat.svg` artwork. The page uses inline CSS and a small script. The script marks the current section in the navigation, places the layout pins and labels table cells on narrow screens.
 
+`controls-review.html` is an approval draft for disclosure controls, address/contact links, detail rows and interaction states. Its PDF and desktop/mobile PNGs are review exports. These drafts do not replace `index.html` or authorize app changes.
+
 # Local Contracts
 
 - The page follows its own guide: Void/Signal palette, Michroma titles, Chakra Petch text, edge column per section, focus frame, square progress row.
@@ -29,6 +31,8 @@ Describe only what exists. Write page copy at about 80% of ASD-STE100 (see root 
 The Go service serves `index.html`, `app-icon.svg` and `app-icon.png` at `/branding/`, behind the same sign-in as the app. Add a file to the guide in `server/api/branding.go` and the Dockerfile, or it stays unreachable. The public grant logo at `/brand/minder-icon.png` is separate.
 
 # Verification
+
+Render `controls-review.html` at 1280 and 390 px for its PNG exports. Export its three-page A4 PDF with print backgrounds and CSS page size enabled. Check 320 px and 1.4× text for horizontal overflow, and check each PDF page for clipped content. The draft reuses bundled fonts and embedded Carbon 11.92.0 icons.
 
 Serve locally with `python3 -I -m http.server 8899 --directory brand` and open `http://127.0.0.1:8899/`.
 

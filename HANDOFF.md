@@ -13,6 +13,15 @@ The owner approved calendar details and links with “Fix all”, asked to conti
 - APK 0.8.0+24 reached Telegram once (message 1998). Full repository checks (135 Flutter tests), release web/APK builds, matching signing certificate and all three browser scenarios passed. Phone review is pending. Details: [calendar details evidence](docs/evidence/calendar-details.md).
 
 
+## Controls and address brand review
+
+The owner requested a brand guide proposal before app changes, and clarified that the address section inside the card looks odd. `brand/controls-review.html` and its three-page PDF propose neutral disclosure labels with chevrons, aligned address blocks, white underlined links, destination hints and square interaction states. Desktop and mobile PNGs show the draft.
+
+Telegram confirmed one PDF upload (message 1999, 42,266 bytes). Local checks passed at 1280, 390 and 320 px, plus 320 px at 1.4× text; fonts, disclosure toggling and the Maps target passed. The three A4 PDF pages fit without clipping.
+
+Status: awaiting owner approval. The app and canonical `brand/index.html` retain the current implementation. After approval, promote the agreed rules into the canonical guide and shared styles, then apply them to the calendar.
+
+
 ## Current source
 
 - Chat, item and profile previews, Confirm, Discard, Undo and open-item queries.

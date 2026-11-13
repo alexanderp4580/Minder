@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Minder · Controls and linked details · Approval draft</title>
+<style>
+@font-face{font-family:Chakra;src:url('../app/assets/fonts/ChakraPetch-Medium.ttf');font-weight:500}
+@font-face{font-family:Chakra;src:url('../app/assets/fonts/ChakraPetch-SemiBold.ttf');font-weight:600}
+@font-face{font-family:Chakra;src:url('../app/assets/fonts/ChakraPetch-Bold.ttf');font-weight:700}
+@font-face{font-family:Michroma;src:url('../app/assets/fonts/Michroma-Regular.ttf')}
+:root{--void:#0a0a0a;--panel:#161616;--line:#3a3a3a;--edge:#6b6b6b;--text:#f2f2f2;--muted:#b5b5b5;--dim:#8f8f8f;--signal:#e0121a}
+*{box-sizing:border-box}html{color-scheme:dark}body{margin:0;background:var(--void);color:var(--text);font:500 15px/1.4 Chakra,sans-serif}button,a{color:inherit;font:inherit}button{cursor:pointer}a{overflow-wrap:anywhere}svg{width:20px;height:20px;fill:currentColor;stroke:none;flex:none}button:focus-visible,a:focus-visible{outline:2px solid var(--text);outline-offset:3px}button:hover,a.block-link:hover{background:rgb(242 242 242 / .06)}button:active,a.block-link:active,.pressed{background:rgb(242 242 242 / .1)}button:disabled{color:var(--dim);cursor:default;background:transparent}
+.sheet{max-width:1120px;margin:auto;padding:44px 48px 48px;border-bottom:1px solid var(--line)}.mast{display:flex;gap:16px;justify-content:space-between;align-items:center;padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:28px}.brand{font:14px Michroma,sans-serif;letter-spacing:.16em}.meta{font-size:12px;color:var(--muted);letter-spacing:.06em}.status{border:1px solid var(--edge);padding:7px 10px;font-size:12px;white-space:nowrap}.eyebrow{font-size:12px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}h1,h2{font:400 26px/1.35 Michroma,sans-serif;margin:0 0 16px;letter-spacing:.04em;text-transform:uppercase}h2{font-size:23px}h3{font-size:18px;font-weight:600;margin:0 0 12px}p{margin:0 0 16px;max-width:73ch}.intro{font-size:17px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.sample{background:var(--panel);border:1px solid var(--line);padding:20px}.sample-label{font-size:12px;color:var(--muted);margin-bottom:12px;letter-spacing:.07em;text-transform:uppercase}.rule{border-top:1px solid var(--line);padding:16px 0}.rule:last-child{padding-bottom:0}.rule p{font-size:14px;margin:6px 0 0;color:var(--muted)}.catalog{margin-top:24px}.catalog-row{display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}.catalog-row:last-child{border-bottom:0}.catalog-row p{font-size:14px;margin:0;color:var(--muted)}.catalog-row strong{display:block;color:var(--text);font-weight:600;margin-bottom:4px}.demo-action{display:flex;align-items:center;gap:12px;min-height:44px;flex-wrap:wrap}.primary,.secondary,.icon-btn{min-height:44px;min-width:44px;border:1px solid var(--edge);border-radius:0;padding:10px 18px;background:var(--panel);font-size:14px;font-weight:700}.primary{background:var(--signal);border:0;color:#fff;clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%);font-size:16px}.icon-btn{padding:0;display:inline-flex;align-items:center;justify-content:center}.quiet{display:inline-flex;gap:8px;align-items:center;min-height:44px;min-width:44px;background:transparent;border:0;border-radius:0;padding:0;font-size:14px;font-weight:600;text-align:left}.quiet svg{width:16px;height:16px}.quiet.pressed{background:rgb(242 242 242 / .1)}.link{color:var(--text);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}.result{display:flex;align-items:center;gap:8px;font-weight:600;min-height:44px}.result svg{width:20px;height:20px}
+.card{border:1px solid var(--line);padding:20px;background:var(--panel)}.card-top{display:flex;align-items:center;justify-content:space-between;gap:12px}.time{font-size:12px;color:var(--muted);letter-spacing:.06em}.card h3{margin:8px 0 12px}.tags{display:flex;gap:8px;flex-wrap:wrap}.tag{padding:3px 8px;font-size:12px;border:1px solid var(--line);color:var(--muted)}.disclosure{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;border:0;border-top:1px solid var(--line);border-radius:0;margin-top:16px;padding:12px 0 0;background:transparent;font-size:14px;font-weight:600;text-align:left;gap:12px}.disclosure svg{width:16px;height:16px}.details{padding-top:4px}.field{margin-top:16px}.label{color:var(--muted);font-size:12px;display:block;margin-bottom:4px}.value{font-size:15px;overflow-wrap:anywhere}.block-link{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;min-height:44px;padding:8px 0;text-decoration:none}.block-link svg{width:16px;height:16px;margin-top:3px}.destination{display:block;font-size:12px;color:var(--muted);margin-top:4px}.notes{padding-left:18px;margin:4px 0 0}.notes li{margin-bottom:8px}.caption{font-size:13px;color:var(--muted);margin:12px 0 0}.note{margin-top:24px;padding-left:16px;border-left:2px solid var(--text);font-size:14px}.focus-demo{outline:2px solid var(--text);outline-offset:3px}.small-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0}.small-grid .sample{padding:16px}.specs{margin:24px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:0 24px}.specs div{padding:12px 0;border-top:1px solid var(--line);font-size:14px}.footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:12px}.token-line{font-size:13px;color:var(--muted);margin-top:24px}button[aria-expanded=true] svg.chevron{transform:rotate(180deg)}[hidden]{display:none!important}
+@media(max-width:700px){.sheet{padding:24px 20px 32px}.mast{align-items:flex-start;flex-wrap:wrap;margin-bottom:24px}.grid,.specs{grid-template-columns:1fr}.catalog-row{grid-template-columns:1fr;gap:8px}.small-grid{grid-template-columns:1fr}h1{font-size:22px}h2{font-size:20px}.footer{flex-direction:column;gap:4px}.status{white-space:normal}.primary:focus-visible{outline-offset:0}}
+@page{size:A4;margin:0}
+@media print{html,body{width:210mm;print-color-adjust:exact;-webkit-print-color-adjust:exact}.sheet{width:210mm;max-width:none;height:297mm;padding:14mm 15mm 12mm;break-after:page;overflow:hidden;border:0}.sheet:last-of-type{break-after:auto}.mast{margin-bottom:18px;padding-bottom:14px}h1{font-size:24px}h2{font-size:22px}.intro{font-size:16px}.catalog-row{grid-template-columns:185px 1fr;gap:20px;padding:12px 0}.grid{gap:20px}.card{padding:16px}.field{margin-top:12px}.footer{margin-top:20px}.caption{font-size:12px}.specs{margin-top:16px}.small-grid{gap:12px}.sheet:last-of-type .small-grid{margin:12px 0}.sheet:last-of-type .specs div{padding:9px 0;font-size:13px}.sheet:last-of-type .note{margin-top:16px;font-size:13px}.sheet:last-of-type .sample{padding:14px}}
+</style>
+</head>
+<body>
+<svg aria-hidden="true" style="display:none"><defs>
+<symbol id="chevron" viewBox="0 0 32 32"><path d="M16 22 6 12 7.4 10.6 16 19.2 24.6 10.6 26 12z"/></symbol>
+<symbol id="external" viewBox="0 0 32 32"><path d="M26,28H6a2.0027,2.0027,0,0,1-2-2V6A2.0027,2.0027,0,0,1,6,4H16V6H6V26H26V16h2V26A2.0027,2.0027,0,0,1,26,28Z"/><path d="M20 2 20 4 26.586 4 18 12.586 19.414 14 28 5.414 28 12 30 12 30 2 20 2z"/></symbol>
+<symbol id="delete" viewBox="0 0 32 32"><path d="M12 12H14V24H12z"/><path d="M18 12H20V24H18z"/><path d="M4,6V8H6V28a2,2,0,0,0,2,2H24a2,2,0,0,0,2-2V8h2V6ZM8,28V8H24V28Z"/><path d="M12 2H20V4H12z"/></symbol>
+<symbol id="check" viewBox="0 0 32 32"><path d="M14 21.414 9 16.413 10.413 15 14 18.586 21.585 11 23 12.415 14 21.414z"/><path d="M16,2A14,14,0,1,0,30,16,14,14,0,0,0,16,2Zm0,26A12,12,0,1,1,28,16,12,12,0,0,1,16,28Z"/></symbol>
+</defs></svg>
+<section class="sheet">
+<header class="mast"><span class="brand">MINDER</span><span class="status">Approval draft · 13 Nov 2026</span></header>
+<div class="eyebrow">Brand guide addition · 01 / 03</div>
+<h1>Controls and linked details</h1>
+<p class="intro">Use shape and placement to show what a control does. Keep routine actions and links in Text colour.</p>
+<p class="muted">This proposal covers calendar cards, addresses, contact details and related controls. It extends the existing Void, Panel and Signal palette.</p>
+<div class="catalog">
+<div class="catalog-row"><div class="demo-action"><button class="primary" type="button">Confirm</button></div><p><strong>Primary action</strong>A decision that changes data. Signal fill, white text and the existing 12 px cut corner.</p></div>
+<div class="catalog-row"><div class="demo-action"><button class="secondary" type="button">Keep it</button></div><p><strong>Secondary action</strong>A distinct action beside the primary action. Panel fill, Edge outline and square corners.</p></div>
+<div class="catalog-row"><div class="demo-action"><button class="quiet" type="button">Details <svg aria-hidden="true"><use href="#chevron"/></svg></button></div><p><strong>Disclosure</strong>White label and 16 px chevron. No visible button box. Align the label with the card text.</p></div>
+<div class="catalog-row"><div class="demo-action"><a class="quiet link" href="https://www.google.com/maps/search/?api=1&amp;query=Damrak%201%20Amsterdam" target="_blank" rel="noopener">Damrak 1 <svg aria-hidden="true"><use href="#external"/></svg></a></div><p><strong>External destination</strong>Underlined white text. Add a 16 px external arrow to an address block. Name Google Maps beside the address.</p></div>
+<div class="catalog-row"><div class="demo-action"><button class="icon-btn" type="button" aria-label="Delete"><svg aria-hidden="true"><use href="#delete"/></svg></button><span class="muted">Delete</span></div><p><strong>Icon control</strong>A 20 px neutral icon in a square 44 × 44 px target. Keep Delete in the card header; ask before deleting.</p></div>
+<div class="catalog-row"><div class="result"><svg aria-hidden="true"><use href="#check"/></svg>Confirmed</div><p><strong>Result</strong>A check icon and semibold text in a separated footer. Status copy is readable content and has no press effect.</p></div>
+</div>
+<p class="token-line">Text #F2F2F2 · Muted #B5B5B5 · Panel #161616 · Line #3A3A3A · Signal #E0121A</p>
+<footer class="footer"><span>Design pending · proposed addition to the current guide</span><span>01 / 03</span></footer>
+</section>
+<section class="sheet">
+<header class="mast"><span class="brand">MINDER</span><span class="status">Calendar · proposed treatment</span></header>
+<div class="eyebrow">Brand guide addition · 02 / 03</div>
+<h2>Details belong to the card</h2>
+<p>The disclosure sits below the summary. A thin divider groups it with the card. Expanded content follows the same left edge.</p>
+<div class="grid">
+<div><div class="sample-label">Collapsed · illustrative</div>
+<article class="card"><div class="card-top"><span class="time">09:00</span><button class="icon-btn" type="button" aria-label="Delete dentist appointment"><svg aria-hidden="true"><use href="#delete"/></svg></button></div><h3>Dentist appointment</h3><div class="tags"><span class="tag">30 min</span><span class="tag">Damrak 1</span></div><button class="disclosure" aria-expanded="false" aria-controls="first-details"><span>Details</span><svg class="chevron" aria-hidden="true"><use href="#chevron"/></svg></button><div class="details" id="first-details" hidden><div class="field"><span class="label">Starts</span><div class="value">Thu 12 Nov · 09:00<br><span class="muted">Europe/Amsterdam</span></div></div><div class="field"><span class="label">Type</span><div class="value">Appointment</div></div></div></article>
+<p class="caption">The full footer is a 44 px target. The label starts at the same inset as the title. A chevron shows that the card can expand.</p>
+<div class="rule" style="margin-top:24px"><h3>Control placement</h3><p>Keep month arrows and Today in their current square styles. Use the white disclosure for Details and Hide details. Email and attachments uses neutral text with a right chevron to open its source dialog.</p></div>
+<div class="rule"><h3>Tap behavior</h3><p>The card body may also expand or collapse it. Address links, contact links and Delete keep their own actions. Keep a visible disclosure for keyboard and screen-reader access.</p></div>
+<div class="rule"><h3>Expanded rows</h3><p>Use a 12 px Muted label and 15 px Text value. Allow 4 px between label and value and 16 px between fields. Put a long timezone on a separate line.</p></div>
+</div>
+<div><div class="sample-label">Expanded · illustrative</div>
+<article class="card"><div class="card-top"><span class="time">09:00</span><button class="icon-btn" type="button" aria-label="Delete expanded appointment"><svg aria-hidden="true"><use href="#delete"/></svg></button></div><h3>Dentist appointment</h3><button class="disclosure" aria-expanded="true" aria-controls="second-details"><span>Hide details</span><svg class="chevron" aria-hidden="true"><use href="#chevron"/></svg></button><div class="details" id="second-details">
+<div class="field"><span class="label">Starts</span><div class="value">Thu 12 Nov · 09:00<br><span class="muted">Europe/Amsterdam</span></div></div>
+<div class="field"><span class="label">Ends</span><div class="value">Thu 12 Nov · 09:30<br><span class="muted">Europe/Amsterdam</span></div></div>
+<div class="field"><span class="label">Duration</span><div class="value">30 minutes</div></div>
+<div class="field"><span class="label">Type</span><div class="value">Appointment</div></div>
+<div class="field"><span class="label">Address</span><a class="block-link" href="https://www.google.com/maps/search/?api=1&amp;query=Damrak%201%20Amsterdam" target="_blank" rel="noopener"><span><span class="link">Damrak 1<br>1012 LG Amsterdam</span><span class="destination">Opens Google Maps</span></span><svg aria-hidden="true"><use href="#external"/></svg></a></div>
+<div class="field"><span class="label">Notes</span><ul class="notes"><li>Bring ID and booking reference ABC123456789.</li><li>Call <a class="link" href="tel:0201234567">020-1234567</a> if you are late.</li></ul></div>
+<div class="field"><span class="label">Reminders</span><div class="value">1 day, 1 hour before</div></div>
+</div></article>
+</div>
+</div>
+<footer class="footer"><span>20 px card inset · 16 px field gaps · square geometry</span><span>02 / 03</span></footer>
+</section>
+<section class="sheet">
+<header class="mast"><span class="brand">MINDER</span><span class="status">Links and interaction states</span></header>
+<div class="eyebrow">Brand guide addition · 03 / 03</div>
+<h2>Addresses and contacts</h2>
+<p>Keep the address inside the expanded card. Show its destination before a tap. The external map belongs to Google Maps.</p>
+<div class="grid">
+<div class="sample"><div class="sample-label">Address block · illustrative</div><span class="label">Address</span><a class="block-link" href="https://www.google.com/maps/search/?api=1&amp;query=Prins%20Hendrikkade%20108%20Amsterdam" target="_blank" rel="noopener"><span><span class="link">Prins Hendrikkade 108<br>1011 AK Amsterdam</span><span class="destination">Opens Google Maps</span></span><svg aria-hidden="true"><use href="#external"/></svg></a><p class="caption">Let the full address wrap. Align the arrow with its first line. Keep the content at the card inset.</p></div>
+<div class="sample"><div class="sample-label">Contact details · illustrative</div><p>Call <a class="link" href="tel:0201234567">020-1234567</a>, email <a class="link" href="mailto:info@example.com">info@example.com</a>, or visit <a class="link" href="https://example.com" target="_blank" rel="noopener">https://example.com</a>.</p><p class="caption">Inline links keep the body type and a visible underline. Plain booking references keep their body styling. Phone and email links open a dialer or compose window after a tap.</p></div>
+</div>
+<h3 style="margin-top:24px">One neutral interaction language</h3>
+<div class="small-grid">
+<div class="sample"><div class="sample-label">Rest</div><button class="quiet" type="button">Details <svg aria-hidden="true"><use href="#chevron"/></svg></button><p class="caption">Text colour, transparent fill.</p></div>
+<div class="sample"><div class="sample-label">Pressed</div><button class="quiet pressed" type="button">Details <svg aria-hidden="true"><use href="#chevron"/></svg></button><p class="caption">10% Text wash, square bounds.</p></div>
+<div class="sample"><div class="sample-label">Keyboard focus</div><button class="quiet focus-demo" type="button">Details <svg aria-hidden="true"><use href="#chevron"/></svg></button><p class="caption">2 px Text outline, 3 px offset.</p></div>
+</div>
+<div class="specs">
+<div><b>Hit areas.</b> Standalone links and controls have at least a 44 × 44 px target. Inline prose links keep their line flow; separate them into rows when space allows.</div>
+<div><b>Colour.</b> Reserve Signal for its five existing roles. Disclosure, links and ordinary navigation use Text. Disabled controls use Dim and have no press effect.</div>
+<div><b>Feedback.</b> Use a 6% Text wash on hover and a 10% wash on press. Corners stay square. The link underline remains visible in each state.</div>
+<div><b>Opening.</b> Keep the encoded Google Maps search URL. HTTPS opens in a browser; phone and email links open external apps. Opening requires a tap.</div>
+<div><b>Failure.</b> Keep the address visible and show “Could not open this link.” Keep this feedback in the current view.</div>
+<div><b>Accessibility.</b> Announce expanded/collapsed state and the external destination. Wrap long content at 320 px and enlarged text. Reduce decorative motion when requested.</div>
+</div>
+<p class="note"><b>Approval scope:</b> review the disclosure, address block and link styles before app changes. The address stays inside the expanded card, aligned with its other fields. The link opens Google Maps after a tap.</p>
+<footer class="footer"><span>Draft for owner review · existing app behavior remains current</span><span>03 / 03</span></footer>
+</section>
+<script>
+document.querySelectorAll('.disclosure').forEach(button=>button.addEventListener('click',()=>{
+ const expanded=button.getAttribute('aria-expanded')==='true';
+ button.setAttribute('aria-expanded',String(!expanded));
+ button.querySelector('span').textContent=expanded?'Details':'Hide details';
+ document.getElementById(button.getAttribute('aria-controls')).hidden=expanded;
+}));
+</script>
+</body>
+</html>
