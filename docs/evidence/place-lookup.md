@@ -27,7 +27,7 @@ Spec: [place lookup design](../superpowers/specs/2026-11-13-place-lookup-design.
 | Browser, chat | `toolchain/local-check` passed (offline icon, recovery and restored send)  |
 | `toolchain/check` | Exit 0 on the final tree: checker tests, hook tests, Worker tests, architecture, DOX, orbital exports, Go race tests, vet, gofmt, Flutter tests, analyze, format, `git diff --check` |
 
-Artifact: `.local/artifacts/Minder-0.9.2-arm64.apk` (ignored by Git), 19,289,894 bytes, SHA-256 `de359f7f3254a74dfbe2d536ed760181ef8f95f7bbb9c49daa07cf7fdb0328d8`. aapt2 reports `io.liveleds.minder`, version 0.9.2, code 27 (above 0.9.1's 26). The signer SHA-256 `7bbc3aba5e417ffe87efa00c53c183c6490dc61905ce7231aaf99f87666d2572` matches 0.7.0, 0.8.0, 0.9.0 and 0.9.1. `libapp.so` contains the offer card strings; 0.9.1's does not. Telegram delivery is pending: the vault was locked, so the bot credentials were unavailable.
+Artifact: `.local/artifacts/Minder-0.9.2-arm64.apk` (ignored by Git), 19,289,894 bytes, SHA-256 `de359f7f3254a74dfbe2d536ed760181ef8f95f7bbb9c49daa07cf7fdb0328d8`. aapt2 reports `io.liveleds.minder`, version 0.9.2, code 27 (above 0.9.1's 26). The signer SHA-256 `7bbc3aba5e417ffe87efa00c53c183c6490dc61905ce7231aaf99f87666d2572` matches 0.7.0, 0.8.0, 0.9.0 and 0.9.1. `libapp.so` contains the offer card strings; 0.9.1's does not. Telegram confirmed one upload (message 2009). An earlier 0.8.0+24 build (message 2006) was not installable over 0.9.1 and is superseded.
 
 ## Limits
 
