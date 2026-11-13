@@ -238,4 +238,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(repository.reminderCalls, isEmpty);
   });
+
+  test('a delete preview reads as plain rows', () {
+    final change = Change(
+      id: 'd',
+      action: 'delete_item',
+      itemTitle: 'Dentist',
+      fields: [
+        _f('item', 'Deleted', 'Dentist'),
+        _f('reminders', 'Removed', 'Scheduled'),
+        _f(
+          'email source',
+          'Deleted unless another item uses it',
+          'Original email and attachments',
+        ),
+      ],
+      state: ChangeState.pending,
+    );
+    expect(actionLabel('delete_item'), 'DELETE ITEM');
+    expect(previewRows(change).map((r) => r.label), [
+      'Item',
+      'Reminders',
+      'Email source',
+    ]);
+  });
 }

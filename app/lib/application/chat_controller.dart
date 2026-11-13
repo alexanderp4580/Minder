@@ -45,6 +45,8 @@ class ChatController extends ChangeNotifier {
     } else if (e.cursor >= _entries[index].cursor) {
       _entries[index] = e;
     }
+    final removed = e.change?.removedEntryIds ?? const [];
+    if (removed.isNotEmpty) _entries.removeWhere((v) => removed.contains(v.id));
     if (e.cursor > cursor) cursor = e.cursor;
     if (e.kind != EntryKind.user && e.captureId.isEmpty) {
       waiting = false;

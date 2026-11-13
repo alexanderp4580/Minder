@@ -35,6 +35,7 @@ class Change {
     this.undoId,
     this.reminderOffsets = const [],
     this.reminderChoices = const [],
+    this.removedEntryIds = const [],
   });
 
   final String id, action, itemTitle;
@@ -44,6 +45,9 @@ class Change {
 
   /// Minutes before the start or deadline; [reminderChoices] lists what can be picked.
   final List<int> reminderOffsets, reminderChoices;
+
+  /// Chat entries a delete took away; the chat drops them.
+  final List<String> removedEntryIds;
 }
 
 /// One firing of a reminder. [state] is active until you act on it.

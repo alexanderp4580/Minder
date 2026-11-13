@@ -182,6 +182,37 @@ void main() {
       c.dispose();
     },
   );
+  test('a delete result drops the cards of the deleted item', () async {
+    final repo = FakeRepository();
+    final c = ChatController(repo, pollInterval: const Duration(days: 1));
+    await c.start();
+    repo.saved.addAll([
+      entry('p', 1, 'preview', change: preview()),
+      entry('r', 2, 'result', text: 'Saved: Call plumber.'),
+      entry('other', 3, 'minder', text: 'Hello'),
+    ]);
+    await c.sync();
+    expect(c.entries.map((e) => e.id), ['p', 'r', 'other']);
+    repo.saved.add(
+      entry(
+        'gone',
+        4,
+        'result',
+        text: 'Deleted: Call plumber.',
+        change: {
+          'id': 'd',
+          'action': 'delete_item',
+          'item_title': 'Call plumber',
+          'fields': [],
+          'state': 'confirmed',
+          'removed_entry_ids': ['p', 'r'],
+        },
+      ),
+    );
+    await c.sync();
+    expect(c.entries.map((e) => e.id), ['other', 'gone']);
+    c.dispose();
+  });
   test('poll fills gaps and replaces older entries by cursor', () async {
     final repo = FakeRepository();
     final c = ChatController(repo, pollInterval: const Duration(days: 1));

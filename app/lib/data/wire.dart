@@ -25,6 +25,9 @@ Change changeFromJson(Map<String, dynamic> j) => Change(
   reminderChoices: [
     for (final m in j['reminder_choices_minutes'] as List? ?? []) m as int,
   ],
+  removedEntryIds: [
+    for (final id in j['removed_entry_ids'] as List? ?? []) id as String,
+  ],
 );
 
 ReminderInfo reminderInfoFromJson(Map<String, dynamic> j) =>
@@ -78,6 +81,7 @@ Item itemFromJson(Map<String, dynamic> j) {
     dueAt: time('due_at'),
     durationMinutes: (j['duration_minutes'] as num?)?.toInt() ?? 0,
     priority: (j['priority'] as num?)?.toInt() ?? 0,
+    version: (j['version'] as num?)?.toInt() ?? 0,
     location: j['location'] as String? ?? '',
     list: j['list'] as String? ?? '',
     repeat: _repeat(j['recurrence'] as Map<String, dynamic>?),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../domain/failure.dart';
+import '../domain/entry.dart';
 import '../domain/item.dart';
 import '../domain/item_repository.dart';
 
@@ -37,6 +38,17 @@ class CalendarController extends ChangeNotifier {
 
   int countOn(DateTime day) => itemsOn(day).length;
   List<Item> get selectedItems => itemsOn(selected);
+
+  Future<Entry> previewDelete(Item item) => _repository.previewDelete(item);
+
+  Future<void> confirmDelete(String changeId) async {
+    await _repository.confirmDelete(changeId);
+    await load();
+  }
+
+  Future<void> discardDelete(String changeId) async {
+    await _repository.discardDelete(changeId);
+  }
 
   Future<void> load() async {
     if (_disposed) return;

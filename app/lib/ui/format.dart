@@ -35,6 +35,7 @@ String actionLabel(String action) => switch (action) {
   'create_item' => 'CREATE ITEM',
   'delete_capture' => 'DELETE EMAIL SOURCE',
   'cancel_item' => 'CANCEL ITEM',
+  'delete_item' => 'DELETE ITEM',
   'complete_item' => 'COMPLETE ITEM',
   'create_profile' => 'ADD PROFILE',
   'update_profile' => 'CHANGE PROFILE',
@@ -67,6 +68,8 @@ String fieldLabel(String name) => switch (name) {
   'notes' => 'Notes',
   'status' => 'Status',
   'timezone' => 'Timezone',
+  'item' => 'Item',
+  'email source' => 'Email source',
   _ => name,
 };
 

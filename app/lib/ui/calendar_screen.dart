@@ -1,4 +1,5 @@
 import '../domain/capture_repository.dart';
+import 'item_delete_dialog.dart';
 import 'item_sources.dart';
 
 import 'dart:math' as math;
@@ -366,13 +367,32 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            time,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Tokens.muted,
-              letterSpacing: 1,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  time,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Tokens.muted,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Delete',
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => ItemDeleteDialog(controller: c, item: item),
+                ),
+                constraints: const BoxConstraints.tightFor(
+                  width: Tokens.minTarget,
+                  height: Tokens.minTarget,
+                ),
+                icon: const Icon(Icons.delete_outline, color: Tokens.muted),
+              ),
+            ],
           ),
           const SizedBox(height: Tokens.gap),
           Text(

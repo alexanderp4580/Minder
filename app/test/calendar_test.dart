@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/application/calendar_controller.dart';
 import 'package:minder/data/wire.dart';
+import 'package:minder/domain/entry.dart';
 import 'package:minder/domain/failure.dart';
 import 'package:minder/domain/item.dart';
 import 'package:minder/domain/item_repository.dart';
@@ -34,10 +35,43 @@ Item item(
   'location': location,
 });
 
+Entry deletePreview(Item item) => entryFromJson({
+  'id': 'e-${item.id}',
+  'cursor': 1,
+  'kind': 'preview',
+  'text': 'Delete this item and its data.',
+  'created_at': '2026-11-12T10:00:00Z',
+  'change': {
+    'id': 'c-${item.id}',
+    'action': 'delete_item',
+    'item_title': item.title,
+    'state': 'pending',
+    'fields': [
+      {'name': 'item', 'old': item.title, 'new': 'Deleted'},
+    ],
+  },
+});
+
 class FakeItems implements ItemRepository {
   final requests = <(DateTime, DateTime)>[];
+  final confirmed = <String>[], discarded = <String>[];
   List<Item> items = [];
   bool offline = false;
+  @override
+  Future<Entry> previewDelete(Item item) async => deletePreview(item);
+  @override
+  Future<Entry> confirmDelete(String changeId) async {
+    confirmed.add(changeId);
+    items.removeWhere((i) => 'c-${i.id}' == changeId);
+    return deletePreview(item('x', 'x'));
+  }
+
+  @override
+  Future<Entry> discardDelete(String changeId) async {
+    discarded.add(changeId);
+    return deletePreview(item('x', 'x'));
+  }
+
   @override
   Future<List<Item>> itemsBetween(DateTime from, DateTime to) async {
     requests.add((from, to));
@@ -54,6 +88,12 @@ CalendarController controller(FakeItems repo) =>
 
 class PendingItems implements ItemRepository {
   final requests = <Completer<List<Item>>>[];
+  @override
+  Future<Entry> previewDelete(Item item) => throw UnimplementedError();
+  @override
+  Future<Entry> confirmDelete(String changeId) => throw UnimplementedError();
+  @override
+  Future<Entry> discardDelete(String changeId) => throw UnimplementedError();
   @override
   Future<List<Item>> itemsBetween(DateTime from, DateTime to) {
     final result = Completer<List<Item>>();
@@ -286,5 +326,62 @@ void main() {
     expect(find.text('December'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     c.dispose();
+  });
+
+  group('Delete', () {
+    Future<(FakeItems, CalendarController)> open(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(412, 892);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final repo = FakeItems()
+        ..items = [item('a', 'Dentist', start: utc(2026, 11, 12, 9))];
+      final c = controller(repo);
+      await c.load();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: Tokens.theme,
+          home: CalendarScreen(controller: c),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return (repo, c);
+    }
+
+    testWidgets('has a 44 px target on each agenda card', (tester) async {
+      final (_, c) = await open(tester);
+      expect(tester.getSize(find.byTooltip('Delete')).height, 44);
+      expect(tester.getSize(find.byTooltip('Delete')).width, 44);
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    });
+
+    testWidgets('shows what goes, then removes the item on confirm', (
+      tester,
+    ) async {
+      final (repo, c) = await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete this item and its data.'), findsOneWidget);
+      expect(find.text('Deleted'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+      expect(repo.confirmed, ['c-a']);
+      expect(find.text('Dentist'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    });
+
+    testWidgets('keeps the item when the owner backs out', (tester) async {
+      final (repo, c) = await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Keep it'));
+      await tester.pumpAndSettle();
+      expect(repo.discarded, ['c-a']);
+      expect(repo.confirmed, isEmpty);
+      expect(find.text('Dentist'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    });
   });
 }

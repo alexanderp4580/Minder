@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:minder/domain/entry.dart';
 import 'package:minder/application/calendar_controller.dart';
 import 'package:minder/domain/item.dart';
 import 'package:minder/domain/item_repository.dart';
@@ -13,6 +14,12 @@ import 'package:minder/ui/tokens.dart';
 import 'package:minder/ui/orbital_background.dart';
 
 class EmptyItems implements ItemRepository {
+  @override
+  Future<Entry> previewDelete(Item item) => throw UnimplementedError();
+  @override
+  Future<Entry> confirmDelete(String changeId) => throw UnimplementedError();
+  @override
+  Future<Entry> discardDelete(String changeId) => throw UnimplementedError();
   @override
   Future<List<Item>> itemsBetween(DateTime from, DateTime to) async => [];
 }

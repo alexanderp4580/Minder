@@ -14,6 +14,12 @@ import 'package:minder/ui/tokens.dart';
 
 class EmptyItems implements ItemRepository {
   @override
+  Future<Entry> previewDelete(Item item) => throw UnimplementedError();
+  @override
+  Future<Entry> confirmDelete(String changeId) => throw UnimplementedError();
+  @override
+  Future<Entry> discardDelete(String changeId) => throw UnimplementedError();
+  @override
   Future<List<Item>> itemsBetween(DateTime from, DateTime to) async => [];
 }
 

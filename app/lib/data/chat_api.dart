@@ -114,6 +114,18 @@ class ChatApi
         '&to=${to.toUtc().toIso8601String()}'
         '&timezone=${Uri.encodeQueryComponent(await downloads.deviceTimezone())}',
   )) as List).map((j) => itemFromJson(j as Map<String, dynamic>)).toList();
+  @override
+  Future<Entry> previewDelete(Item item) async => entryFromJson(
+    await _request(
+      'POST',
+      '/v1/items/${Uri.encodeComponent(item.id)}/delete',
+      body: {'expected_version': item.version},
+    ) as Map<String, dynamic>,
+  );
+  @override
+  Future<Entry> confirmDelete(String changeId) => confirm(changeId);
+  @override
+  Future<Entry> discardDelete(String changeId) => discard(changeId);
   Future<Entry> _post(String route) async =>
       entryFromJson(await _request('POST', route) as Map<String, dynamic>);
   @override
