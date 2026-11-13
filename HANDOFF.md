@@ -1,15 +1,15 @@
 # Handoff
 
-State on 2026-11-13. Production runs `d04c3a8` from `fix-connection-message`; `main` and `notification-body-tap` remain at `ab94726`.
-`main` holds `m0-chat`, `notification-body-tap`, `app-icon-orbital` and `delete-items`. The owner asked for the merge and the deployment on 2026-11-13. `origin/main` and `origin/notification-body-tap` are both at `ab94726`. The worktree `Minder-m0-chat` is on `fix-connection-message`.
+State on 2026-11-13. Production runs `adb1bdf` from `main` (the Coolify app is pinned to branch `main` at that commit). It includes the place lookup, with `SERPER_API_KEY` set as a Coolify runtime variable.
+`main` holds every earlier branch. Only `main` and `m0-chat` remain, locally and on origin. The worktree `Minder-m0-chat` is on `m0-chat` at the same commit as `main`. The previous runtime was `d04c3a8`, reachable from `main`; roll back with branch `main` and that commit.
 
 ## Current work: approved controls and booking fields
 
-The owner approved the brand guide and clarified that phone, email, website and booking reference belong in separate fields like Address, not Notes. App version is 0.9.1+26 on `fix-connection-message`.
+The owner approved the brand guide and clarified that phone, email, website and booking reference belong in separate fields like Address, not Notes. App 0.9.1+26 introduced these fields.
 
 The client uses neutral square text actions, chevrons, the approved address block and separate contact/reference rows. New proposals and stored items carry optional `phone`, `email`, `website` and `booking_reference` strings. Notes retain remaining instructions. Clearly labelled older note metadata is separated for display; server edits promote it before clear/Undo so cleared data cannot reappear. Conflicts and conditional instructions remain visible. Bare calendar UID/sequence Ref lines stay in Notes.
 
-HTML conversion preserves safe contact/link targets and cell separation before extraction. No schema migration is needed: item JSON already stores optional fields. The owner authorized delivery and deployment. Commit `d04c3a8` deployed successfully through Coolify (`ory0emc19xfx2eroyyrh48k6`); the application reports running:healthy. The previous verified runtime is `fc21e5e`. Coolify tracks `fix-connection-message` pinned to that exact commit. Phone approval still gates merging to main.
+HTML conversion preserves safe contact/link targets and cell separation before extraction. No schema migration is needed: item JSON already stores optional fields. The owner authorized delivery and deployment. Commit `d04c3a8` deployed successfully through Coolify (`ory0emc19xfx2eroyyrh48k6`); the application reports running:healthy. The previous verified runtime is `fc21e5e`. Phone approval of the app builds is still pending.
 
 Local checks passed: 147 Flutter tests, Go race/vet, analysis/format, all four browser scenarios, and a real-model synthetic booking confirmed into temporary SQLite with separate fields. APK 0.9.0+25 built and its signature matches 0.8.0. Telegram delivery succeeded once on the authorized retry (message 2000). Source: server `03c51fd`, client/guide `04a3530`.
 
@@ -20,7 +20,7 @@ Verification and APK status: [calendar controls evidence](docs/evidence/calendar
 
 ## Calendar details 0.8.0
 
-The owner approved calendar details and links with “Fix all”, asked to continue the current work, and requested a clearer Confirmed footer. Work runs inline on `fix-connection-message`; keep this branch for phone review. That 0.8.0 slice needed no server change.
+The owner approved calendar details and links with “Fix all”, asked to continue the current work, and requested a clearer Confirmed footer. That 0.8.0 slice needed no server change.
 
 - `d0f0f68` fixes the stale connection message: dropped streams feed the delayed offline icon; a successful sync clears background error copy. Failed sends retain composer text.
 - `4f45e7e`: calendar cards expand on a card tap or Details. Available rows retain kind, notes, reminders, source wall clocks and timezones. Starts/Ends become Departs/Arrives only across different zones. Address opens Google Maps; note links open the dialer, email app or browser. The launcher permits HTTPS, tel and mailto, and reports failed launches. Notes retain the 600-character cap.
@@ -107,9 +107,9 @@ APK 0.7.0 reached Telegram once (message 1995). Evidence and limits: [docs/evide
 
 ## Place lookup
 
-On branch `place-lookup` (worktree `Minder-place-lookup`), built on `fix-connection-message` at `5807cca`, the line production and the phone run; not merged, not deployed. App 0.9.2+27 (an APK needs a code above the installed 26 to update).
+In `main` and deployed at `adb1bdf` (Coolify deployment `gn89izeozdgbno8bmucrxgxl`, running:healthy, schema 5, no migration, startup log `serper_key_set=true`, no warnings or errors in the first 60 log lines). App 0.9.2+27; an APK needs a code above the installed 26 to update.
 When a request names a venue without an address, chat shows an offer card (Skip, Look it up). Look it up runs one Serper places search for the offered query and the next preview carries the address in location and the website in the website field. Skip and any other text run no search. The server needs `SERPER_API_KEY` (TokenCrypt secret `serper_api_key`) as a Coolify process variable; without it chat is unchanged.
-Design: [docs/superpowers/specs/2026-11-13-place-lookup-design.md](docs/superpowers/specs/2026-11-13-place-lookup-design.md). Plan and evidence: [docs/superpowers/plans/2026-11-13-place-lookup.md](docs/superpowers/plans/2026-11-13-place-lookup.md), [docs/evidence/place-lookup.md](docs/evidence/place-lookup.md). APK 0.9.2 (`.local/artifacts/Minder-0.9.2-arm64.apk`) reached Telegram once (message 2009). Phone approval is pending.
+Design: [docs/superpowers/specs/2026-11-13-place-lookup-design.md](docs/superpowers/specs/2026-11-13-place-lookup-design.md). Plan and evidence: [docs/superpowers/plans/2026-11-13-place-lookup.md](docs/superpowers/plans/2026-11-13-place-lookup.md), [docs/evidence/place-lookup.md](docs/evidence/place-lookup.md). APK 0.9.2 (`.local/artifacts/Minder-0.9.2-arm64.apk`, ignored by Git) reached Telegram once (message 2009). Nobody has tried a lookup against production or on a phone yet. Phone approval is pending.
 
 ## App icon and faster highlights
 
@@ -150,7 +150,7 @@ Send each APK once. A 504 from Telegram can mean the file arrived.
 
 ## Email capture implementation
 
-Earlier app version: 0.6.0+20 on `notification-body-tap` (email review refinement: [design](docs/superpowers/specs/2026-11-13-email-review-refinement-design.md)). The initial live email release ran `fb99b50`: Worker `minder-email-ingress`, routing for the `minder` subdomain and an Access service-token policy. A real forward from an allowed Gmail address reached the server and produced one candidate on 2026-11-12 (Worker log: all stages, status 201). APK 0.5.0+18 reached Telegram (message 1990). App 0.5.1+19 adds the Do nothing button and clearer zero-item wording. Phone review, attachment download and Confirm remain unverified.
+Earlier app version: 0.6.0+20 (email review refinement: [design](docs/superpowers/specs/2026-11-13-email-review-refinement-design.md)). The initial live email release ran `fb99b50`: Worker `minder-email-ingress`, routing for the `minder` subdomain and an Access service-token policy. A real forward from an allowed Gmail address reached the server and produced one candidate on 2026-11-12 (Worker log: all stages, status 201). APK 0.5.0+18 reached Telegram (message 1990). App 0.5.1+19 adds the Do nothing button and clearer zero-item wording. Phone review, attachment download and Confirm remain unverified.
 
 App 0.6.0+20 changes the flow: the email card lists what was found, questions arrive as their own message with agent-chosen quick replies, and the final card shows the title once, Starts/Ends with timezone, `45 minutes`, Address, bullet notes, Type Appointment and reminder chips (10 minutes to 1 week; the agent preselects). One item can hold several reminders: `reminder_offsets_minutes` on the item, one schedule row that advances to the next unfired offset. A header icon shows the connection only after 2 seconds offline.
 Known gaps: the app does not re-register a stale push token on resume (tap Enable notifications); normal chat still asks for a location by fixed rule (`server/assistant/prompt.go`).
@@ -181,7 +181,7 @@ Reference and tracing steps: [docs/logging.md](docs/logging.md).
 
 ## Deployment and APK status
 
-Current runtime and APK status are recorded in Current work above and the linked evidence. Coolify builds `fix-connection-message` at a pinned `git_commit_sha`; it does not follow main. The earlier `ab94726` deployment ran schema version 5 with email capture and Firebase push configured.
+Current runtime and APK status are recorded in Current work above and the linked evidence. Coolify builds `main` at a pinned `git_commit_sha`; it does not follow new commits by itself. The `adb1bdf` deployment ran schema version 5 with email capture, Firebase push and the Serper key configured; it applied no migration.
 Notifications did not arrive on 2026-11-12. The old build logged nothing that explains it. Watch the next reminder with the new logs.
 
 APK 0.4.6 carries the bar, the header rule, the composer spacing and the dimmer lines. Telegram confirmed one upload.
@@ -189,7 +189,7 @@ The build uses the cached debug signing key, so it installs over earlier builds.
 Earlier APK evidence: [docs/evidence/orbital-artwork.md](docs/evidence/orbital-artwork.md).
 
 The Coolify app is `ciw3jk5gkgiql8kfdomeyys2`.
-A Git push does not deploy. To deploy a commit: PATCH the application with `{"git_branch":"fix-connection-message","git_commit_sha":"<sha>"}` at `/api/v1/applications/<uuid>`, then POST `/api/v1/deploy?uuid=<uuid>&force=false`. Coolify rejects a GET. A deploy without the PATCH redeploys the old pinned commit and rebuilds nothing. Rollback is the same two calls with the branch and commit captured before deployment.
+A Git push does not deploy. To deploy a commit: PATCH the application with `{"git_branch":"main","git_commit_sha":"<sha>"}` at `/api/v1/applications/<uuid>`, then POST `/api/v1/deploy?uuid=<uuid>&force=false`. Coolify rejects a GET. A deploy without the PATCH redeploys the old pinned commit and rebuilds nothing. Rollback is the same two calls with the branch and commit captured before deployment.
 The prior handoff recommends normal deploys; forced deploys rebuild all layers.
 `.dockerignore` controls the build context. Check a new COPY source before deploying.
 
