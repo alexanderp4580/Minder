@@ -217,13 +217,7 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  Future<void> retry({String? text}) async {
-    if (text != null) {
-      await send(text);
-    } else {
-      await sync();
-    }
-  }
+  Future<void> retry(String text) => send(text);
 
   String retryText(Entry entry) {
     String text = '';

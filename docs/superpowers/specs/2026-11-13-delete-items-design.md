@@ -48,3 +48,4 @@ Names of SQL helpers, dialog layout details, wording of the delete preview beyon
 
 - The delete's audit row keeps an item snapshot so Undo works. It is not purged later.
 - Backups made before the delete keep their copies until they expire.
+- The agent sees open and in-progress items only, so chat cannot cancel or delete a done or cancelled item. The calendar can.

@@ -92,7 +92,7 @@ class EntryView extends StatelessWidget {
             child: OutlinedButton(
               onPressed: controller.waiting
                   ? null
-                  : () => controller.retry(text: controller.retryText(entry)),
+                  : () => controller.retry(controller.retryText(entry)),
               child: const Text('Retry'),
             ),
           ),

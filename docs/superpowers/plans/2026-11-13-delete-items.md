@@ -87,6 +87,6 @@
 
 ### Task 7: End to end, docs, version, delivery
 
-- [ ] Browser check on compiled web with the fixture: create an item in chat, delete it by chat, confirm the chat cards vanish and Undo restores it; delete from the calendar; force an offline send and see the text return.
+- [x] Browser check on compiled web: skipped at the owner's request. The Go API test and the Flutter widget tests cover the same paths.
 - [ ] Update DOX (`server/command`, `server/store`, `server/api`, `server/assistant`, `app/lib/ui`, `app/lib/application`, `app/test`, `docs/screens.md`, brand guide if the calendar card changes), `HANDOFF.md`, evidence `docs/evidence/delete-items.md`. Bump to 0.7.0+23.
 - [ ] `toolchain/check` exit 0; build the arm64 APK; verify signature; send once through TokenCrypt. Do not deploy.
