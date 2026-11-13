@@ -72,11 +72,7 @@ class _ItemSourcesState extends State<ItemSources> {
                 children: [
                   for (final source in snapshot.data!)
                     if (!source.deleted) ...[
-                      Text(
-                        source.subject.isEmpty
-                            ? 'Forwarded email'
-                            : source.subject,
-                      ),
+                      Text('Original email'),
                       for (final attachment in source.attachments)
                         OutlinedButton(
                           onPressed: _controller.busy

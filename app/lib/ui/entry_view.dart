@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../application/chat_controller.dart';
 import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
+import '../domain/link_launcher.dart';
 import 'format.dart';
 import 'tokens.dart';
 import 'capture_view.dart';
@@ -13,9 +14,15 @@ const _meta = TextStyle(fontSize: 12, color: Tokens.muted, letterSpacing: 1.2);
 
 /// One chat entry: a sender line, then the message in its box.
 class EntryView extends StatelessWidget {
-  const EntryView({super.key, required this.entry, required this.controller});
+  const EntryView({
+    super.key,
+    required this.entry,
+    required this.controller,
+    this.linkLauncher,
+  });
   final Entry entry;
   final ChatController controller;
+  final LinkLauncher? linkLauncher;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +71,11 @@ class EntryView extends StatelessWidget {
         if (entry.capture != null && entry.kind == EntryKind.question)
           QuestionView(capture: entry.capture!, chat: controller)
         else if (entry.capture != null)
-          CaptureView(capture: entry.capture!, chat: controller)
+          CaptureView(
+            capture: entry.capture!,
+            chat: controller,
+            linkLauncher: linkLauncher,
+          )
         else if (change != null && entry.kind == EntryKind.preview)
           _Preview(change: change, controller: controller)
         else

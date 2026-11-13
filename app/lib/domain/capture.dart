@@ -1,3 +1,5 @@
+import 'item.dart';
+
 import 'dart:typed_data';
 
 class Capture {
@@ -62,10 +64,12 @@ class CaptureCandidate {
     this.dueDate = '',
     this.location = '',
     this.evidence = const [],
+    this.details,
   });
   final String id, state, title, changeId, question;
   final String startAt, startDate, dueAt, dueDate, location;
   final List<String> options, evidence;
+  final Item? details;
 }
 
 class AttachmentDownload {

@@ -19,6 +19,8 @@ Capture/source values and repository methods are typed; dates without times stay
 
 `Item` carries phone, email, website and bookingReference as typed values. `BookingDetails` separates clearly labelled older contact/reference lines for display, keeps conflicts and calendar UID/sequence Ref lines in Notes, and never writes to the server.
 
+`CaptureCandidate.details` is a read-only Item projection of a proposal for shared detail rendering. Its synthetic ID never authorizes item changes. `capture_questions.dart` supplies duration choices for older captures and English duration labels.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.

@@ -8,6 +8,7 @@ import 'package:minder/application/chat_controller.dart';
 import 'package:minder/data/chat_api.dart';
 import 'package:minder/data/wire.dart';
 import 'package:minder/domain/capture.dart';
+import 'package:minder/domain/capture_questions.dart';
 import 'package:minder/ui/capture_view.dart';
 import 'package:minder/ui/question_view.dart';
 import 'package:minder/ui/tokens.dart';
@@ -75,6 +76,13 @@ http.Response _reply() => http.Response(
 );
 
 void main() {
+  test('duration choices preserve days and nights', () {
+    expect(
+      questionOptions('How long is your stay?', ['2 nights', '3 nights']),
+      ['2 nights', '3 nights'],
+    );
+  });
+
   test('questions decode from objects and from the older bare strings', () {
     final capture = captureFromJson({
       'id': 'c',
@@ -102,6 +110,95 @@ void main() {
     expect(capture.candidates.single.location, 'Amsterdam');
     expect(capture.candidates.single.options, ['1 hour']);
   });
+
+  testWidgets(
+    'expanded email shows parsed English details and duration suggestions',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final capture = captureFromJson({
+        'id': 'source',
+        'status': 'needs-answer',
+        'revision': 3,
+        'subject': 'Afspraak bevestiging',
+        'candidates': [
+          {
+            'id': 'a',
+            'state': 'needs-answer',
+            'question': 'How long will it take?',
+            'proposal': {
+              'title': 'Fitting',
+              'kind': 'event',
+              'location': 'Clinic address',
+              'phone': '020-1234567',
+              'booking_reference': '001234',
+              'notes': '- Bring your glasses',
+            },
+            'evidence': [
+              {'part': '1_1', 'excerpt': 'Neem je bril mee'},
+            ],
+          },
+        ],
+      });
+      final answers = <Map<String, dynamic>>[];
+      await _pump(
+        tester,
+        (chat) => CaptureView(capture: capture, chat: chat),
+        MockClient((request) async {
+          expect(request.url.path, '/v1/captures/source/answers');
+          answers.add(jsonDecode(request.body) as Map<String, dynamic>);
+          return _reply();
+        }),
+      );
+      await tester.tap(find.text('Fitting'));
+      await tester.pumpAndSettle();
+      expect(find.text('Phone'), findsOneWidget);
+      expect(find.text('020-1234567'), findsOneWidget);
+      expect(find.text('Booking reference'), findsOneWidget);
+      expect(find.text('001234'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('001234')), findsOneWidget);
+      expect(find.text('Bring your glasses'), findsOneWidget);
+      expect(find.textContaining('1_1:'), findsNothing);
+      expect(find.textContaining('Neem je bril'), findsNothing);
+      expect(find.text('Afspraak bevestiging'), findsNothing);
+      for (final option in ['30 minutes', '45 minutes', '1 hour']) {
+        expect(find.text(option), findsOneWidget);
+      }
+      await tester.ensureVisible(find.text('30 minutes'));
+      await tester.tap(find.text('30 minutes'));
+      await tester.pumpAndSettle();
+      expect(answers.single['text'], '30 minutes');
+      expect(answers.single['candidate_id'], 'a');
+      expect(answers.single['revision'], 3);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'duration questions get useful replies when older data has no options',
+    (tester) async {
+      final capture = Capture(
+        id: 'source',
+        status: 'needs-answer',
+        revision: 3,
+        candidates: [
+          CaptureCandidate(
+            id: 'a',
+            state: 'needs-answer',
+            title: 'Fitting',
+            question: 'How long will it take?',
+          ),
+        ],
+      );
+      await _pump(
+        tester,
+        (chat) => QuestionView(capture: capture, chat: chat),
+        MockClient((_) async => _reply()),
+      );
+      for (final option in ['30 minutes', '45 minutes', '1 hour']) {
+        expect(find.text(option), findsOneWidget);
+      }
+    },
+  );
 
   testWidgets('email card lists found items without questions', (tester) async {
     await _pump(

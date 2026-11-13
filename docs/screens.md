@@ -8,6 +8,7 @@ All names, dates, counts and times in the text and in the mockup are illustrativ
 
 The [email capture spec](superpowers/specs/2026-11-12-email-capture-design.md) defines source summaries, attachments, coverage warnings and candidate-specific follow-up questions inside Chat.
 A source keeps its own answer field. Each item uses the existing Confirm/Discard preview; clarifying one item leaves independent previews valid.
+Expanded email candidates show the same labelled address, contact, booking reference and notes fields as calendar details. The review heading and extracted descriptions are English; original-source quotes and internal evidence IDs are not displayed. Original attachments remain available. A missing appointment duration offers 30 minutes and alternatives, both in the expanded item and the separate question message.
 Source deletion first creates an irreversible preview. Mockup: [email capture](mockups/email-capture.html).
 
 ## UX rules

@@ -160,6 +160,11 @@ Capture captureFromJson(Map<String, dynamic> j) => Capture(
           id: c['id'] as String,
           state: c['state'] as String,
           title: c['proposal']['title'] as String? ?? '',
+          details: itemFromJson({
+            ...c['proposal'] as Map<String, dynamic>,
+            'id': 'proposal:${c['id']}',
+            'status': c['state'] as String,
+          }),
           changeId: c['change_id'] as String? ?? '',
           question: c['question'] as String? ?? '',
           options: [for (final o in c['options'] as List? ?? []) o as String],

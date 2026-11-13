@@ -190,7 +190,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Hotel confirmation'), findsOneWidget);
+    expect(find.text('Original email'), findsOneWidget);
+    expect(find.text('Hotel confirmation'), findsNothing);
     expect(find.text('original.eml'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     api.close();

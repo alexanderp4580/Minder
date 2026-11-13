@@ -9,8 +9,8 @@ A forwarded email should feel like a short conversation, not a form. The owner s
 ## Goals
 
 1. **Natural flow.** Three messages, in order:
-   1. *Email received.* The email card appears at once. When extraction finishes, the same card shows what Minder found: each item's title, when, and where, plus the source file. It asks nothing.
-   2. *Questions, only if needed.* A separate chat message from Minder. The agent decides, as a thoughtful assistant would, what is missing or unclear and worth asking: a duration that matters, a location, a date, a time, who or what to bring. It asks as many questions as that takes, each short and specific. No fixed list of fields and no field is always asked; it never asks what the email already answers or what does not matter. Each question may carry up to three quick-reply buttons chosen by the agent (for example "Skip", "About 30 minutes"). Typing always works, and one free-text reply can answer several questions. Answered questions close; unanswered ones stay open.
+   1. *Email received.* The email card appears at once. When extraction finishes, the same card shows what Minder found: each item's title, when, and where, plus the source file. Its collapsed summary asks nothing; expanded details also expose any open item question.
+   2. *Questions, only if needed.* A separate chat message from Minder. The agent decides, as a thoughtful assistant would, what is missing or unclear and worth asking: a duration that matters, a location, a date, a time, who or what to bring. It asks as many questions as that takes, each short and specific. The owner later specified a duration question for appointments with a known start but no end/duration; it includes 30 minutes and plausible alternatives. Other questions have no fixed checklist; it never asks what the email already answers or what does not matter. Each question may carry up to three quick-reply buttons chosen by the agent, with a fallback for duration choices. Typing always works, and one free-text reply can answer several questions. Answered questions close; unanswered ones stay open.
    3. *Final item.* When nothing is missing, Minder posts one complete item card for approval (Confirm, Discard, Do nothing).
 2. **Item card.**
    - The title shows once.
@@ -18,7 +18,7 @@ A forwarded email should feel like a short conversation, not a form. The owner s
    - Starts and Ends are one row each, with the timezone in the value, for example "Fri 20 Nov, 14:30 (Europe/Amsterdam)". No separate timezone rows.
    - Duration is a row whose value carries the unit: "45 minutes", "1 hour 30 minutes".
    - Address is its own row, filled from the email. The label is *Address*; the stored field stays `location`.
-   - Notes are a short Markdown list of relevant facts only: booking reference, what to bring, cancellation terms, contact. No restated title, date or address. No reminders.
+   - Notes are a short list of remaining instructions such as what to bring and cancellation terms. Phone, Email, Website and Booking reference have separate fields. No restated title, date or address. No reminders.
 3. **Reminders as choices, not notes.** The card shows chips. The agent preselects the sensible ones and the owner switches any on or off, or clears all. Offsets: 10 minutes, 30 minutes, 1 hour, 2 hours, 1 day, 2 days, 3 days, 1 week. An item can hold several reminders at once.
 4. **Kind rename.** The stored kind `event` is shown as *Appointment*. Whether the stored value changes is the builder's call; existing items must keep working.
 5. **Connection status.** Remove the "Connection lost / Retry" block that flashes in the chat. Show a small status icon at the top right of the header: hidden when connected, a clear icon when offline or retrying, tappable to retry. Short drops of about two seconds show nothing.
@@ -64,3 +64,7 @@ Data model for multiple reminders, migration, wire format for quick replies and 
 - Switching chips changes the stored reminders; each fires once at its offset in a local scheduler test, and Done or Undo still work.
 - A forced two-second connection drop shows no banner; a ten-second drop shows the header icon and recovery clears it.
 - Existing items and single reminders load and fire as before after the migration.
+
+## English review details
+
+The owner requested English descriptions and duration choices on 2026-11-13. Expanded email candidates use the calendar detail fields and neutral controls. Phone, Email, Website and Booking reference have separate rows. Raw evidence IDs and original-language quotes are retained for validation, not shown as descriptions. Original attachments remain available. Extracted titles, notes, questions and suggestions are English; proper names, addresses and identifiers remain exact. Duration choices are also available inside the expanded candidate and submit the same targeted answer as the question message.

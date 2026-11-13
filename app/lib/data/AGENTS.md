@@ -20,6 +20,8 @@ Capture routes use owner authentication. Attachment bytes download through the s
 
 Item JSON preserves `phone`, `email`, `website` and `booking_reference`; absent keys keep older responses compatible.
 
+Capture JSON retains the full candidate proposal as read-only detail fields; original evidence and subjects remain available in the source data.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.

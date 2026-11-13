@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 
 import '../application/chat_controller.dart';
+import '../domain/link_launcher.dart';
 import 'bottom_nav.dart';
 import 'entry_view.dart';
 import 'tokens.dart';
@@ -14,6 +15,7 @@ class ChatScreen extends StatefulWidget {
     super.key,
     required this.controller,
     this.signIn,
+    this.linkLauncher,
     this.onCalendar,
     this.enableNotifications,
     this.notificationStatus,
@@ -23,6 +25,7 @@ class ChatScreen extends StatefulWidget {
   final String? notificationStatus;
   final bool notificationsBusy;
   final ChatController controller;
+  final LinkLauncher? linkLauncher;
   final Future<void> Function()? signIn;
   final VoidCallback? onCalendar;
   @override
@@ -227,7 +230,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   ),
                                 for (final e in c.entries)
-                                  EntryView(entry: e, controller: c),
+                                  EntryView(
+                                    entry: e,
+                                    controller: c,
+                                    linkLauncher: widget.linkLauncher,
+                                  ),
                                 if (c.waiting)
                                   const Padding(
                                     padding: EdgeInsets.symmetric(vertical: 16),

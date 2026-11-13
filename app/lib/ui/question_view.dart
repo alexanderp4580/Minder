@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../application/capture_controller.dart';
 import '../application/chat_controller.dart';
 import '../domain/capture.dart';
+import '../domain/capture_questions.dart';
 import '../domain/capture_repository.dart';
 import 'tokens.dart';
 
@@ -54,34 +55,16 @@ class _QuestionViewState extends State<QuestionView> {
     String text,
     List<String> options,
     String? candidateId,
-  ) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(text),
-        if (options.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: Tokens.gap,
-            runSpacing: Tokens.gap,
-            children: [
-              for (final option in options)
-                OutlinedButton(
-                  onPressed: controller.busy
-                      ? null
-                      : () => controller.answer(
-                          widget.capture,
-                          option,
-                          candidateId: candidateId,
-                        ),
-                  child: Text(option),
-                ),
-            ],
+  ) => QuestionPrompt(
+    text: text,
+    options: options,
+    onAnswer: controller.busy
+        ? null
+        : (answer) => controller.answer(
+            widget.capture,
+            answer,
+            candidateId: candidateId,
           ),
-        ],
-      ],
-    ),
   );
 
   Widget _content(CaptureController controller) {
@@ -121,6 +104,49 @@ class _QuestionViewState extends State<QuestionView> {
         if (controller.error != null)
           Text(controller.error!, style: const TextStyle(color: Tokens.alert)),
       ],
+    );
+  }
+}
+
+/// Shared question and suggested replies in the email details and question message.
+class QuestionPrompt extends StatelessWidget {
+  const QuestionPrompt({
+    super.key,
+    required this.text,
+    required this.options,
+    this.onAnswer,
+  });
+  final String text;
+  final List<String> options;
+  final ValueChanged<String>? onAnswer;
+
+  @override
+  Widget build(BuildContext context) {
+    final choices = questionOptions(text, options);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(questionText(text)),
+          if (choices.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: Tokens.gap,
+              runSpacing: Tokens.gap,
+              children: [
+                for (final choice in choices)
+                  OutlinedButton(
+                    onPressed: onAnswer == null
+                        ? null
+                        : () => onAnswer!(choice),
+                    child: Text(choice),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

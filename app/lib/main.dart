@@ -134,6 +134,7 @@ class _MinderAppState extends ConsumerState<MinderApp>
         home: Builder(
           builder: (context) => ChatScreen(
             controller: ref.watch(chatProvider),
+            linkLauncher: UrlLinkLauncher(),
             onCalendar: () {
               final calendar = ref.read(calendarProvider);
               unawaited(calendar.goToday());

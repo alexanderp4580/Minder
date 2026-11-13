@@ -3,19 +3,31 @@ import 'package:flutter/material.dart';
 import '../application/capture_controller.dart';
 import '../application/chat_controller.dart';
 import '../domain/capture.dart';
+import '../domain/item.dart';
+import '../domain/link_launcher.dart';
+import 'calendar_item_details.dart';
+import 'content_action.dart';
+import 'question_view.dart';
 import '../domain/capture_repository.dart';
 import 'format.dart';
 import 'tokens.dart';
 
 class CaptureView extends StatefulWidget {
-  const CaptureView({super.key, required this.capture, required this.chat});
+  const CaptureView({
+    super.key,
+    required this.capture,
+    required this.chat,
+    this.linkLauncher,
+  });
   final Capture capture;
   final ChatController chat;
+  final LinkLauncher? linkLauncher;
   @override
   State<CaptureView> createState() => _CaptureViewState();
 }
 
 class _CaptureViewState extends State<CaptureView> {
+  final _expanded = <String>{};
   final _answer = TextEditingController();
   CaptureController? _controller;
   @override
@@ -42,14 +54,123 @@ class _CaptureViewState extends State<CaptureView> {
     final controller = _controller;
     if (controller == null) {
       return Text(
-        widget.capture.deleted
-            ? 'Email source deleted.'
-            : widget.capture.subject,
+        widget.capture.deleted ? 'Email source deleted.' : 'Email review',
       );
     }
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) => _content(controller),
+    );
+  }
+
+  Widget _candidate(
+    CaptureController controller,
+    Capture capture,
+    CaptureCandidate candidate,
+  ) {
+    final expanded = _expanded.contains(candidate.id);
+    final details =
+        candidate.details ??
+        Item(
+          id: 'proposal:${candidate.id}',
+          title: candidate.title,
+          status: candidate.state,
+          location: candidate.location,
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          expanded: expanded,
+          child: ContentAction(
+            onPressed: () => setState(() {
+              if (expanded) {
+                _expanded.remove(candidate.id);
+              } else {
+                _expanded.add(candidate.id);
+              }
+            }),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          candidate.title.isEmpty
+                              ? 'Proposed item'
+                              : candidate.title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          [
+                            candidateWhen(candidate),
+                            if (!expanded) candidate.location,
+                            if (candidate.state == 'confirmed') 'Confirmed',
+                            if (candidate.state == 'discarded') 'Discarded',
+                          ].where((part) => part.isNotEmpty).join(' · '),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Tokens.muted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (expanded) ...[
+          CalendarItemDetails(
+            item: details,
+            launcher: widget.linkLauncher,
+            showTiming: false,
+          ),
+          if (candidate.question.isNotEmpty &&
+              (candidate.state == 'needs-answer' ||
+                  candidate.state == 'pending'))
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: QuestionPrompt(
+                text: candidate.question,
+                options: candidate.options,
+                onAnswer: controller.busy
+                    ? null
+                    : (answer) => controller.answer(
+                        capture,
+                        answer,
+                        candidateId: candidate.id,
+                      ),
+              ),
+            ),
+          if (candidate.question.isEmpty && capture.candidates.length == 1)
+            for (final question in capture.questions)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: QuestionPrompt(
+                  text: question.text,
+                  options: question.options,
+                  onAnswer: controller.busy
+                      ? null
+                      : (answer) => controller.answer(capture, answer),
+                ),
+              ),
+          const SizedBox(height: 16),
+        ],
+      ],
     );
   }
 
@@ -81,7 +202,7 @@ class _CaptureViewState extends State<CaptureView> {
           ),
           const SizedBox(height: 8),
           Text(
-            capture.subject.isEmpty ? 'Forwarded email' : capture.subject,
+            'Email review',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           if (capture.sender.isNotEmpty)
@@ -110,34 +231,7 @@ class _CaptureViewState extends State<CaptureView> {
               ),
             ),
           for (final candidate in capture.candidates)
-            Material(
-              type: MaterialType.transparency,
-              child: ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: const EdgeInsets.only(bottom: 8),
-                title: Text(
-                  candidate.title.isEmpty ? 'Proposed item' : candidate.title,
-                ),
-                subtitle: Text(
-                  [
-                    candidateWhen(candidate),
-                    candidate.location,
-                    if (candidate.state == 'confirmed') 'Confirmed',
-                    if (candidate.state == 'discarded') 'Discarded',
-                  ].where((part) => part.isNotEmpty).join(' · '),
-                ),
-                children: [
-                  for (final evidence in candidate.evidence)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        evidence,
-                        style: const TextStyle(color: Tokens.muted),
-                      ),
-                    ),
-                ],
-              ),
-            ),
+            _candidate(controller, capture, candidate),
           for (final warning in capture.coverage)
             Padding(
               padding: const EdgeInsets.only(top: 8),

@@ -10,9 +10,15 @@ import 'linked_text.dart';
 import 'tokens.dart';
 
 class CalendarItemDetails extends StatelessWidget {
-  const CalendarItemDetails({super.key, required this.item, this.launcher});
+  const CalendarItemDetails({
+    super.key,
+    required this.item,
+    this.launcher,
+    this.showTiming = true,
+  });
   final Item item;
   final LinkLauncher? launcher;
+  final bool showTiming;
 
   Widget? _when(String local, DateTime? instant, DateTime? date, String zone) {
     if (date != null) return Text(date.toIso8601String().split('T').first);
@@ -112,9 +118,10 @@ class CalendarItemDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (start != null) _row(trip ? 'Departs' : 'Starts', start),
-        if (end != null) _row(trip ? 'Arrives' : 'Ends', end),
-        if (item.dueAt != null || item.dueDate != null)
+        if (showTiming && start != null)
+          _row(trip ? 'Departs' : 'Starts', start),
+        if (showTiming && end != null) _row(trip ? 'Arrives' : 'Ends', end),
+        if (showTiming && (item.dueAt != null || item.dueDate != null))
           _row('Due', _when('', item.dueAt, item.dueDate, '')!),
         if (item.durationMinutes > 0)
           _row('Duration', Text(durationText(item.durationMinutes))),
@@ -173,7 +180,14 @@ class CalendarItemDetails extends StatelessWidget {
         if (details.website.isNotEmpty)
           _contact(context, 'Website', details.website, LinkKind.url),
         if (details.reference.isNotEmpty)
-          _row('Booking reference', SelectableText(details.reference)),
+          _row(
+            'Booking reference',
+            Semantics(
+              label: details.reference,
+              excludeSemantics: true,
+              child: SelectableText(details.reference),
+            ),
+          ),
         if (details.notes.isNotEmpty)
           _row(
             'Notes',

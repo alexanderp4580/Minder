@@ -23,11 +23,14 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   await answer.waitFor({timeout:30000});await answer.fill('21 November');await page.getByRole('button',{name:'Send answer',exact:true}).click();
   for(let attempt=0;attempt<100;attempt++){const current=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(current.status==='ready-for-review')break;await new Promise(resolve=>setTimeout(resolve,100));}
   const reviewed=await fetch(url+'/v1/captures/'+id).then(r=>r.json());assert.equal(reviewed.status,'ready-for-review');assert.equal(reviewed.candidates.filter(c=>c.state==='pending').length,2);
+  // Reload the completed revision so newly arriving previews cannot move the scroll target.
+  await page.reload();await page.waitForSelector('flutter-view',{timeout:60000});await page.locator('flt-semantics-placeholder').evaluate(element=>element.click()).catch(()=>{});
+  await page.getByRole('button',{name:'Confirm',exact:true}).last().waitFor({timeout:30000});
   const original=page.getByRole('button',{name:'original.eml',exact:true});
   // The chat is long now: scroll up until the email card is on screen.
   await page.mouse.move(200,450);
   const onScreen=async()=>{const box=await original.first().boundingBox({timeout:1000}).catch(()=>null);return !!box&&box.y>=60&&box.y+box.height<=840;};
-  for(let n=0;n<40&&!(await onScreen());n++){await page.mouse.wheel(0,-400);await page.waitForTimeout(200);}
+  for(let n=0;n<40&&!(await onScreen());n++){await page.mouse.wheel(0,-400);await page.waitForTimeout(500);}
   await original.waitFor();const downloadPromise=page.waitForEvent('download');downloadPromise.catch(()=>{});await original.click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'original.eml');await page.mouse.wheel(0,20000);await page.waitForTimeout(300);
   await page.getByRole('button',{name:'Confirm',exact:true}).first().click();
   for(let attempt=0;attempt<100;attempt++){const current=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(current.candidates.some(c=>c.state==='confirmed'))break;await new Promise(resolve=>setTimeout(resolve,100));}
@@ -52,7 +55,18 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   for(let n=0;n<100;n++){const history=await fetch(url+'/v1/chat?after=0&limit=100').then(r=>r.json());questionEntry=entriesOf(history).find(e=>e.kind==='question'&&e.capture_id===fittingId);if(questionEntry)break;await new Promise(resolve=>setTimeout(resolve,100));}
   assert.ok(questionEntry,'the question must arrive as its own entry');assert.equal(questionEntry.capture.candidates[0].question,'How long will it take?');assert.deepEqual(questionEntry.capture.candidates[0].options,['30 minutes','45 minutes','1 hour']);
   await page.reload();await page.waitForSelector('flutter-view',{timeout:60000});await page.locator('flt-semantics-placeholder').evaluate(element=>element.click()).catch(()=>{});
-  const quick=page.getByRole('button',{name:'45 minutes',exact:true});await quick.waitFor({timeout:30000});await quick.click();
+  const fittingDetails=page.getByRole('button',{name:/Contact lens fitting/});
+  await page.mouse.move(200,450);
+  for(let n=0;n<30;n++){const box=await fittingDetails.boundingBox({timeout:1000}).catch(()=>null);if(box&&box.y>=60&&box.y+box.height<=800)break;await page.mouse.wheel(0,-300);await page.waitForTimeout(150);}
+  await fittingDetails.click();
+  await page.getByRole('button',{name:'30 minutes',exact:true}).nth(1).waitFor();
+  const expandedEmail=await page.locator('body').ariaSnapshot();
+  assert.match(expandedEmail,/Booking reference/,'expanded email labels the reference');
+  assert.match(expandedEmail,/AB12CD/,'expanded email exposes the selectable booking reference');
+  assert.match(expandedEmail,/020-1234567/,'expanded email shows the phone');
+  assert.doesNotMatch(expandedEmail,/1_1:/,'raw evidence IDs stay out of the card');
+  await page.screenshot({path:'.local/email-expanded-details.png'});
+  const quick=page.getByRole('button',{name:'45 minutes',exact:true}).first();await quick.waitFor({timeout:30000});await quick.click();
   let fittingReview;
   for(let n=0;n<100;n++){fittingReview=await fetch(url+'/v1/captures/'+fittingId).then(r=>r.json());if(fittingReview.status==='ready-for-review')break;await new Promise(resolve=>setTimeout(resolve,100));}
   assert.equal(fittingReview.status,'ready-for-review');
@@ -65,5 +79,5 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   await page.screenshot({path:'.local/email-appointment.png'});
   assert.deepEqual(errors,[]);
   console.log('PASS: compiled web email review, targeted answer, owner download, confirmation, travel calendar and reviewed cancellation.');
- }catch(error){if(page)await page.screenshot({path:'.local/email-failure.png'}).catch(()=>{});throw error;}finally{await browser.close();}
+ }catch(error){if(page){require('node:fs').writeFileSync('.local/email-accessibility.txt',await page.locator('body').ariaSnapshot().catch(()=>''));require('node:fs').writeFileSync('.local/email-dom.html',await page.content().catch(()=>''));}if(page)await page.screenshot({path:'.local/email-failure.png'}).catch(()=>{});throw error;}finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
