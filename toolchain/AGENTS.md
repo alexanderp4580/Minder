@@ -20,7 +20,7 @@ Pinned Podman runners, build helpers and verification scripts.
 - The calendar browser scenario checks selection, typed detail expansion/collapse and return to Chat.
 - The chat browser scenario checks delayed offline status without a message or Retry block, restored composer text after failed sends, and recovery/resend through the header icon.
 - Chat, reminder, calendar and email local checks each start an isolated model fixture on a temporary port. Run browser scenarios in sequence.
-- `email-local-check` and `email-check.cjs` cover signed ingestion, compiled-web answers/downloads/review, the appointment flow (question message, quick reply, reminder chip, Confirm) and real SQLite provenance and reminder schedules.
+- `email-local-check` and `email-check.cjs` cover signed ingestion, compiled-web answers/downloads/review, the appointment flow (question message, quick reply, reminder chip, Confirm and separate saved phone/email/website/booking-reference fields) and real SQLite provenance and reminder schedules.
 - Real-model checks use temporary databases and provider cost values. `real-model-multi-check.py [runs]` checks two proposals.
 - `android-callback-check.py` uses a disposable emulator and rejects physical device serials.
 - `export-orbits.py` exports canonical brand SVG geometry/lighting to Flutter data and inline guide/mockup artwork. Its --check mode rejects stale exports in toolchain/check.

@@ -12,6 +12,20 @@ void main() {
     );
   });
   group('phone numbers', () {
+    for (final entry in {
+      'Tel:0201234567': 'tel:0201234567',
+      'Phone:+31\u00a06\u00a01234\u00a05678': 'tel:+31612345678',
+      'Call +31\u202f6\u202f1234\u202f5678': 'tel:+31612345678',
+    }.entries) {
+      test('recognizes ${entry.key}', () {
+        expect(links(entry.key).single.target.toString(), entry.value);
+      });
+    }
+    test('numeric booking references stay plain beside a phone number', () {
+      final found = links('Booking reference 0123456789. Phone:0201234567');
+      expect(found.map((s) => s.target.toString()), ['tel:0201234567']);
+    });
+
     for (final number in [
       '+31 6 1234 5678',
       '020-1234567',
@@ -29,10 +43,10 @@ void main() {
       });
     }
 
-    test('the tel target keeps only digits and a leading plus', () {
+    test('the dial target drops the optional international trunk zero', () {
       expect(
         links('+31 (0)20 123 4567').single.target.toString(),
-        'tel:+310201234567',
+        'tel:+31201234567',
       );
     });
 

@@ -18,8 +18,9 @@ Status 2026-11-13. The owner asked for a calendar page. The page shows items and
 - Short screens and enlarged text can scroll the agenda into view. Day rows grow to keep dates and markers visible.
 - Agenda cards have 20 px padding and an 18 px title. Shared spacing rules live in the brand guide and foundation.
 
-- Tap a card or its 44 px Details button to expand it in place. Hide details collapses it. Available rows show Starts, Ends, Due, Duration, Type (Appointment for event), Address, Notes and Reminders. Two different nonempty start/end timezones use Departs and Arrives. A timezone without a timestamp adds no row.
-- The address opens a Google Maps search. Notes show plain lines capped at 600 characters, with underlined phone numbers, email addresses and HTTPS links. Dates and booking references stay plain text. Links open only after a tap, through the dialer, email app or browser; a failed launch shows a message. Only HTTPS, tel and mailto targets open.
+- Disclosure rows use a neutral white label, down/up chevron and square interaction states. The 44 px target aligns with the card text under a Line divider. Source-dialog actions use a right chevron. The approved content-control rules live in `../brand/index.html` and the foundation.
+- Tap a card or its 44 px Details button to expand it in place. Hide details collapses it. Available rows show Starts, Ends, Due, Duration, Type (Appointment for event), Address, Phone, Email, Website, Booking reference, Notes and Reminders. Two different nonempty start/end timezones use Departs and Arrives. A timezone without a timestamp adds no row.
+- The address appears as a wrapping white underlined block with an external arrow and “Opens Google Maps”. It opens a Google Maps search. Phone, Email, Website and Booking reference have separate rows. Only remaining instructions appear in Notes. Labelled metadata in older notes is separated for display without a server write; conflicting values and calendar UID/sequence Ref lines stay in Notes. Notes show plain bullets capped at 600 characters, with underlined phone numbers, email addresses and HTTPS links. Dates and booking references stay plain text. Links open only after a tap, through the dialer, email app or browser; a failed launch shows a message. Only HTTPS, tel and mailto targets open.
 
 ## Data
 

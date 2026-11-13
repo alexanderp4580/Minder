@@ -14,7 +14,7 @@ final _url = RegExp(r'''(?:https?://|www\.)[^\s<>"']+''', caseSensitive: false);
 final _email = RegExp(
   r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}',
 );
-final _phone = RegExp(r'\+?\(?\d[\d \t().\-]{5,}\d');
+final _phone = RegExp(r'\+?\(?\d[\d \t\u00a0\u202f().\-]{5,}\d');
 final _isoDate = RegExp(r'\d{4}-\d{2}-\d{2}');
 
 const _endings = '.,;:!?\'"';
@@ -59,7 +59,11 @@ List<LinkSpan> findLinks(String text) {
     if (!free(m.start, m.end) || !_isPhone(text, m.start, m.end, number)) {
       continue;
     }
-    final digits = number.replaceAll(RegExp(r'\D'), '');
+    final dialNumber = number.replaceFirstMapped(
+      RegExp(r'^((?:\+|00)\d{1,3})[ \t\u00a0\u202f]*\(0\)'),
+      (m) => m[1]!,
+    );
+    final digits = dialNumber.replaceAll(RegExp(r'\D'), '');
     found.add((
       start: m.start,
       end: m.end,
@@ -107,7 +111,18 @@ String _trimLink(String raw) {
 /// A phone number has 7 to 15 digits and is not glued to letters or digits. It starts
 /// with +, 0 or a bracket, or has separators and at least 10 digits. Dates are not numbers.
 bool _isPhone(String text, int start, int end, String number) {
-  if (start > 0 && (_alnum(text[start - 1]) || text[start - 1] == ':')) {
+  final prefix = text.substring(0, start);
+  final phoneLabel = RegExp(
+    r'(?:^|\b)(?:tel\.?|telephone|phone(?: number)?|mobile(?: number)?|mobiel|telefoon(?:nummer)?|call|contact)\s*:\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix);
+  final referenceLabel = RegExp(
+    r'\b(?:booking|reservation|confirmation|reference|ref|reservering|boekingsnummer|bevestigingsnummer|referentie)(?:\s+(?:number|no\.?|nr\.?|id|code|reference|nummer))?\s*[:.#\-]?\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix);
+  if (referenceLabel) return false;
+  if (start > 0 &&
+      (_alnum(text[start - 1]) || (text[start - 1] == ':' && !phoneLabel))) {
     return false;
   }
   if (end < text.length) {
@@ -125,7 +140,7 @@ bool _isPhone(String text, int start, int end, String number) {
       number.startsWith('0') ||
       number.startsWith('(');
   final separated = RegExp(r'[ .()\-]').hasMatch(number);
-  return startsLikeANumber || (separated && digits >= 10);
+  return phoneLabel || startsLikeANumber || (separated && digits >= 10);
 }
 
 /// A Google Maps search for [address].

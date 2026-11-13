@@ -137,6 +137,21 @@ void main() {
     },
   );
 
+  test('legacy labelled booking notes produce separate preview rows', () {
+    final rows = previewRows(
+      _change([
+        _f(
+          'notes',
+          '- Phone: 020-1234567\n- Booking reference: 00123456789\n- Bring ID',
+        ),
+      ]),
+    );
+    expect(rows.map((r) => r.label), ['Phone', 'Booking reference', 'Notes']);
+    expect(rows[0].newValue, '020-1234567');
+    expect(rows[1].newValue, '00123456789');
+    expect(rows.last.bullets, ['Bring ID']);
+  });
+
   test('formatters read naturally', () {
     expect(durationText(45), '45 minutes');
     expect(durationText(1), '1 minute');

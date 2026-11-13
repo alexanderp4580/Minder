@@ -19,6 +19,10 @@ class Item {
     this.priority = 0,
     this.version = 0,
     this.location = '',
+    this.phone = '',
+    this.email = '',
+    this.website = '',
+    this.bookingReference = '',
     this.list = '',
     this.repeat = '',
     this.kind = '',
@@ -26,6 +30,7 @@ class Item {
     this.reminderOffsets = const [],
   });
   final String id, title, status, location, list, repeat, kind, notes;
+  final String phone, email, website, bookingReference;
 
   /// Minutes before the start or deadline at which a reminder fires.
   final List<int> reminderOffsets;

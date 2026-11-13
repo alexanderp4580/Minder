@@ -58,6 +58,34 @@ abstract final class Tokens {
     ),
     // Primary: Signal fill, cut bottom-right corner. Secondary: Panel fill, Edge outline.
     // Both are 44 px high. The primary button goes last in its row.
+    textButtonTheme: TextButtonThemeData(
+      style:
+          TextButton.styleFrom(
+            foregroundColor: text,
+            disabledForegroundColor: dim,
+            backgroundColor: Colors.transparent,
+            minimumSize: const Size(minTarget, minTarget),
+            padding: EdgeInsets.zero,
+            alignment: Alignment.centerLeft,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: const RoundedRectangleBorder(),
+            textStyle: const TextStyle(
+              fontFamily: 'Chakra Petch',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ).copyWith(
+            overlayColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.pressed)) {
+                return text.withValues(alpha: .10);
+              }
+              if (states.contains(WidgetState.hovered)) {
+                return text.withValues(alpha: .06);
+              }
+              return Colors.transparent;
+            }),
+          ),
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: signal,

@@ -6,7 +6,7 @@ Brand guide website for Minder: colour, type, icons, layout, actions, cards, com
 
 This `brand/` folder owns `index.html`, `app-icon.svg`, its PNG preview and the canonical `orbital-calendar.svg` / `orbital-chat.svg` artwork. The page uses inline CSS and a small script. The script marks the current section in the navigation, places the layout pins and labels table cells on narrow screens.
 
-`controls-review.html` is an approval draft for disclosure controls, address/contact links, detail rows and interaction states. Its PDF and desktop/mobile PNGs are review exports. These drafts do not replace `index.html` or authorize app changes.
+`controls-review.html` and its PDF/PNG exports retain the proposal approved by the owner on 2026-11-13. `index.html` now owns the canonical disclosure, address/contact and interaction rules; `docs/mockups/common.css` mirrors them. The review artifacts retain their original draft labels as the submitted snapshot.
 
 # Local Contracts
 

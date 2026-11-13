@@ -331,6 +331,30 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
 .calendar-layout .screen-header{margin:-24px -24px 0}
 .calendar-layout{display:flex;flex-direction:column}
 .calendar-layout > .nav{margin:auto -24px -32px}
+/* Neutral content actions: shared with the approved Minder guide. */
+.content-action{display:inline-flex;align-items:center;gap:8px;min-height:44px;min-width:44px;padding:0;border:0;border-radius:0;background:transparent;color:var(--text);font:600 14px/1.4 'Chakra Petch',sans-serif;text-align:left;cursor:pointer}
+.content-action:hover,.content-disclosure:hover,.content-address:hover{background:rgba(242,242,242,.06)}
+.content-action:active,.content-disclosure:active,.content-address:active{background:rgba(242,242,242,.10)}
+.content-action:focus-visible,.content-disclosure:focus-visible,.content-address:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+.content-action:disabled{color:var(--dim);background:transparent;cursor:default}
+.content-action .cb,.content-disclosure .cb,.content-address .cb{width:16px;height:16px;flex:none}
+.content-disclosure{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;width:100%;margin-top:16px;padding:12px 0 0;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;color:var(--text);font:600 14px/1.4 'Chakra Petch',sans-serif;text-align:left;cursor:pointer;list-style:none}
+.content-disclosure::-webkit-details-marker{display:none}
+.content-disclosure svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;flex:none}
+.content-disclosure .when-open{display:none}details[open]>.content-disclosure .when-open{display:inline}details[open]>.content-disclosure .when-closed{display:none}details[open]>.content-disclosure svg{transform:rotate(180deg)}
+.content-fields{margin:4px 0 0;font-size:15px;line-height:1.4}
+.content-fields dt{margin-top:16px;margin-bottom:4px;font-size:12px;color:var(--muted)}
+.content-fields dd{margin:0;overflow-wrap:anywhere}
+.content-zone{display:block;color:var(--muted)}
+.content-link{color:var(--text);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;overflow-wrap:anywhere}
+.content-address{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;min-height:44px;padding:8px 0;color:var(--text);text-decoration:none;font-size:15px}
+.content-address svg{width:16px;height:16px;margin-top:3px;fill:none;stroke:currentColor;stroke-width:1.5;flex:none}
+.content-destination{display:block;margin-top:4px;font-size:12px;color:var(--muted)}
+.content-notes{padding-left:18px;margin:0}.content-notes li{margin-bottom:8px}
+.i-up{--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/chevron--up.svg)}
+
+
+.content-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.content-tag{padding:3px 8px;border:1px solid var(--line);color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -607,7 +631,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
   <div class="cal-day other"><div class="cal-face"><span class="cal-number">5</span><span class="cal-marker"></span></div></div>
   <div class="cal-day other"><div class="cal-face"><span class="cal-number">6</span><span class="cal-marker"></span></div></div>
  </div>
- <div class="cal-agenda"><div class="cal-agenda-header"><div class="cal-date">Thursday, 12 Nov</div><span class="cal-control cal-today">Today</span></div><div class="cal-event"><div class="cal-event-top"><div class="cal-time">Due 10:00</div><span class="cal-control cal-delete" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13M10 11v6M14 11v6"/></svg></span></div><div class="cal-event-title">Call plumber</div></div></div>
+ <div class="cal-agenda"><div class="cal-agenda-header"><div class="cal-date">Thursday, 12 Nov</div><span class="cal-control cal-today">Today</span></div><div class="cal-event"><div class="cal-event-top"><div class="cal-time">09:00</div><span class="cal-control cal-delete" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13M10 11v6M14 11v6"/></svg></span></div><div class="cal-event-title">Dentist</div><div class="content-tags"><span class="content-tag">30 min</span><span class="content-tag">Damrak 1</span></div><details class="cal-details"><summary class="content-disclosure"><span class="when-closed">Details</span><span class="when-open">Hide details</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><dl class="content-fields"><dt>Starts</dt><dd>Thu 12 Nov · 09:00<span class="content-zone">Europe/Amsterdam</span></dd><dt>Ends</dt><dd>Thu 12 Nov · 09:30<span class="content-zone">Europe/Amsterdam</span></dd><dt>Duration</dt><dd>30 minutes</dd><dt>Type</dt><dd>Appointment</dd><dt>Address</dt><dd><a class="content-address" href="https://www.google.com/maps/search/?api=1&amp;query=Damrak%201"><span><span class="content-link">Damrak 1</span><span class="content-destination">Opens Google Maps</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5H5v14h14v-3M12 5h7v7M11 13l8-8"/></svg></a></dd><dt>Phone</dt><dd><a class="content-action content-link" href="tel:0201234567">020-1234567</a></dd><dt>Booking reference</dt><dd>00123456789</dd><dt>Notes</dt><dd>Bring ID.</dd><dt>Reminders</dt><dd>1 hour before</dd></dl></details></div></div>
 </div>
 <div class="nav two"><div><i class="cb i-chat"></i>Chat</div><div class="on"><i class="cb i-cal"></i>Calendar</div></div>
 </div></div>
@@ -712,9 +736,17 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
    <figure style="width:340px"><div class="pf"><div class="empty"><span class="mark"><i class="cb i-cal"></i></span><div class="h">Nothing due</div><div class="s">No item is due today. Add an item with the bar below.</div></div></div></figure>
   </div>
 
-  <h3>Disclosure row</h3>
-  <p>A row with a title, a count and a chevron. It hides secondary fields. The row is 48 px high. Use the down chevron when open. Class: <code>.disc</code>.</p>
-  <div class="pf"><div class="disc">More fields<span class="n">4</span><i class="cb i-chev"></i></div><div class="disc" style="border-top:0">Done today<span class="n">3</span><i class="cb i-down"></i></div></div>
+  <h3>Disclosure and content actions</h3>
+  <p>Use white labels for routine content actions. A disclosure has a down chevron when closed and an up chevron when open. A source dialog action has a right chevron. Keep the label aligned with the card text. Use square hover and press effects: 6% Text on hover, 10% on press. Keyboard focus has a 2 px Text outline with a 3 px offset. Every standalone control has a target of at least 44 × 44 px.</p>
+  <p>Calendar disclosure rows have a Line divider, 16 px above it and 12 px before the label. Use <code>.content-disclosure</code> and <code>.content-action</code>. Keep primary actions in Signal and secondary actions in their existing square frames.</p>
+  <div class="pf" style="padding:20px">
+   <details><summary class="content-disclosure"><span class="when-closed">Details</span><span class="when-open">Hide details</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><dl class="content-fields"><dt>Starts</dt><dd>Thu 12 Nov · 09:00<span class="content-zone">Europe/Amsterdam</span></dd><dt>Type</dt><dd>Appointment</dd></dl></details>
+   <button class="content-action" type="button">Email and attachments <i class="cb i-chev" aria-hidden="true"></i></button>
+  </div>
+  <h3>Addresses and contact links</h3>
+  <p>An address stays inside the expanded card. Use a 12 px Muted label, a 15 px Text value and a 4 px gap. Leave 16 px between fields. Underline links in Text colour. Let the full address wrap, align the external arrow with its first line and name the destination below it. Inline phone, email and web links keep the body type and underline; separate them into rows when space allows.</p>
+  <div class="pf" style="padding:20px"><dl class="content-fields"><dt style="margin-top:0">Address</dt><dd><a class="content-address" href="https://www.google.com/maps/search/?api=1&amp;query=Damrak%201%20Amsterdam" target="_blank" rel="noopener"><span><span class="content-link">Damrak 1<br>1012 LG Amsterdam</span><span class="content-destination">Opens Google Maps</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5H5v14h14v-3M12 5h7v7M11 13l8-8"/></svg></a></dd><dt>Phone</dt><dd><a class="content-action content-link" href="tel:0201234567">020-1234567</a></dd><dt>Booking reference</dt><dd>00123456789</dd><dt>Notes</dt><dd><ul class="content-notes"><li>Bring ID.</li></ul></dd></dl></div>
+  <p>Phone, Email, Website and Booking reference have separate labelled rows, like Address. Notes contain remaining instructions. Booking references keep their exact spelling and leading zeros and remain selectable plain text. Links open only after a tap; phone links open the dialer and email links open a compose window. If a link fails, keep its text visible and show “Could not open this link.”</p>
 
   <h3>Bottom sheet and scrim</h3>
   <p>The scrim dims the screen above a sheet. The screen stays visible. The sheet has a grab bar and an Edge top line. Class: <code>.scrim</code>, <code>.sheet</code>, <code>.grab</code>.</p>

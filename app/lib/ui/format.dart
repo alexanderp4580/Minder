@@ -1,4 +1,5 @@
 import '../domain/capture.dart';
+import '../domain/booking_details.dart';
 import '../domain/entry.dart';
 
 const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -55,6 +56,10 @@ String fieldLabel(String name) => switch (name) {
   'duration_minutes' => 'Duration',
   'priority' => 'Priority',
   'location' => 'Address',
+  'phone' => 'Phone',
+  'email' => 'Email',
+  'website' => 'Website',
+  'booking_reference' => 'Booking reference',
   'list' => 'List',
   'profile' => 'Profile',
   'recurrence' => 'Repeats',
@@ -192,20 +197,49 @@ List<PreviewRow> previewRows(Change change) {
           return minutes == null ? raw : durationText(minutes);
         case 'kind':
           return kindLabel(raw);
+        case 'phone':
+        case 'email':
+        case 'website':
+        case 'booking_reference':
+          return raw;
       }
       final text = fieldValue(raw);
       final zone = zones[f.name];
       return zone == null ? text : '$text ($zone)';
     }
 
+    if (f.name == 'notes') {
+      final details = BookingDetails.fromNotes(
+        phone: value('phone') ?? '',
+        email: value('email') ?? '',
+        website: value('website') ?? '',
+        reference: value('booking_reference') ?? '',
+        notes: f.newValue,
+      );
+      for (final field in {
+        'phone': details.phone,
+        'email': details.email,
+        'website': details.website,
+        'booking_reference': details.reference,
+      }.entries) {
+        if (field.value.isNotEmpty &&
+            !change.fields.any((f) => f.name == field.key)) {
+          rows.add(PreviewRow(fieldLabel(field.key), newValue: field.value));
+        }
+      }
+      if (details.notes.isNotEmpty) {
+        rows.add(PreviewRow('Notes', bullets: noteLines(details.notes)));
+      } else if (f.newValue.isEmpty) {
+        rows.add(const PreviewRow('Notes', newValue: 'None'));
+      }
+      continue;
+    }
     rows.add(
-      f.name == 'notes'
-          ? PreviewRow(fieldLabel(f.name), bullets: noteLines(f.newValue))
-          : PreviewRow(
-              fieldLabel(f.name),
-              oldValue: show(f.oldValue),
-              newValue: f.newValue.isEmpty ? 'None' : show(f.newValue),
-            ),
+      PreviewRow(
+        fieldLabel(f.name),
+        oldValue: show(f.oldValue),
+        newValue: f.newValue.isEmpty ? 'None' : show(f.newValue),
+      ),
     );
   }
   return rows;

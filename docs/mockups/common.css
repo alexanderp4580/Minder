@@ -211,3 +211,27 @@ html,body{margin:0;background:#000}
 .calendar-layout > .nav{margin:auto -24px -32px}
 .nav .cb{width:24px;height:24px}
 .nav.two div{padding:8px 0;gap:4px;line-height:12px}
+
+/* Neutral content actions: shared with the approved Minder guide. */
+.content-action{display:inline-flex;align-items:center;gap:8px;min-height:44px;min-width:44px;padding:0;border:0;border-radius:0;background:transparent;color:var(--text);font:600 14px/1.4 'Chakra Petch',sans-serif;text-align:left;cursor:pointer}
+.content-action:hover,.content-disclosure:hover,.content-address:hover{background:rgba(242,242,242,.06)}
+.content-action:active,.content-disclosure:active,.content-address:active{background:rgba(242,242,242,.10)}
+.content-action:focus-visible,.content-disclosure:focus-visible,.content-address:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+.content-action:disabled{color:var(--dim);background:transparent;cursor:default}
+.content-action .cb,.content-disclosure .cb,.content-address .cb{width:16px;height:16px;flex:none}
+.content-disclosure{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;width:100%;margin-top:16px;padding:12px 0 0;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;color:var(--text);font:600 14px/1.4 'Chakra Petch',sans-serif;text-align:left;cursor:pointer;list-style:none}
+.content-disclosure::-webkit-details-marker{display:none}
+.content-disclosure svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;flex:none}
+.content-disclosure .when-open{display:none}details[open]>.content-disclosure .when-open{display:inline}details[open]>.content-disclosure .when-closed{display:none}details[open]>.content-disclosure svg{transform:rotate(180deg)}
+.content-fields{margin:4px 0 0;font-size:15px;line-height:1.4}
+.content-fields dt{margin-top:16px;margin-bottom:4px;font-size:12px;color:var(--muted)}
+.content-fields dd{margin:0;overflow-wrap:anywhere}
+.content-zone{display:block;color:var(--muted)}
+.content-link{color:var(--text);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;overflow-wrap:anywhere}
+.content-address{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;min-height:44px;padding:8px 0;color:var(--text);text-decoration:none;font-size:15px}
+.content-address svg{width:16px;height:16px;margin-top:3px;fill:none;stroke:currentColor;stroke-width:1.5;flex:none}
+.content-destination{display:block;margin-top:4px;font-size:12px;color:var(--muted)}
+.content-notes{padding-left:18px;margin:0}.content-notes li{margin-bottom:8px}
+.i-up{--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/chevron--up.svg)}
+
+.content-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.content-tag{padding:3px 8px;border:1px solid var(--line);color:var(--muted);font-size:12px}

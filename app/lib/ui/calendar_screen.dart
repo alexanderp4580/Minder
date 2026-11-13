@@ -1,6 +1,7 @@
 import '../domain/capture_repository.dart';
 import '../domain/link_launcher.dart';
 import 'calendar_item_details.dart';
+import 'content_action.dart';
 import 'item_delete_dialog.dart';
 import 'item_sources.dart';
 
@@ -355,6 +356,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
         item.startTimezone != item.endTimezone;
     final expanded = _expanded.contains(item.id);
     final hasDetails =
+        item.phone.isNotEmpty ||
+        item.email.isNotEmpty ||
+        item.website.isNotEmpty ||
+        item.bookingReference.isNotEmpty ||
         item.notes.isNotEmpty ||
         item.location.isNotEmpty ||
         item.reminderOffsets.isNotEmpty ||
@@ -434,7 +439,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
             ),
             if (item.sourceIds.isNotEmpty && widget.sourceRepository != null)
-              TextButton(
+              ContentAction(
                 onPressed: () => showDialog<void>(
                   context: context,
                   builder: (_) => ItemSources(
@@ -442,7 +447,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     sourceIds: item.sourceIds,
                   ),
                 ),
-                child: const Text('Email and attachments'),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(child: Text('Email and attachments')),
+                    SizedBox(width: 8),
+                    Icon(Icons.chevron_right, size: 16),
+                  ],
+                ),
               ),
             if (chips.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -471,13 +483,33 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
             ],
             if (hasDetails) ...[
-              TextButton(
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(44, 44),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(top: 16),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: Tokens.line)),
                 ),
-                onPressed: toggle,
-                child: Text(expanded ? 'Hide details' : 'Details'),
+                child: Semantics(
+                  expanded: expanded,
+                  child: ContentAction(
+                    onPressed: toggle,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(expanded ? 'Hide details' : 'Details'),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(
+                            expanded ? Icons.expand_less : Icons.expand_more,
+                            size: 16,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
               if (expanded)
                 CalendarItemDetails(item: item, launcher: widget.linkLauncher),

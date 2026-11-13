@@ -46,7 +46,7 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   assert.equal((await fetch(url+'/v1/changes/'+cancelProposal.change_id+'/confirm',{method:'POST'})).status,200);
   const afterCancellation=await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json());assert.equal(afterCancellation.find(item=>item.title==='Hotel booking').status,'cancelled');assert.equal(afterCancellation.find(item=>item.title==='Return flight').status,'open');
   // Appointment flow: received card, a separate question message with quick replies, then one complete item.
-  const fitting=Buffer.from('From: Owner <owner@example.com>\r\nSubject: Contact lens fitting\r\n\r\nContact lens fitting at Specsavers.');
+  const fitting=Buffer.from('From: Owner <owner@example.com>\r\nSubject: Contact lens fitting\r\n\r\nContact lens fitting at Specsavers. Booking reference AB12CD. Phone 020-1234567. Email desk@example.com. Website https://example.com.');
   const fittingReceipt=await fetch(url+'/v1/email/ingest',{method:'POST',body:fitting,headers:await sign(fitting,'fitting')});assert.equal(fittingReceipt.status,201);const fittingId=(await fittingReceipt.json()).capture_id;
   let questionEntry;
   for(let n=0;n<100;n++){const history=await fetch(url+'/v1/chat?after=0&limit=100').then(r=>r.json());questionEntry=entriesOf(history).find(e=>e.kind==='question'&&e.capture_id===fittingId);if(questionEntry)break;await new Promise(resolve=>setTimeout(resolve,100));}
@@ -61,7 +61,7 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   await page.getByRole('button',{name:'Confirm',exact:true}).last().click();
   let saved;
   for(let n=0;n<100;n++){const all=await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json());saved=all.find(i=>i.title==='Contact lens fitting');if(saved)break;await new Promise(resolve=>setTimeout(resolve,100));}
-  assert.ok(saved,'the appointment must be saved');assert.equal(saved.location,'Kinkerstraat 123, Amsterdam');assert.equal(saved.duration_minutes,45);assert.equal(saved.notes,'- Bring your current glasses\n- Ref: AB12CD');assert.deepEqual(saved.reminder_offsets_minutes,[1440,120,60]);
+  assert.ok(saved,'the appointment must be saved');assert.equal(saved.location,'Kinkerstraat 123, Amsterdam');assert.equal(saved.duration_minutes,45);assert.equal(saved.notes,'- Bring your current glasses');assert.equal(saved.phone,'020-1234567');assert.equal(saved.email,'desk@example.com');assert.equal(saved.website,'https://example.com');assert.equal(saved.booking_reference,'AB12CD');assert.deepEqual(saved.reminder_offsets_minutes,[1440,120,60]);
   await page.screenshot({path:'.local/email-appointment.png'});
   assert.deepEqual(errors,[]);
   console.log('PASS: compiled web email review, targeted answer, owner download, confirmation, travel calendar and reviewed cancellation.');

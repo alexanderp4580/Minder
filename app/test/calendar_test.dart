@@ -584,6 +584,7 @@ void main() {
         tester.getSize(find.widgetWithText(TextButton, 'Details')).height,
         44,
       );
+      await tester.ensureVisible(find.text('Details'));
       await tester.tap(find.text('Details'));
       await tester.pumpAndSettle();
       for (final label in [
@@ -614,11 +615,97 @@ void main() {
       await finish(tester, c);
     });
 
+    testWidgets(
+      'address names its destination and opens without losing booking details',
+      (tester) async {
+        final (launcher, c) = await show(
+          tester,
+          appointment(
+            location: 'Damrak 1',
+            notes: '- Booking reference: ABC123456789',
+          ),
+        );
+        final details = find.widgetWithText(TextButton, 'Details');
+        await tester.ensureVisible(details);
+        await tester.tap(details);
+        await tester.pumpAndSettle();
+        expect(find.text('Opens Google Maps'), findsOneWidget);
+        expect(find.byIcon(Icons.open_in_new), findsOneWidget);
+        expect(find.text('Booking reference'), findsOneWidget);
+        expect(find.text('ABC123456789'), findsOneWidget);
+        await tester.ensureVisible(find.text('Damrak 1'));
+        await tester.tap(find.text('Damrak 1'));
+        expect(launcher.opened.map((u) => u.toString()), [
+          'https://www.google.com/maps/search/?api=1&query=Damrak%201',
+        ]);
+        expect(find.text('Hide details'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await finish(tester, c);
+      },
+    );
+
+    testWidgets('structured booking and contact fields have their own rows', (
+      tester,
+    ) async {
+      final (launcher, c) = await show(
+        tester,
+        itemFromJson({
+          'id': 'b',
+          'title': 'Dentist',
+          'status': 'open',
+          'kind': 'event',
+          'start_at': '2026-11-12T09:00:00Z',
+          'phone': '020-1234567',
+          'email': 'desk@example.com',
+          'website': 'https://example.com',
+          'booking_reference': '00123456789',
+          'notes': '- Bring ID',
+        }),
+      );
+      await tester.ensureVisible(find.text('Details'));
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+      for (final label in ['Phone', 'Email', 'Website', 'Booking reference']) {
+        expect(find.text(label), findsOneWidget);
+      }
+      expect(find.text('00123456789'), findsOneWidget);
+      expect(find.text('Bring ID'), findsOneWidget);
+      await tester.ensureVisible(find.text('020-1234567'));
+      await tester.tap(find.text('020-1234567'));
+      await tester.pump();
+      expect(launcher.opened.single.toString(), 'tel:0201234567');
+      await finish(tester, c);
+    });
+
+    testWidgets(
+      'labelled older notes become contact rows and leave instructions in Notes',
+      (tester) async {
+        final (_, c) = await show(
+          tester,
+          appointment(
+            notes: '- Phone: 020-1234567\n- Booking reference: 00123456789\n- Bring ID',
+          ),
+        );
+        await tester.ensureVisible(find.text('Details'));
+        await tester.tap(find.text('Details'));
+        await tester.pumpAndSettle();
+        expect(find.text('Phone'), findsOneWidget);
+        expect(find.text('Booking reference'), findsOneWidget);
+        expect(find.text('020-1234567'), findsOneWidget);
+        expect(find.text('00123456789'), findsOneWidget);
+        expect(find.text('Phone: 020-1234567'), findsNothing);
+        expect(find.text('Booking reference: 00123456789'), findsNothing);
+        expect(find.text('Bring ID'), findsOneWidget);
+        await finish(tester, c);
+      },
+    );
+
     testWidgets('the address opens Google Maps', (tester) async {
       final (launcher, c) = await show(
         tester,
         appointment(location: 'Damrak 1'),
       );
+      await tester.ensureVisible(find.text('Details'));
       await tester.tap(find.text('Details'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Damrak 1'));
@@ -635,10 +722,11 @@ void main() {
         tester,
         appointment(notes: '- Call 020-1234567\n- Mail info@clinic.nl'),
       );
+      await tester.ensureVisible(find.text('Details'));
       await tester.tap(find.text('Details'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Call 020-1234567'));
-      await tester.tapOnText(find.textRange.ofSubstring('020-1234567'));
+      await tester.ensureVisible(find.text('020-1234567'));
+      await tester.tap(find.text('020-1234567'));
       await tester.ensureVisible(find.text('Mail info@clinic.nl'));
       await tester.tapOnText(find.textRange.ofSubstring('info@clinic.nl'));
       expect(launcher.opened.map((u) => u.toString()), [

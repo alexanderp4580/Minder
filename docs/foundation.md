@@ -87,6 +87,15 @@ The calendar follows the Layout section of the brand guide.
 - Leave 32 px between the grid and agenda, and 16 px between the agenda heading and cards.
 - Agenda cards use 20 px padding, an 18 px title and a Line outline. Leave 16 px between cards.
 
+## Content controls and links
+
+- Routine text actions use Text, square bounds and a 44 × 44 px minimum target. Use a 6% Text wash on hover and 10% on press. Disabled actions use Dim.
+- Keyboard focus uses a 2 px Text outline, 3 px outside the target.
+- Calendar Details / Hide details has a down/up chevron, a Line divider and a label aligned with the card text. Leave 16 px before the divider and 12 px before the label. A source-dialog action uses a right chevron.
+- Expanded fields use a 12 px Muted label, 4 px before the 15 px value and 16 px between fields. Timezones have their own Muted line.
+- Address blocks wrap the complete address, with white underlining, an external arrow aligned to the first line and “Opens Google Maps” below. Address and contact taps keep the card expanded.
+- Phone, Email, Website and Booking reference have separate labelled rows, like Address. Phone, email and website values use underlined Text; remaining instructions stay in Notes. Inline phone, email and HTTPS links use underlined Text. Booking references remain plain text and retain leading zeros. Phone links open a dialer; email links open a compose window. A failed open shows “Could not open this link.”
+
 ## Orbital background
 
 - `brand/orbital-calendar.svg` and `brand/orbital-chat.svg` own the artwork in a 462×868 reference plane.

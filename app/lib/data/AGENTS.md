@@ -17,6 +17,9 @@ Capture routes use owner authentication. Attachment bytes download through the s
 
 `UrlLinkLauncher` uses url_launcher in external-application mode. It rejects schemes outside HTTPS, tel and mailto, empty targets, hostless URLs and URLs with user information. Platform failures return false. `wire.dart` retains item notes, kind and reminder offsets.
 
+
+Item JSON preserves `phone`, `email`, `website` and `booking_reference`; absent keys keep older responses compatible.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.
