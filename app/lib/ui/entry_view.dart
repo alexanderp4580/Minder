@@ -192,11 +192,40 @@ class _Preview extends StatelessWidget {
       if (change.state == ChangeState.pending)
         _decision()
       else
-        Text(switch (change.state) {
-          ChangeState.confirmed => 'Confirmed',
-          ChangeState.discarded => 'Discarded',
-          _ => 'Item changed. See the new preview.',
-        }, style: _muted),
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.only(top: 12),
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: Tokens.line)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                change.state == ChangeState.confirmed
+                    ? Icons.check_circle_outline
+                    : Icons.info_outline,
+                size: 20,
+                color: Tokens.text,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  switch (change.state) {
+                    ChangeState.confirmed => 'Confirmed',
+                    ChangeState.discarded => 'Discarded',
+                    _ => 'Item changed. See the new preview.',
+                  },
+                  style: const TextStyle(
+                    color: Tokens.text,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
     ],
   );
 

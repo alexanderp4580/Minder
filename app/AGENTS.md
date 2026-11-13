@@ -12,6 +12,9 @@ Business validation runs on the server. The client displays typed results and er
 The app has chat and a calendar that views items and deletes them (with a confirm step). Preserve current API contracts, spacing and notification actions.
 The current app uses Material icons; Carbon remains a design-guide difference.
 
+
+The client uses url_launcher for user-tapped HTTPS, phone and email links on expanded calendar cards.
+
 # Work Guidance
 
 The runner starts in app/. Use format paths `lib test`. Orbital preview APK builds and delivery are authorized; preserve the cached signing key.

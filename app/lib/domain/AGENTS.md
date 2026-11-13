@@ -13,6 +13,9 @@ Use typed values for server and notification data.
 
 Capture/source values and repository methods are typed; dates without times stay date-only and event overlap excludes checkout.
 
+
+`Item` retains kind, notes and reminder offsets. `links.dart` finds visible phone, email and web spans and encodes Google Maps searches. `LinkLauncher` opens HTTPS, tel and mailto targets through a data adapter. Booking references and dates stay plain text.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.

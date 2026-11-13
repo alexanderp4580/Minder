@@ -18,6 +18,9 @@ Generate launcher icons from brand/app-icon.svg; do not hand-edit generated icon
 
 The minder/attachments channel opens authenticated downloads from a narrowly scoped cache FileProvider and reports the device timezone. Capture review notifications use generic copy and open chat; reminder body/button behaviour stays unchanged.
 
+
+The manifest declares VIEW queries for HTTPS, tel and mailto. External link opening uses url_launcher; phone links open the dialer without calling automatically.
+
 # Work Guidance
 
 Preserve the cached debug signing key for installable updates. Native checks use disposable emulators only.

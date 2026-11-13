@@ -1,4 +1,6 @@
 import '../domain/capture_repository.dart';
+import '../domain/link_launcher.dart';
+import 'calendar_item_details.dart';
 import 'item_delete_dialog.dart';
 import 'item_sources.dart';
 
@@ -56,8 +58,10 @@ class CalendarScreen extends StatefulWidget {
     super.key,
     required this.controller,
     this.sourceRepository,
+    this.linkLauncher,
   });
   final CaptureRepository? sourceRepository;
+  final LinkLauncher? linkLauncher;
   final CalendarController controller;
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -65,6 +69,7 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   CalendarController get c => widget.controller;
+  final _expanded = <String>{};
   @override
   void initState() {
     super.initState();
@@ -343,102 +348,142 @@ class _CalendarScreenState extends State<CalendarScreen> {
         : item.startAt != null
         ? clock(at)
         : 'Due ${clock(at)}';
+    // Departs and Arrives suit a trip across zones; an appointment starts and ends.
+    final trip =
+        item.startTimezone.isNotEmpty &&
+        item.endTimezone.isNotEmpty &&
+        item.startTimezone != item.endTimezone;
+    final expanded = _expanded.contains(item.id);
+    final hasDetails =
+        item.notes.isNotEmpty ||
+        item.location.isNotEmpty ||
+        item.reminderOffsets.isNotEmpty ||
+        item.endLocal.isNotEmpty ||
+        item.kind.isNotEmpty ||
+        item.durationMinutes > 0 ||
+        item.startAt != null ||
+        item.startDate != null;
     final chips = [
-      if (item.startLocal.isNotEmpty)
+      if (!expanded && trip && item.startLocal.isNotEmpty)
         'Departs ${item.startLocal.replaceFirst('T', ' ')} ${item.startTimezone}',
-      if (item.endLocal.isNotEmpty)
+      if (!expanded && trip && item.endLocal.isNotEmpty)
         'Arrives ${item.endLocal.replaceFirst('T', ' ')} ${item.endTimezone}',
       if (item.endDate != null)
         'Checkout ${item.endDate!.year}-${item.endDate!.month.toString().padLeft(2, '0')}-${item.endDate!.day.toString().padLeft(2, '0')}',
-
-      if (item.durationMinutes > 0) _duration(item.durationMinutes),
+      if (!expanded && item.durationMinutes > 0)
+        _duration(item.durationMinutes),
       if (item.priority > 0) 'P${item.priority}',
-      if (item.location.isNotEmpty) item.location,
+      if (!expanded && item.location.isNotEmpty) item.location,
       if (item.list.isNotEmpty) item.list,
       if (item.repeat.isNotEmpty) item.repeat,
     ];
-    return Container(
-      margin: const EdgeInsets.only(bottom: Tokens.relatedGap),
-      padding: const EdgeInsets.all(CalendarTokens.cardPadding),
-      decoration: BoxDecoration(
-        color: Tokens.panel,
-        border: Border.all(color: Tokens.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Tokens.muted,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Delete',
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => ItemDeleteDialog(controller: c, item: item),
-                ),
-                constraints: const BoxConstraints.tightFor(
-                  width: Tokens.minTarget,
-                  height: Tokens.minTarget,
-                ),
-                icon: const Icon(Icons.delete_outline, color: Tokens.muted),
-              ),
-            ],
-          ),
-          const SizedBox(height: Tokens.gap),
-          Text(
-            item.title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: item.done ? Tokens.dim : Tokens.text,
-              decoration: item.done ? TextDecoration.lineThrough : null,
-            ),
-          ),
-          if (item.sourceIds.isNotEmpty && widget.sourceRepository != null)
-            TextButton(
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (_) => ItemSources(
-                  repository: widget.sourceRepository!,
-                  sourceIds: item.sourceIds,
-                ),
-              ),
-              child: const Text('Email and attachments'),
-            ),
-          if (chips.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
+    void toggle() => setState(() {
+      if (expanded) {
+        _expanded.remove(item.id);
+      } else {
+        _expanded.add(item.id);
+      }
+    });
+    return GestureDetector(
+      onTap: hasDetails ? toggle : null,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: Tokens.relatedGap),
+        padding: const EdgeInsets.all(CalendarTokens.cardPadding),
+        decoration: BoxDecoration(
+          color: Tokens.panel,
+          border: Border.all(color: Tokens.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                for (final chip in chips)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Tokens.line),
-                    ),
-                    child: Text(
-                      chip,
-                      style: const TextStyle(fontSize: 12, color: Tokens.muted),
+                Expanded(
+                  child: Text(
+                    time,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Tokens.muted,
+                      letterSpacing: 1,
                     ),
                   ),
+                ),
+                IconButton(
+                  tooltip: 'Delete',
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => ItemDeleteDialog(controller: c, item: item),
+                  ),
+                  constraints: const BoxConstraints.tightFor(
+                    width: Tokens.minTarget,
+                    height: Tokens.minTarget,
+                  ),
+                  icon: const Icon(Icons.delete_outline, color: Tokens.muted),
+                ),
               ],
             ),
+            const SizedBox(height: Tokens.gap),
+            Text(
+              item.title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: item.done ? Tokens.dim : Tokens.text,
+                decoration: item.done ? TextDecoration.lineThrough : null,
+              ),
+            ),
+            if (item.sourceIds.isNotEmpty && widget.sourceRepository != null)
+              TextButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => ItemSources(
+                    repository: widget.sourceRepository!,
+                    sourceIds: item.sourceIds,
+                  ),
+                ),
+                child: const Text('Email and attachments'),
+              ),
+            if (chips.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  for (final chip in chips)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Tokens.line),
+                      ),
+                      child: Text(
+                        chip,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Tokens.muted,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            if (hasDetails) ...[
+              TextButton(
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(44, 44),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: toggle,
+                child: Text(expanded ? 'Hide details' : 'Details'),
+              ),
+              if (expanded)
+                CalendarItemDetails(item: item, launcher: widget.linkLauncher),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

@@ -6,7 +6,7 @@ class LinkSpan {
   final LinkKind kind;
   final String text;
 
-  /// Where a tap goes. Null for plain text. Only http, https, tel and mailto appear here.
+  /// Where a tap goes. Null for plain text. Only https, tel and mailto appear here.
   final Uri? target;
 }
 
@@ -17,7 +17,7 @@ final _email = RegExp(
 final _phone = RegExp(r'\+?\(?\d[\d \t().\-]{5,}\d');
 final _isoDate = RegExp(r'\d{4}-\d{2}-\d{2}');
 
-const _endings = '.,;:!?\'\"';
+const _endings = '.,;:!?\'"';
 
 bool _alnum(String c) => RegExp(r'[A-Za-z0-9]').hasMatch(c);
 
@@ -34,7 +34,7 @@ List<LinkSpan> findLinks(String text) {
       raw.toLowerCase().startsWith('www.') ? 'https://$raw' : raw,
     );
     if (target == null || !target.hasAuthority || target.host.isEmpty) continue;
-    if (target.scheme != 'http' && target.scheme != 'https') continue;
+    if (target.scheme != 'https') continue;
     found.add((
       start: m.start,
       end: m.start + raw.length,

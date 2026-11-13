@@ -5,6 +5,12 @@ List<LinkSpan> links(String text) =>
     findLinks(text).where((s) => s.kind != LinkKind.text).toList();
 
 void main() {
+  test('plain HTTP links stay text under the approved HTTPS-only rule', () {
+    expect(
+      findLinks('http://example.com').where((s) => s.target != null),
+      isEmpty,
+    );
+  });
   group('phone numbers', () {
     for (final number in [
       '+31 6 1234 5678',

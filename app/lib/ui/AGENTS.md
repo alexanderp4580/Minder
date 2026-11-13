@@ -28,6 +28,9 @@ Calendar items with source links open a read-only email/attachment dialog; authe
 
 Each calendar agenda card has a 44 px Delete icon button (tooltip `Delete`) in its top row. It opens `ItemDeleteDialog`, which shows the server preview (what goes with the item), then Delete or Keep it. Tapping outside does nothing; Back or any other exit discards the preview, even while it loads, so no pending delete card stays in the chat. An error entry shows Retry only while it is the newest entry. The chat error block shows a message only (no Retry); sign-in keeps its button. ScreenHeader takes an optional `trailing` control; Chat shows a 44 px offline icon there (tap to retry) and no connection banner. Preview cards come from `previewRows`: the title shows once, Starts/Ends carry their timezone inline, Duration and Type read as words (Appointment for `event`), Address is the `location` field, notes show as plain-text bullets capped at 600 characters, and reminders are `ReminderChips` that call `setReminders` while the change is pending.
 
+
+Calendar cards expand by tapping the card or its 44 px Details / Hide details button. `CalendarItemDetails` shows available start, end, deadline, duration, type, address, notes and reminders. Starts/Ends become Departs/Arrives only with two different, nonempty timezones. Local wall clocks retain their source zone. Addresses open Google Maps; `LinkedText` makes visible HTTPS, phone and email spans tappable and disposes its recognizers. Notes keep the shared 600-character cap. A failed launch shows a snackbar. Confirmed preview cards end with a full-width footer: divider, 16 px top gap, 12 px inner top padding, a check icon and semibold text; other resolved states use an information icon.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.

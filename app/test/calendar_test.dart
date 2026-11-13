@@ -9,6 +9,8 @@ import 'package:minder/domain/entry.dart';
 import 'package:minder/domain/failure.dart';
 import 'package:minder/domain/item.dart';
 import 'package:minder/domain/item_repository.dart';
+import 'package:minder/domain/link_launcher.dart';
+import 'package:minder/domain/links.dart';
 import 'package:minder/ui/calendar_screen.dart';
 import 'package:minder/ui/tokens.dart';
 
@@ -50,6 +52,37 @@ Entry deletePreview(Item item) => entryFromJson({
       {'name': 'item', 'old': item.title, 'new': 'Deleted'},
     ],
   },
+});
+
+class FakeLauncher implements LinkLauncher {
+  final opened = <Uri>[];
+  @override
+  Future<bool> open(Uri uri) async {
+    opened.add(uri);
+    return true;
+  }
+}
+
+Item appointment({
+  String endZone = 'Europe/Amsterdam',
+  String location = '',
+  String notes = '',
+  List<int> offsets = const [],
+}) => itemFromJson({
+  'id': 'a',
+  'title': 'Dentist',
+  'status': 'open',
+  'kind': 'event',
+  'start_at': utc(2026, 11, 12, 9),
+  'start_local': '2026-11-12T09:00',
+  'start_timezone': 'Europe/Amsterdam',
+  'end_at': utc(2026, 11, 12, 9, 30),
+  'end_local': '2026-11-12T09:30',
+  'end_timezone': endZone,
+  'duration_minutes': 30,
+  'location': location,
+  'notes': notes,
+  'reminder_offsets_minutes': offsets,
 });
 
 class FakeItems implements ItemRepository {
@@ -409,6 +442,210 @@ void main() {
       expect(find.text('Dentist'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
       c.dispose();
+    });
+  });
+
+  group('Item details', () {
+    Future<(FakeLauncher, CalendarController)> show(
+      WidgetTester tester,
+      Item shown,
+    ) async {
+      tester.view.physicalSize = const Size(412, 892);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final launcher = FakeLauncher();
+      final c = controller(FakeItems()..items = [shown]);
+      await c.load();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: Tokens.theme,
+          home: CalendarScreen(controller: c, linkLauncher: launcher),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return (launcher, c);
+    }
+
+    Future<void> finish(WidgetTester tester, CalendarController c) async {
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    }
+
+    testWidgets(
+      'tapping the card expands it and enlarged details scroll on a narrow phone',
+      (tester) async {
+        final (_, c) = await show(
+          tester,
+          appointment(
+            location: 'Damrak 1, Amsterdam, Netherlands',
+            notes: 'Bring ID and booking ABC123456789',
+            offsets: [60],
+          ),
+        );
+        tester.view.physicalSize = const Size(320, 640);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: Tokens.theme,
+            home: MediaQuery(
+              data: const MediaQueryData(
+                textScaler: TextScaler.linear(1.4),
+                disableAnimations: true,
+              ),
+              child: CalendarScreen(
+                controller: c,
+                linkLauncher: FakeLauncher(),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Dentist'));
+        await tester.tap(find.text('Dentist'));
+        await tester.pumpAndSettle();
+        expect(find.text('Notes'), findsOneWidget);
+        await tester.ensureVisible(find.text('1 hour before'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await finish(tester, c);
+      },
+    );
+
+    testWidgets('a timezone without an end does not invent an Ends row', (
+      tester,
+    ) async {
+      final (_, c) = await show(
+        tester,
+        Item(
+          id: 'a',
+          title: 'Dentist',
+          status: 'open',
+          startAt: DateTime(2026, 11, 12, 9),
+          startTimezone: 'Europe/Amsterdam',
+          endTimezone: 'Europe/Amsterdam',
+        ),
+      );
+      await tester.ensureVisible(find.text('Details'));
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+      expect(find.text('Starts'), findsOneWidget);
+      expect(find.text('Ends'), findsNothing);
+      await finish(tester, c);
+    });
+
+    testWidgets('an appointment in one zone does not say Departs or Arrives', (
+      tester,
+    ) async {
+      final (_, c) = await show(tester, appointment());
+      expect(find.textContaining('Departs'), findsNothing);
+      expect(find.textContaining('Arrives'), findsNothing);
+      await finish(tester, c);
+    });
+
+    testWidgets('a trip across zones says Departs and Arrives', (tester) async {
+      final (_, c) = await show(
+        tester,
+        appointment(endZone: 'America/New_York'),
+      );
+      expect(
+        find.text('Departs 2026-11-12 09:00 Europe/Amsterdam'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Arrives 2026-11-12 09:30 America/New_York'),
+        findsOneWidget,
+      );
+      await finish(tester, c);
+    });
+
+    testWidgets('an item with no details has no Details button', (
+      tester,
+    ) async {
+      final (_, c) = await show(
+        tester,
+        item('t', 'Taxes', due: utc(2026, 11, 12, 17)),
+      );
+      expect(find.text('Details'), findsNothing);
+      await finish(tester, c);
+    });
+
+    testWidgets('Details shows every row and Hide details hides them', (
+      tester,
+    ) async {
+      final (_, c) = await show(
+        tester,
+        appointment(
+          location: 'Damrak 1',
+          notes: '- Bring ID\n- Call 020-1234567',
+          offsets: [1440, 60],
+        ),
+      );
+      expect(tester.getSize(find.text('Details')).height, greaterThan(0));
+      expect(
+        tester.getSize(find.widgetWithText(TextButton, 'Details')).height,
+        44,
+      );
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+      for (final label in [
+        'Starts',
+        'Ends',
+        'Duration',
+        'Type',
+        'Address',
+        'Notes',
+        'Reminders',
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      expect(find.text('Appointment'), findsOneWidget);
+      expect(find.text('Bring ID'), findsOneWidget);
+      expect(find.text('1 day, 1 hour before'), findsOneWidget);
+      tester.view.physicalSize = const Size(412, 1600);
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(CalendarScreen),
+        matchesGoldenFile('goldens/calendar-details.png'),
+      );
+
+      await tester.ensureVisible(find.text('Hide details'));
+      await tester.tap(find.text('Hide details'));
+      await tester.pumpAndSettle();
+      expect(find.text('Notes'), findsNothing);
+      await finish(tester, c);
+    });
+
+    testWidgets('the address opens Google Maps', (tester) async {
+      final (launcher, c) = await show(
+        tester,
+        appointment(location: 'Damrak 1'),
+      );
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Damrak 1'));
+      await tester.tap(find.text('Damrak 1'));
+      await tester.pump();
+      expect(launcher.opened, [mapsUri('Damrak 1')]);
+      await finish(tester, c);
+    });
+
+    testWidgets('a phone number and an email in the notes open their apps', (
+      tester,
+    ) async {
+      final (launcher, c) = await show(
+        tester,
+        appointment(notes: '- Call 020-1234567\n- Mail info@clinic.nl'),
+      );
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Call 020-1234567'));
+      await tester.tapOnText(find.textRange.ofSubstring('020-1234567'));
+      await tester.ensureVisible(find.text('Mail info@clinic.nl'));
+      await tester.tapOnText(find.textRange.ofSubstring('info@clinic.nl'));
+      expect(launcher.opened.map((u) => u.toString()), [
+        'tel:0201234567',
+        'mailto:info@clinic.nl',
+      ]);
+      await finish(tester, c);
     });
   });
 }

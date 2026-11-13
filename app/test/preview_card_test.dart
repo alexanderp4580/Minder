@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/application/chat_controller.dart';
 import 'package:minder/domain/chat_repository.dart';
@@ -69,6 +70,7 @@ Future<RecordingRepository> _show(WidgetTester tester, Change change) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: Tokens.theme,
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: SingleChildScrollView(
           child: EntryView(entry: _entry(change), controller: controller),
@@ -80,6 +82,61 @@ Future<RecordingRepository> _show(WidgetTester tester, Change change) async {
 }
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final icons = FontLoader('MaterialIcons')
+      ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+    await icons.load();
+    for (final name in ['Michroma', 'Chakra Petch']) {
+      final loader = FontLoader(name);
+      for (final file
+          in name == 'Michroma'
+              ? ['Michroma-Regular.ttf']
+              : [
+                  'ChakraPetch-Regular.ttf',
+                  'ChakraPetch-Medium.ttf',
+                  'ChakraPetch-SemiBold.ttf',
+                  'ChakraPetch-Bold.ttf',
+                ]) {
+        loader.addFont(rootBundle.load('assets/fonts/$file'));
+      }
+      await loader.load();
+    }
+  });
+  testWidgets(
+    'confirmed result has a separated, emphasized footer on narrow screens',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await _show(
+        tester,
+        const Change(
+          id: 'c',
+          action: 'create_item',
+          itemTitle: 'Appointment',
+          fields: [],
+          state: ChangeState.confirmed,
+        ),
+      );
+      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.text('Confirmed')).style?.fontWeight,
+        FontWeight.w600,
+      );
+      expect(
+        tester.getTopLeft(find.text('Confirmed')).dy -
+            tester.getBottomLeft(find.text('Appointment')).dy,
+        greaterThanOrEqualTo(20),
+      );
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/confirmed-card.png'),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   test('formatters read naturally', () {
     expect(durationText(45), '45 minutes');
     expect(durationText(1), '1 minute');

@@ -88,7 +88,8 @@ Item itemFromJson(Map<String, dynamic> j) {
     kind: j['kind'] as String? ?? '',
     notes: j['notes'] as String? ?? '',
     reminderOffsets: [
-      for (final m in j['reminder_offsets_minutes'] as List? ?? []) (m as num).toInt(),
+      for (final m in j['reminder_offsets_minutes'] as List? ?? [])
+        (m as num).toInt(),
     ],
   );
 }

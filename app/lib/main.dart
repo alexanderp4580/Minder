@@ -11,6 +11,7 @@ import 'application/chat_controller.dart';
 import 'application/notifications.dart';
 import 'data/access_auth.dart';
 import 'data/chat_api.dart';
+import 'data/url_link_launcher.dart';
 import 'data/notification_device.dart';
 import 'ui/calendar_screen.dart';
 import 'ui/chat_screen.dart';
@@ -141,6 +142,7 @@ class _MinderAppState extends ConsumerState<MinderApp>
                   builder: (_) => CalendarScreen(
                     controller: calendar,
                     sourceRepository: ref.read(apiProvider),
+                    linkLauncher: UrlLinkLauncher(),
                   ),
                 ),
               );
