@@ -26,8 +26,7 @@ class ChatController extends ChangeNotifier {
       connected = false,
       needsSignIn = false;
   String? error;
-  String _lastText = '';
-  Future<Entry> Function()? _retryAction;
+  String? _unsent;
   bool _disposed = false, _syncing = false;
   Timer? _poll, _reconnect, _offlineTimer;
 
@@ -55,6 +54,15 @@ class ChatController extends ChangeNotifier {
     _connectionOk();
   }
 
+  /// The text of a send that never completed, once. The screen puts it back in the composer.
+  String? takeUnsentText() {
+    final text = _unsent;
+    _unsent = null;
+    return text;
+  }
+
+  bool get hasUnsentText => _unsent != null;
+
   void _connectionOk() {
     _offlineTimer?.cancel();
     _offlineTimer = null;
@@ -80,7 +88,11 @@ class ChatController extends ChangeNotifier {
 
   void _failed(Object e) {
     if (e is RepositoryFailure && e.transport) _connectionLost();
-    error = e is RepositoryFailure
+    // A dropped connection shows only in the header icon, never as a message in the chat.
+    final transport = e is RepositoryFailure && e.transport;
+    error = transport
+        ? null
+        : e is RepositoryFailure
         ? e.message
         : 'Check your connection. Then try again.';
     if (e is RepositoryFailure) {
@@ -109,9 +121,9 @@ class ChatController extends ChangeNotifier {
         _merge(e);
       }
       connected = true;
+      if (needsSignIn) error = null;
       needsSignIn = false;
       _connectionOk();
-      if (_retryAction == null && _lastText.isEmpty) error = null;
     } catch (e) {
       _backgroundFailed(e);
     } finally {
@@ -150,16 +162,16 @@ class ChatController extends ChangeNotifier {
   }
 
   Future<void> send(String text) async {
-    if (_disposed || waiting || text.trim().isEmpty) return;
-    _lastText = text.trim();
-    _retryAction = null;
+    final body = text.trim();
+    if (_disposed || waiting || body.isEmpty) return;
     error = null;
     waiting = true;
     _notify();
     try {
-      final e = await repository.send(_lastText);
+      final e = await repository.send(body);
       _merge(e);
     } catch (e) {
+      _unsent = body;
       _failed(e);
     }
     _notify();
@@ -186,12 +198,10 @@ class ChatController extends ChangeNotifier {
   Future<void> _act(Future<Entry> Function() action) async {
     if (_disposed || acting) return;
     acting = true;
-    _retryAction = action;
     error = null;
     _notify();
     try {
       _merge(await action());
-      _retryAction = null;
       await sync();
     } catch (e) {
       _failed(e);
@@ -204,13 +214,6 @@ class ChatController extends ChangeNotifier {
   Future<void> retry({String? text}) async {
     if (text != null) {
       await send(text);
-      return;
-    }
-    if (_retryAction != null) {
-      await _act(_retryAction!);
-    } else if (_lastText.isNotEmpty) {
-      waiting = false;
-      await send(_lastText);
     } else {
       await sync();
     }

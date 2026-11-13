@@ -79,6 +79,18 @@ class _ChatScreenState extends State<ChatScreen> {
     animation: widget.controller,
     builder: (context, _) {
       final c = widget.controller;
+      if (c.hasUnsentText) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final unsent = c.takeUnsentText();
+          if (unsent == null || !mounted) return;
+          final typed = _text.text;
+          final restored = typed.isEmpty ? unsent : '$unsent $typed';
+          _text.value = TextEditingValue(
+            text: restored,
+            selection: TextSelection.collapsed(offset: restored.length),
+          );
+        });
+      }
       if (c.cursor != _lastCursor) {
         _lastCursor = c.cursor;
         _stickToBottom = true;
@@ -266,18 +278,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                                       : 'Sign in',
                                                 ),
                                               ),
-                                            ),
-                                          )
-                                        else
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              top: 12,
-                                            ),
-                                            child: OutlinedButton(
-                                              onPressed: c.acting || c.waiting
-                                                  ? null
-                                                  : () => c.retry(),
-                                              child: Text('Retry'),
                                             ),
                                           ),
                                       ],

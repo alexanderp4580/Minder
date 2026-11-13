@@ -42,6 +42,8 @@ class FakeRepository implements ChatRepository {
   final events = StreamController<Entry>.broadcast();
   final saved = <Entry>[];
   bool offline = false;
+  RepositoryFailure? sendFailure;
+  Future<void>? sendGate;
   int sends = 0;
   @override
   Future<List<Entry>> history(int after) async {
@@ -55,9 +57,11 @@ class FakeRepository implements ChatRepository {
   Stream<Entry> watch(int after) => events.stream;
   @override
   Future<Entry> send(String text) async {
+    if (sendGate != null) await sendGate;
     if (offline) {
       throw const RepositoryFailure('Check your connection.', transport: true);
     }
+    if (sendFailure != null) throw sendFailure!;
     sends++;
     return entry('u$sends', sends, 'user', text: text);
   }
@@ -157,22 +161,27 @@ void main() {
     expect(c.entries.last.text, 'Undone: Call plumber.');
     c.dispose();
   });
-  test('failed send can retry and discard leaves no active buttons', () async {
-    final repo = FakeRepository();
-    final c = ChatController(repo, pollInterval: const Duration(days: 1));
-    await c.start();
-    repo.offline = true;
-    await c.send('Call plumber');
-    expect(c.error, isNotNull);
-    repo.offline = false;
-    await c.retry();
-    expect(repo.sends, 1);
-    repo.events.add(entry('p', 2, 'preview', change: preview()));
-    await Future<void>.delayed(Duration.zero);
-    await c.discard('p');
-    expect(c.entries.last.change?.state, ChangeState.discarded);
-    c.dispose();
-  });
+  test(
+    'a failed send hands the text back and sends again on request',
+    () async {
+      final repo = FakeRepository();
+      final c = ChatController(repo, pollInterval: const Duration(days: 1));
+      await c.start();
+      repo.offline = true;
+      await c.send('Call plumber');
+      expect(c.error, isNull);
+      expect(c.takeUnsentText(), 'Call plumber');
+      expect(c.takeUnsentText(), isNull);
+      repo.offline = false;
+      await c.send('Call plumber');
+      expect(repo.sends, 1);
+      repo.events.add(entry('p', 2, 'preview', change: preview()));
+      await Future<void>.delayed(Duration.zero);
+      await c.discard('p');
+      expect(c.entries.last.change?.state, ChangeState.discarded);
+      c.dispose();
+    },
+  );
   test('poll fills gaps and replaces older entries by cursor', () async {
     final repo = FakeRepository();
     final c = ChatController(repo, pollInterval: const Duration(days: 1));
@@ -530,15 +539,68 @@ void main() {
       await finish(tester, c);
     });
 
-    testWidgets('a failed send keeps its inline Retry', (tester) async {
+    testWidgets('a failed send puts the text back and shows no Retry block', (
+      tester,
+    ) async {
       final (repo, c) = await screen(tester);
       repo.offline = true;
-      await c.send('Call plumber');
+      await tester.enterText(find.byType(TextField), 'Call plumber');
+      await tester.tap(find.byTooltip('Send'));
       await tester.pump();
-      expect(c.error, isNotNull);
-      expect(find.text('Retry'), findsOneWidget);
+      await tester.pump();
+      expect(c.error, isNull);
+      expect(find.text('Retry'), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Call plumber',
+      );
       await finish(tester, c);
     });
+
+    testWidgets('restored text goes in front of what was typed meanwhile', (
+      tester,
+    ) async {
+      final (repo, c) = await screen(tester);
+      repo.offline = true;
+      final gate = Completer<void>();
+      repo.sendGate = gate.future;
+      await tester.enterText(find.byType(TextField), 'Call plumber');
+      await tester.tap(find.byTooltip('Send'));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'and the dentist');
+      gate.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Call plumber and the dentist',
+      );
+      await finish(tester, c);
+    });
+
+    testWidgets(
+      'a server refusal shows its message without Retry until the next send',
+      (tester) async {
+        final (repo, c) = await screen(tester);
+        repo.sendFailure = const RepositoryFailure('Monthly limit reached.');
+        await tester.enterText(find.byType(TextField), 'Call plumber');
+        await tester.tap(find.byTooltip('Send'));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Monthly limit reached.'), findsOneWidget);
+        expect(find.text('Retry'), findsNothing);
+        repo.sendFailure = null;
+        await c.sync();
+        await tester.pump();
+        expect(find.text('Monthly limit reached.'), findsOneWidget);
+        await tester.enterText(find.byType(TextField), 'Call plumber');
+        await tester.tap(find.byTooltip('Send'));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Monthly limit reached.'), findsNothing);
+        await finish(tester, c);
+      },
+    );
   });
 }
 
