@@ -85,6 +85,11 @@ Item itemFromJson(Map<String, dynamic> j) {
     location: j['location'] as String? ?? '',
     list: j['list'] as String? ?? '',
     repeat: _repeat(j['recurrence'] as Map<String, dynamic>?),
+    kind: j['kind'] as String? ?? '',
+    notes: j['notes'] as String? ?? '',
+    reminderOffsets: [
+      for (final m in j['reminder_offsets_minutes'] as List? ?? []) (m as num).toInt(),
+    ],
   );
 }
 

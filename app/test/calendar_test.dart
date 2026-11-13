@@ -130,6 +130,24 @@ void main() {
     }
   });
 
+  test('an item keeps its notes, kind and reminders', () {
+    final full = itemFromJson({
+      'id': 'a',
+      'title': 'Dentist',
+      'status': 'open',
+      'kind': 'event',
+      'notes': '- Bring ID\n- Call 020-1234567',
+      'reminder_offsets_minutes': [1440, 60],
+    });
+    expect(full.kind, 'event');
+    expect(full.notes, '- Bring ID\n- Call 020-1234567');
+    expect(full.reminderOffsets, [1440, 60]);
+    final bare = itemFromJson({'id': 'b', 'title': 'x', 'status': 'open'});
+    expect(bare.kind, '');
+    expect(bare.notes, '');
+    expect(bare.reminderOffsets, isEmpty);
+  });
+
   test('load asks for six weeks from the Monday before the month', () async {
     final repo = FakeItems();
     final c = controller(repo);

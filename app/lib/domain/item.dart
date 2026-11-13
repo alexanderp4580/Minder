@@ -21,8 +21,14 @@ class Item {
     this.location = '',
     this.list = '',
     this.repeat = '',
+    this.kind = '',
+    this.notes = '',
+    this.reminderOffsets = const [],
   });
-  final String id, title, status, location, list, repeat;
+  final String id, title, status, location, list, repeat, kind, notes;
+
+  /// Minutes before the start or deadline at which a reminder fires.
+  final List<int> reminderOffsets;
   final DateTime? startAt, dueAt, endAt, startDate, endDate, dueDate;
   final List<String> sourceIds;
   final String startLocal, endLocal, startTimezone, endTimezone;
