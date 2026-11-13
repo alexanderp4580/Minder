@@ -65,7 +65,6 @@ class _Chip extends StatelessWidget {
       child: Container(
         constraints: const BoxConstraints(minHeight: Tokens.minTarget),
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: on ? Tokens.panel : null,
           border: Border.all(
@@ -73,10 +72,13 @@ class _Chip extends StatelessWidget {
             width: on ? 1.5 : 1,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: onTap == null || quiet ? Tokens.muted : Tokens.text,
+        child: Center(
+          widthFactor: 1,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: onTap == null || quiet ? Tokens.muted : Tokens.text,
+            ),
           ),
         ),
       ),

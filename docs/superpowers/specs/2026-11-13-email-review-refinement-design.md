@@ -1,6 +1,6 @@
 # Email review refinement
 
-Status: approved by the owner with the question change below. Date: 2026-11-13. Builds on [email capture](2026-11-12-email-capture-design.md).
+Status: approved by the owner with the question change below; implemented in app 0.6.0+20, phone approval pending. Date: 2026-11-13. Builds on [email capture](2026-11-12-email-capture-design.md).
 
 ## Intent
 

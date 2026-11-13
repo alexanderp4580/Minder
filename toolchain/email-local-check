@@ -42,7 +42,8 @@ def main():
                 import sqlite3
                 connection=sqlite3.connect(directory+'/db')
                 items=[json.loads(row[0]) for row in connection.execute('select body from item')]
-                assert len(items)==2,items
+                assert len(items)==3,items
+                assert connection.execute("select count(*) from reminder_schedule where item_id in (select id from item where json_extract(body,'$.title')='Contact lens fitting')").fetchone()[0]==1
                 assert any(item.get('end_date')=='2026-11-15' for item in items)
                 assert connection.execute('select count(*) from item_source').fetchone()[0]>=2
                 connection.close()

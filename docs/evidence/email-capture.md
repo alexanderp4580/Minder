@@ -33,3 +33,18 @@ The existing keyboard-following implementation and tests remain separate working
 No live Cloudflare, DNS, Access or production configuration changed. Verify actual trusted authentication headers, service-token policy, real delivery failure behaviour and the selected model's document capability/retention settings during activation.
 The APK compiles; no emulator was available to verify native attachment opening. Physical-phone email review, download and notification checks remain pending. No APK was delivered for this slice. Phone approval gates merging.
 Local model fixtures verify integration contracts, not real-world extraction accuracy. Cloudflare and the model provider receive readable content as specified; this pipeline is not end-to-end encrypted.
+
+## Review refinement (app 0.6.0+20)
+
+Date: 2026-11-13. Design: [email review refinement](../superpowers/specs/2026-11-13-email-review-refinement-design.md).
+
+| Command | Exit | Observed result |
+|---|---|---|
+| `toolchain/check` | 0 | Go race tests/vet/format, Flutter tests/analyze/format (new: preview card, question view, connection status, reminder wire), Worker tests, DOX, architecture, hooks, export checks |
+| `toolchain/run flutter flutter build web --release --no-wasm-dry-run` | 0 | Release web bundle |
+| `toolchain/email-local-check` | 0 (two runs) | Signed ingress, answer, download, confirmation, travel calendar, cancellation, and the appointment flow: question entry with quick replies, tapped reply, reminder chip, Confirm; stored location, duration, notes, offsets `[1440,120,60]` and one `reminder_schedule` row in real SQLite |
+| `toolchain/local-check`, `reminder-local-check`, `calendar-local-check` | 0 | Regression scenarios |
+
+Rendered check: `.local/email-appointment.png` (ignored) shows the final card with the title once, `Starts: Wed 18 Nov 14:30 (Europe/Amsterdam)`, `Duration: 45 minutes`, a separate Address row, bullet notes, Type Appointment and compact chips with the agent's picks highlighted. The first render exposed full-width chips and a `Status: open` row; both are fixed with tests.
+The model fixture is synthetic: it proves the contracts, not the real model's judgment about which questions to ask or which reminders to preselect. Phone behaviour, push for the question message and the real model remain unverified.
+

@@ -39,6 +39,12 @@ class Handler(BaseHTTPRequestHandler):
             if items:
                 item=next((item for item in items if item['title']=='Hotel booking'),items[0])
                 candidates=[{'id':'cancel','proposal':{'action':'cancel_item','item_id':item['id'],'expected_version':item['version'],'title':item['title']},'evidence':evidence}]
+        elif 'contact lens fitting' in text.lower():
+            start=(datetime.now(timezone.utc)+timedelta(days=5)).replace(hour=13,minute=30,second=0,microsecond=0)
+            fitting={'id':'fitting','proposal':{'action':'create_item','kind':'event','title':'Contact lens fitting','start_at':start.strftime('%Y-%m-%dT%H:%M:%SZ'),'start_timezone':'Europe/Amsterdam','location':'Kinkerstraat 123, Amsterdam','notes':'- Bring your current glasses\n- Ref: AB12CD','reminder_offsets_minutes':[1440,60,7]},'question':'How long will it take?','options':['30 minutes','45 minutes','1 hour'],'evidence':evidence}
+            if answers:
+                fitting['question']='';fitting['options']=[];fitting['proposal']['duration_minutes']=45
+            candidates=[fitting]
         else:
             candidates=[{'id':'hotel','proposal':{'action':'create_item','kind':'event','title':'Hotel booking','start_date':'2026-11-12','end_date':'2026-11-15','notes':'Booking ABC123'},'evidence':evidence}]
             flight={'id':'return-flight','proposal':{'action':'create_item','kind':'event','title':'Return flight'},'question':'What date is your return flight?','evidence':evidence}

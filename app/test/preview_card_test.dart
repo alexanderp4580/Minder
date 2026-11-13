@@ -141,6 +141,26 @@ void main() {
     expect(find.text('Timezone:'), findsNothing);
   });
 
+  testWidgets('a new item hides its open status', (tester) async {
+    await _show(tester, _change([_f('status', 'open'), _f('kind', 'event')]));
+    expect(find.text('Status:'), findsNothing);
+    expect(find.text('Type:'), findsOneWidget);
+  });
+
+  testWidgets('reminder chips are compact, not full width', (tester) async {
+    await _show(
+      tester,
+      _change(const [], offsets: const [1440], choices: _choices),
+    );
+    expect(tester.getSize(find.text('10 minutes')).width, lessThan(200));
+    final chip = find.ancestor(
+      of: find.text('10 minutes'),
+      matching: find.byType(Container),
+    );
+    expect(tester.getSize(chip.first).width, lessThan(200));
+    expect(tester.getSize(chip.first).height, greaterThanOrEqualTo(44));
+  });
+
   testWidgets('duration reads with its unit', (tester) async {
     await _show(
       tester,

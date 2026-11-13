@@ -177,6 +177,7 @@ List<PreviewRow> previewRows(Change change) {
       case 'start_timezone' when hasStart:
       case 'end_timezone' when hasEnd:
       case 'timezone' when hasTime:
+      case 'status' when f.oldValue.isEmpty && f.newValue == 'open':
       case 'reminders' when change.reminderChoices.isNotEmpty:
         continue;
     }
