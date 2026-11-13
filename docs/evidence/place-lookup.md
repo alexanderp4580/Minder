@@ -1,6 +1,6 @@
 # Place lookup with Serper
 
-Date: 2026-11-13. Branch `place-lookup` (worktree `Minder-place-lookup`), built on `fix-connection-message` at `5807cca`, the line production and the phone run (0.9.1+26). App version 0.9.2+27. Not merged, not deployed.
+Date: 2026-11-13. Branch `place-lookup`, built on `fix-connection-message` at `5807cca`. App version 0.9.2+27.
 Spec: [place lookup design](../superpowers/specs/2026-11-13-place-lookup-design.md). Plan: [place lookup plan](../superpowers/plans/2026-11-13-place-lookup.md). Mock: `../mockups/place-lookup.png`.
 
 ## Behaviour
@@ -14,20 +14,20 @@ Spec: [place lookup design](../superpowers/specs/2026-11-13-place-lookup-design.
 
 | Check | Result |
 |---|---|
-| Red tests before each change | Domain, config, Serper adapter, assistant gate, openrouter tool exposure, app card and wire tests each failed first (undefined symbols or missing behaviour) |
-| Startup log mutation | Reverting `serper_key_set` in `logStartup` failed `TestStartupSummaryShowsSettingsButNeverSecrets`; restoring it passed |
-| Prompt order | Found by the browser fixture: the place rule sat after the untrusted item data. `TestWithoutAFinderThereIsNoOfferToolOrRule` failed, then passed once the rule joined the other rules |
-| Retry | `TestRetryAfterAFailedReplyStillSearches` failed first; `TestNoSearchOnceTheOfferWasAnswered` guards the stale case |
-| API wire | `TestChatServesOptionsOnlyForAPlaceLookupOffer` checks `/v1/chat` and `/v1/chat?after=1`; it passed on first run because Task 1 already added the marshalling (a boundary test, not a mutation-checked one) |
-| Live Serper | One real query for `SnowWorld Landgraaf` through TokenCrypt returned `Witte Wereld 1` and `https://www.snowworld.com/landgraaf?utm_source=gmb_listing&utm_medium=organic`, 1,170 ms, status 200. The throwaway test file was deleted |
-| Flutter | Part of `toolchain/check` (exit 0 on the rebased branch): Flutter tests, analyze and format |
+| Test-first | Domain, config, Serper adapter, assistant gate, openrouter tool exposure, app card and wire tests each failed before the code existed |
+| Startup log | Without `serper_key_set` in `logStartup`, `TestStartupSummaryShowsSettingsButNeverSecrets` fails; with it, it passes. The summary never holds the key |
+| Prompt order | `TestWithoutAFinderThereIsNoOfferToolOrRule` asserts the place rule comes before the untrusted item data and appears only when a finder is set |
+| Retry | `TestRetryAfterAFailedReplyStillSearches` and `TestNoSearchOnceTheOfferWasAnswered` cover a failed reply and an answered offer |
+| API wire | `TestChatServesOptionsOnlyForAPlaceLookupOffer` checks `/v1/chat` and `/v1/chat?after=1` (not mutation-checked) |
+| Live Serper | One real query for `SnowWorld Landgraaf` through TokenCrypt returned `Witte Wereld 1` and `https://www.snowworld.com/landgraaf?utm_source=gmb_listing&utm_medium=organic`, 1,170 ms, status 200 |
+| Flutter | Part of `toolchain/check`: Flutter tests, analyze and format |
 | Browser, place lookup | `toolchain/place-lookup-local-check` passed against compiled web, the model fixture and a fake Serper: the offer ran no search, Look it up ran exactly one, the preview showed `Witte Wereld 1, Landgraaf`, Skip ran none. Screenshots: `place-lookup-offer.png`, `place-lookup-preview.png` |
 | Browser, calendar and reminder | `toolchain/calendar-local-check` and `toolchain/reminder-local-check` passed |
-| Website field | Found after the rebase: the prompt rule and result message sent the website to notes. `TestLookupReplyAfterAFreshOfferSearchesOnceAndFoldsInThePlaces` failed, then passed; the preview screenshot shows a Website row |
-| Browser, chat | `toolchain/local-check` passed (offline icon, recovery and restored send)  |
+| Website field | `TestLookupReplyAfterAFreshOfferSearchesOnceAndFoldsInThePlaces` asserts the prompt rule and result message send the website to its own field; the preview screenshot shows a Website row |
+| Browser, chat | `toolchain/local-check` passed (offline icon, recovery and restored send) |
 | `toolchain/check` | Exit 0 on the final tree: checker tests, hook tests, Worker tests, architecture, DOX, orbital exports, Go race tests, vet, gofmt, Flutter tests, analyze, format, `git diff --check` |
 
-Artifact: `.local/artifacts/Minder-0.9.2-arm64.apk` (ignored by Git), 19,289,894 bytes, SHA-256 `de359f7f3254a74dfbe2d536ed760181ef8f95f7bbb9c49daa07cf7fdb0328d8`. aapt2 reports `io.liveleds.minder`, version 0.9.2, code 27 (above 0.9.1's 26). The signer SHA-256 `7bbc3aba5e417ffe87efa00c53c183c6490dc61905ce7231aaf99f87666d2572` matches 0.7.0, 0.8.0, 0.9.0 and 0.9.1. `libapp.so` contains the offer card strings; 0.9.1's does not. Telegram confirmed one upload (message 2009). An earlier 0.8.0+24 build (message 2006) was not installable over 0.9.1 and is superseded.
+Artifact: `.local/artifacts/Minder-0.9.2-arm64.apk` (ignored by Git), 19,289,894 bytes, SHA-256 `de359f7f3254a74dfbe2d536ed760181ef8f95f7bbb9c49daa07cf7fdb0328d8`. aapt2 reports `io.liveleds.minder`, version 0.9.2, code 27 (above 0.9.1's 26). The signer SHA-256 `7bbc3aba5e417ffe87efa00c53c183c6490dc61905ce7231aaf99f87666d2572` matches 0.7.0, 0.8.0, 0.9.0 and 0.9.1. `libapp.so` contains the offer card strings; 0.9.1's does not. Telegram confirmed one upload (message 2009).
 
 ## Limits
 

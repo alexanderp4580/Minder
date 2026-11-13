@@ -39,7 +39,7 @@ func TestOfferCleansTheQuery(t *testing.T) {
 }
 
 func TestParseOfferRejectsOtherText(t *testing.T) {
-	for _, text := range []string{"Look up it", `Look up "" on Google for its address and website?`, `look up "x" on Google for its address and website?`, `Look up "x" on Google for its address and website? Reply yes`, ""} {
+	for _, text := range []string{"Look up it", `Look up "" on Google for its address and website?`, `look up "x" on Google for its address and website?`, `Look up "x" on Google for its address and website? Reply yes`, `Look up " on Google for its address and website?`, ""} {
 		if _, ok := ParseOffer(text); ok {
 			t.Fatalf("accepted %q", text)
 		}
