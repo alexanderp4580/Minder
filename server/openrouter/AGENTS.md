@@ -16,6 +16,9 @@ Tool schemas distinguish event ends, date-only ranges and deadlines; preserve tr
 
 `propose_cancel` and `propose_delete` need `item_id` and `expected_version`, like `propose_complete`. `find_finished_items` takes an optional `query` and `list`.
 
+
+Item and capture tool schemas expose phone, email, website and booking_reference as separate strings and support clear flags. Notes hold remaining instructions.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

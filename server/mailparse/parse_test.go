@@ -107,3 +107,24 @@ func TestPDFTextAndPageLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestHTMLBookingContactTargetsAndReferenceSurviveConversion(t *testing.T) {
+	raw := "From: owner@example.com\r\nContent-Type: text/html; charset=utf-8\r\n\r\n" +
+		`<table><tr><td>Booking reference:</td><td>ABC123456789</td></tr></table><p><a href="tel:+31201234567">Call us</a> <a href="mailto:desk@example.com">Email reception</a> <a href="https://example.com/booking?ref=ABC123456789">Manage booking</a></p><script>private-script</script><a href="javascript:bad()">Bad link</a>`
+	document, err := (&Parser{}).Parse(context.Background(), strings.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := document.Parts[0].Text
+	for _, want := range []string{"Booking reference:", "ABC123456789", "tel:+31201234567", "mailto:desk@example.com", "https://example.com/booking?ref=ABC123456789"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("missing %q in %q", want, text)
+		}
+	}
+	if strings.Contains(text, "reference:ABC") {
+		t.Error("table cells ran together")
+	}
+	if strings.Contains(text, "javascript:") || strings.Contains(text, "private-script") {
+		t.Error("active content entered converted text")
+	}
+}

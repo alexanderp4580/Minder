@@ -24,6 +24,11 @@ type Invalid struct {
 func (e *Invalid) Error() string { return e.Message }
 
 type Item struct {
+	Phone            string `json:"phone,omitempty"`
+	Email            string `json:"email,omitempty"`
+	Website          string `json:"website,omitempty"`
+	BookingReference string `json:"booking_reference,omitempty"`
+
 	SourceIDs     []string `json:"source_ids,omitempty"`
 	Kind          string   `json:"kind,omitempty"`
 	EndAt         string   `json:"end_at,omitempty"`
@@ -55,6 +60,16 @@ type Item struct {
 	CompletedAt     string      `json:"completed_at,omitempty"`
 }
 type Proposal struct {
+	Phone            string `json:"phone,omitempty"`
+	Email            string `json:"email,omitempty"`
+	Website          string `json:"website,omitempty"`
+	BookingReference string `json:"booking_reference,omitempty"`
+
+	ClearPhone            bool `json:"clear_phone,omitempty"`
+	ClearEmail            bool `json:"clear_email,omitempty"`
+	ClearWebsite          bool `json:"clear_website,omitempty"`
+	ClearBookingReference bool `json:"clear_booking_reference,omitempty"`
+
 	CaptureID       string `json:"capture_id,omitempty"`
 	CandidateID     string `json:"candidate_id,omitempty"`
 	CaptureRevision int    `json:"capture_revision,omitempty"`
@@ -168,12 +183,26 @@ type Audit struct {
 
 func Now() string { return time.Now().UTC().Format(time.RFC3339Nano) }
 func Validate(i *Item) error {
+	NormalizeBookingDetails(i)
 	i.Title = strings.TrimSpace(i.Title)
 	if n := utf8.RuneCountInString(i.Title); n < 1 || n > 200 {
 		return &Invalid{"title", "Use a title with 1 to 200 characters."}
 	}
 	if utf8.RuneCountInString(i.Notes) > 4000 {
 		return &Invalid{"notes", "Use notes with at most 4,000 characters."}
+	}
+	for _, field := range []struct {
+		name  string
+		value *string
+		limit int
+	}{
+		{"phone", &i.Phone, 200}, {"email", &i.Email, 200},
+		{"website", &i.Website, 2048}, {"booking_reference", &i.BookingReference, 200},
+	} {
+		*field.value = strings.TrimSpace(*field.value)
+		if utf8.RuneCountInString(*field.value) > field.limit {
+			return &Invalid{field.name, "The booking detail is too long."}
+		}
 	}
 	if i.Timezone == "" {
 		i.Timezone = "Europe/Amsterdam"

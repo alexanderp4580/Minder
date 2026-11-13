@@ -22,6 +22,7 @@ var rules = []string{
 	"Done and cancelled items are not in the current list. To answer about one, or to cancel or delete one, call find_finished_items alone with a title query or a list name. You then receive the matches. Do not call it a second time.",
 	"Use start_at for something that happens at a time, such as an appointment or meeting, and add duration_minutes when you know it. Use due_at only for a deadline.",
 	"To move an existing item, change the field it already uses: start_at if it has a start, otherwise due_at. Never set a start_at after the deadline.",
+	"Store contact phone, email, website and booking_reference in their separate item fields, like location. Preserve reference identifiers and leading zeros; keep them out of notes. Notes contain remaining instructions.",
 	"Set priority from 1 (highest) to 5 only when the owner states importance.",
 	"Put an item in a list only when the owner names one, and reuse an existing list name.",
 	"Set a profile only when the owner names a kind of item. A profile sets reminders from the deadline, or from the start when there is no deadline. Use propose_profile to change or add a profile.",

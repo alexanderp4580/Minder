@@ -136,6 +136,16 @@ func tools() []any {
 	props["clear_list"] = flag
 	props["location"] = map[string]string{"type": "string", "description": "Where the item happens, for example an address or a place name."}
 	props["clear_location"] = flag
+	for name, description := range map[string]string{
+		"phone":             "Contact phone number copied from the source. Keep it out of notes.",
+		"email":             "Contact email address copied from the source. Keep it out of notes.",
+		"website":           "Contact or booking website URL copied from the source. Keep it out of notes.",
+		"booking_reference": "Booking or confirmation identifier as text. Preserve leading zeros and exact spelling. Keep it out of notes.",
+	} {
+		props[name] = map[string]string{"type": "string", "description": description}
+		props["clear_"+name] = flag
+	}
+
 	props["start_at"] = map[string]string{"type": "string", "description": "When the item begins, RFC3339 with timezone. Use for appointments and meetings. Use end_at for the event end, due_at only for deadlines. For date-only bookings use start_date/end_date (exclusive checkout) or due_date. Do not invent times."}
 	props["clear_start"] = flag
 	for _, name := range []string{"kind", "end_at", "start_timezone", "end_timezone", "start_date", "end_date", "due_date"} {

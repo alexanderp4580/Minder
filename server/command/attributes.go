@@ -26,6 +26,8 @@ func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error 
 		value string
 		clear bool
 	}{
+		{&i.Phone, p.Phone, p.ClearPhone}, {&i.Email, p.Email, p.ClearEmail},
+		{&i.Website, p.Website, p.ClearWebsite}, {&i.BookingReference, p.BookingReference, p.ClearBookingReference},
 		{&i.EndAt, p.EndAt, p.ClearEnd}, {&i.StartDate, p.StartDate, p.ClearStartDate},
 		{&i.EndDate, p.EndDate, p.ClearEndDate}, {&i.DueDate, p.DueDate, p.ClearDueDate},
 		{&i.StartTimezone, p.StartTimezone, p.ClearStartTimezone}, {&i.EndTimezone, p.EndTimezone, p.ClearEndTimezone},
@@ -102,6 +104,18 @@ func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error 
 		r := *p.Recurrence
 		i.Recurrence = &r
 	}
+	cleared := []string{}
+	for _, field := range []struct {
+		name  string
+		clear bool
+		value string
+	}{{"phone", p.ClearPhone, p.Phone}, {"email", p.ClearEmail, p.Email}, {"website", p.ClearWebsite, p.Website}, {"booking_reference", p.ClearBookingReference, p.BookingReference}} {
+		if field.clear && field.value == "" {
+			cleared = append(cleared, field.name)
+		}
+	}
+	domain.NormalizeBookingDetails(i, cleared...)
+
 	return nil
 }
 
@@ -132,6 +146,10 @@ func itemFields(t port.Transaction, old, now domain.Item) []domain.Field {
 		{Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(now.NagMinutes)},
 		{Name: "priority", Old: zeroEmpty(old.Priority), New: zeroEmpty(now.Priority)},
 		{Name: "location", Old: old.Location, New: now.Location},
+		{Name: "phone", Old: old.Phone, New: now.Phone},
+		{Name: "email", Old: old.Email, New: now.Email},
+		{Name: "website", Old: old.Website, New: now.Website},
+		{Name: "booking_reference", Old: old.BookingReference, New: now.BookingReference},
 		{Name: "list", Old: old.List, New: now.List},
 		{Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, now.ProfileID)},
 		{Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(now.Recurrence)},

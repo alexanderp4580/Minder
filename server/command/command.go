@@ -90,6 +90,7 @@ func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 		if p.ExpectedVersion < 1 || p.ExpectedVersion != i.Version {
 			return domain.ErrConflict
 		}
+		domain.NormalizeBookingDetails(&i)
 		before = &i
 		after = i
 		after.Version++
