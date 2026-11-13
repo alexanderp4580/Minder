@@ -9,8 +9,8 @@ abstract interface class ItemRepository {
   Future<Entry> previewDelete(Item item);
 
   /// Deletes what [previewDelete] described.
-  Future<Entry> confirmDelete(String changeId);
+  Future<Entry> confirm(String changeId);
 
   /// Keeps the item.
-  Future<Entry> discardDelete(String changeId);
+  Future<Entry> discard(String changeId);
 }

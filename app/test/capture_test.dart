@@ -1,17 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:minder/domain/entry.dart';
 import 'package:minder/application/calendar_controller.dart';
 import 'package:minder/domain/item.dart';
 import 'package:minder/domain/item_repository.dart';
 import 'package:minder/data/wire.dart';
 
-class CalendarItems implements ItemRepository {
-  @override
-  Future<Entry> previewDelete(Item item) => throw UnimplementedError();
-  @override
-  Future<Entry> confirmDelete(String changeId) => throw UnimplementedError();
-  @override
-  Future<Entry> discardDelete(String changeId) => throw UnimplementedError();
+class CalendarItems extends Fake implements ItemRepository {
   CalendarItems(this.items);
   final List<Item> items;
   @override

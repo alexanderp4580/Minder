@@ -87,7 +87,7 @@ class EntryView extends StatelessWidget {
               child: const Text('Undo'),
             ),
           ),
-        if (entry.kind == EntryKind.error)
+        if (entry.kind == EntryKind.error && controller.isLatest(entry))
           _Action(
             child: OutlinedButton(
               onPressed: controller.waiting

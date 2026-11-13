@@ -157,3 +157,28 @@ func TestDiscardedDeleteKeepsTheItem(t *testing.T) {
 		t.Fatal("a discarded delete removed the item")
 	}
 }
+
+func TestDeletePreviewOfARepeatingItemSaysTheWholeSeriesGoes(t *testing.T) {
+	c, _ := setup(t)
+	p, e := c.Preview(domain.Proposal{Action: "create_item", Title: "Water plants", DueAt: "2099-01-05T10:00:00Z", Timezone: "Europe/Amsterdam", Recurrence: &domain.Recurrence{Every: "weekly", Interval: 1}})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = c.Confirm(p.Change.ID); e != nil {
+		t.Fatal(e)
+	}
+	items, _ := c.repository.Items()
+	d, e := c.Preview(domain.Proposal{Action: "delete_item", ItemID: items[0].ID, ExpectedVersion: items[0].Version})
+	if e != nil {
+		t.Fatal(e)
+	}
+	var row *domain.Field
+	for i := range d.Change.Fields {
+		if d.Change.Fields[i].Name == "recurrence" {
+			row = &d.Change.Fields[i]
+		}
+	}
+	if row == nil || row.Old != "Repeats weekly" || row.New != "All occurrences removed" {
+		t.Fatalf("fields: %+v", d.Change.Fields)
+	}
+}

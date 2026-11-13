@@ -12,13 +12,7 @@ import 'package:minder/ui/calendar_screen.dart';
 import 'package:minder/ui/chat_screen.dart';
 import 'package:minder/ui/tokens.dart';
 
-class EmptyItems implements ItemRepository {
-  @override
-  Future<Entry> previewDelete(Item item) => throw UnimplementedError();
-  @override
-  Future<Entry> confirmDelete(String changeId) => throw UnimplementedError();
-  @override
-  Future<Entry> discardDelete(String changeId) => throw UnimplementedError();
+class EmptyItems extends Fake implements ItemRepository {
   @override
   Future<List<Item>> itemsBetween(DateTime from, DateTime to) async => [];
 }

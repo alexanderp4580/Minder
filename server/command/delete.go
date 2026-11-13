@@ -2,6 +2,7 @@ package command
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
@@ -19,6 +20,13 @@ func previewItemDeletion(t port.Transaction, p domain.Proposal) (domain.Entry, e
 	fields := []domain.Field{{Name: "item", Old: item.Title, New: "Deleted"}}
 	if item.RemindAt != "" || len(item.ReminderOffsets) > 0 {
 		fields = append(fields, domain.Field{Name: "reminders", Old: "Scheduled", New: "Removed"})
+	}
+	if r := item.Recurrence; r != nil {
+		repeats := "Repeats " + r.Every
+		if r.Interval > 1 {
+			repeats += fmt.Sprintf(", every %d", r.Interval)
+		}
+		fields = append(fields, domain.Field{Name: "recurrence", Old: repeats, New: "All occurrences removed"})
 	}
 	if sources, e := t.SourcesForItem(item.ID); e != nil {
 		return domain.Entry{}, e

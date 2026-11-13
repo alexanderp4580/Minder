@@ -259,6 +259,34 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     c.dispose();
   });
+  testWidgets('only the newest failed reply offers Retry', (tester) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repo = FakeRepository();
+    final c = ChatController(repo, pollInterval: const Duration(days: 1));
+    repo.saved.addAll([
+      entry('u1', 1, 'user', text: 'Call plumber'),
+      entry('e1', 2, 'error', text: 'The model failed.'),
+      entry('u2', 3, 'user', text: 'Call dentist'),
+      entry('e2', 4, 'error', text: 'The model failed again.'),
+    ]);
+    await c.start();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: Tokens.theme,
+        home: ChatScreen(controller: c),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Retry'), findsOneWidget);
+    repo.saved.add(entry('m', 5, 'minder', text: 'Done.'));
+    await c.sync();
+    await tester.pumpAndSettle();
+    expect(find.text('Retry'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
   testWidgets('active reminder shows Done, Snooze and Open and routes Done', (
     tester,
   ) async {

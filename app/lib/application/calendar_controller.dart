@@ -42,12 +42,12 @@ class CalendarController extends ChangeNotifier {
   Future<Entry> previewDelete(Item item) => _repository.previewDelete(item);
 
   Future<void> confirmDelete(String changeId) async {
-    await _repository.confirmDelete(changeId);
+    await _repository.confirm(changeId);
     await load();
   }
 
   Future<void> discardDelete(String changeId) async {
-    await _repository.discardDelete(changeId);
+    await _repository.discard(changeId);
   }
 
   Future<void> load() async {

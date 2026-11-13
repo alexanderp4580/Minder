@@ -65,6 +65,10 @@ class ChatController extends ChangeNotifier {
 
   bool get hasUnsentText => _unsent != null;
 
+  /// True when nothing was added to the chat after [entry].
+  bool isLatest(Entry entry) =>
+      _entries.isNotEmpty && _entries.last.id == entry.id;
+
   void _connectionOk() {
     _offlineTimer?.cancel();
     _offlineTimer = null;

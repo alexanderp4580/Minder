@@ -122,10 +122,6 @@ class ChatApi
       body: {'expected_version': item.version},
     ) as Map<String, dynamic>,
   );
-  @override
-  Future<Entry> confirmDelete(String changeId) => confirm(changeId);
-  @override
-  Future<Entry> discardDelete(String changeId) => discard(changeId);
   Future<Entry> _post(String route) async =>
       entryFromJson(await _request('POST', route) as Map<String, dynamic>);
   @override

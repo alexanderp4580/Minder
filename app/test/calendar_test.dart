@@ -60,14 +60,14 @@ class FakeItems implements ItemRepository {
   @override
   Future<Entry> previewDelete(Item item) async => deletePreview(item);
   @override
-  Future<Entry> confirmDelete(String changeId) async {
+  Future<Entry> confirm(String changeId) async {
     confirmed.add(changeId);
     items.removeWhere((i) => 'c-${i.id}' == changeId);
     return deletePreview(item('x', 'x'));
   }
 
   @override
-  Future<Entry> discardDelete(String changeId) async {
+  Future<Entry> discard(String changeId) async {
     discarded.add(changeId);
     return deletePreview(item('x', 'x'));
   }
@@ -86,14 +86,8 @@ class FakeItems implements ItemRepository {
 CalendarController controller(FakeItems repo) =>
     CalendarController(repo, now: () => DateTime(2026, 11, 12, 10));
 
-class PendingItems implements ItemRepository {
+class PendingItems extends Fake implements ItemRepository {
   final requests = <Completer<List<Item>>>[];
-  @override
-  Future<Entry> previewDelete(Item item) => throw UnimplementedError();
-  @override
-  Future<Entry> confirmDelete(String changeId) => throw UnimplementedError();
-  @override
-  Future<Entry> discardDelete(String changeId) => throw UnimplementedError();
   @override
   Future<List<Item>> itemsBetween(DateTime from, DateTime to) {
     final result = Completer<List<Item>>();
@@ -367,6 +361,21 @@ void main() {
       await tester.pumpAndSettle();
       expect(repo.confirmed, ['c-a']);
       expect(find.text('Dentist'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    });
+
+    testWidgets('leaves no pending preview when the dialog closes any way', (
+      tester,
+    ) async {
+      final (repo, c) = await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Delete item'), findsNothing);
+      expect(repo.discarded, ['c-a']);
+      expect(repo.confirmed, isEmpty);
       await tester.pumpWidget(const SizedBox());
       c.dispose();
     });
