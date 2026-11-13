@@ -45,3 +45,14 @@ func (m Message) MarshalJSON() ([]byte, error) {
 		Content any    `json:"content"`
 	}{m.Role, content})
 }
+
+// Place is one result of a place lookup.
+type Place struct {
+	Title, Address, Category, Website string
+	Rating                            float64
+}
+
+// PlaceFinder looks up places for a query the owner approved.
+type PlaceFinder interface {
+	FindPlaces(context.Context, string) ([]Place, error)
+}

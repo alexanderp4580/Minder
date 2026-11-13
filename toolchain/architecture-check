@@ -12,11 +12,11 @@ GO = {
     'domain': set(), 'port': {'domain'},
     'command': {'domain', 'port'}, 'assistant': {'domain', 'port'},
     'reminder': {'domain', 'port'}, 'conversation': {'domain'},
-    'capture': {'domain','port'}, 'mailauth': {'domain','config'}, 'mailparse': {'domain'}, 'mailfiles': set(), 'store': {'domain', 'port'}, 'openrouter': {'domain', 'assistant'},
+    'capture': {'domain','port'}, 'mailauth': {'domain','config'}, 'mailparse': {'domain'}, 'mailfiles': set(), 'store': {'domain', 'port'}, 'openrouter': {'domain', 'assistant'}, 'serper': {'domain', 'assistant'},
     'push': set(), 'access': set(), 'config': set(),
     'api': {'domain', 'conversation'},
     'cmd/minder': {'domain', 'access', 'api', 'assistant', 'command', 'config',
-                   'conversation', 'openrouter', 'push', 'reminder', 'store', 'capture', 'mailauth', 'mailfiles', 'mailparse'},
+                   'conversation', 'openrouter', 'serper', 'push', 'reminder', 'store', 'capture', 'mailauth', 'mailfiles', 'mailparse'},
 }
 INNER = {'domain', 'port', 'command', 'assistant', 'reminder', 'conversation', 'capture'}
 INFRASTRUCTURE = {'net', 'database/sql', 'os', 'syscall'}

@@ -41,6 +41,7 @@ Formatting must print no paths.
 - `mailfiles/AGENTS.md`: Private persistent capture files.
 - `store/AGENTS.md`: SQLite persistence adapter.
 - `openrouter/AGENTS.md`: OpenRouter HTTP model adapter.
+- `serper/AGENTS.md`: Serper places HTTP adapter.
 - `push/AGENTS.md`: Firebase Cloud Messaging adapter.
 - `access/AGENTS.md`: Request authentication adapter.
 - `config/AGENTS.md`: Process setting validation.
