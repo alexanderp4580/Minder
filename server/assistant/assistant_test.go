@@ -16,13 +16,21 @@ import (
 
 type fakeModel struct {
 	r        Response
+	seq      []Response // replies for successive calls; r answers once seq is empty
 	calls    int
 	messages []Message
+	history  [][]Message
 }
 
 func (f *fakeModel) Complete(_ context.Context, messages []Message) (Response, error) {
 	f.messages = append([]Message(nil), messages...)
+	f.history = append(f.history, f.messages)
 	f.calls++
+	if len(f.seq) > 0 {
+		r := f.seq[0]
+		f.seq = f.seq[1:]
+		return r, nil
+	}
 	return f.r, nil
 }
 func TestAssistantProposesWithoutApplying(t *testing.T) {
@@ -371,7 +379,7 @@ func TestCancelRequestProposesACancellationNotACompletion(t *testing.T) {
 
 func TestPromptSeparatesDoneCancelledAndDeleted(t *testing.T) {
 	system := systemPrompt(time.Now(), nil, nil, nil)
-	for _, want := range []string{"propose_complete", "propose_cancel", "propose_delete"} {
+	for _, want := range []string{"propose_complete", "propose_cancel", "propose_delete", "find_finished_items"} {
 		if !strings.Contains(system, want) {
 			t.Fatalf("prompt does not mention %s", want)
 		}

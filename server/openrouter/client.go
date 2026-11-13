@@ -162,6 +162,7 @@ func tools() []any {
 	}
 	profile := map[string]any{"profile_id": map[string]string{"type": "string", "description": "Omit to add a new profile."}, "expected_version": map[string]string{"type": "integer"}, "profile_name": str, "profile_remind_before_minutes": map[string]string{"type": "integer", "description": "Minutes before the due time, 0 to 20160."}, "profile_nag_minutes": map[string]string{"type": "integer", "description": "Minutes between nags, 0 to 1440."}}
 	out = append(out, tool("propose_profile", "Propose a new profile or a change to one for owner confirmation.", profile, nil))
+	out = append(out, tool("find_finished_items", "Look up done and cancelled items. Call it alone when the owner asks about finished items, or wants to cancel or delete one that is not in the current list. You then get the matches and answer.", map[string]any{"query": str, "list": str}, nil))
 	out = append(out, tool("list_items", "List open items, optionally for one list.", map[string]any{"list": str}, nil))
 	return out
 }

@@ -29,6 +29,7 @@ The owner added an event by accident, and it confuses the agent when they add so
 - **Tools and prompt.** `propose_cancel` maps to `cancel_item`, `propose_delete` to `delete_item`. Both need `item_id` and `expected_version`. One prompt rule separates done, cancelled and deleted.
 - **Preview.** A `delete_item` preview shows the title, `Deleted`, the count of reminders, and whether an email source goes with it. Confirm applies it. Discard keeps the item.
 - **What delete removes.** In one transaction: the item; its reminder schedule, occurrences and push deliveries; the chat entries of its earlier previews, results and reminders (and their events); its earlier pending changes and audit rows; its `item_source` links; and each linked email source that no other item still uses (redacted like `delete_capture`). The delete's own preview and result entries stay.
+- **Finished items.** The agent sees open items only. A `find_finished_items` call makes the server add one model call with the matching done and cancelled items, so chat can answer about them and cancel or delete one. Ordinary requests still cost one call.
 - **Undo.** The result card has Undo. Undo restores the item and its reminders. It does not restore chat cards or an email source; the card says so.
 - **Client sync.** The result's `Change.removed_entry_ids` lists the chat entries removed. The app drops them from memory.
 - **Calendar.** Each agenda card has a 44 px Delete button. It calls `POST /v1/items/{id}/delete` with `expected_version`, shows the preview in a dialog, then Confirm (`/v1/changes/{id}/confirm`) or Discard.
@@ -48,4 +49,3 @@ Names of SQL helpers, dialog layout details, wording of the delete preview beyon
 
 - The delete's audit row keeps an item snapshot so Undo works. It is not purged later.
 - Backups made before the delete keep their copies until they expire.
-- The agent sees open and in-progress items only, so chat cannot cancel or delete a done or cancelled item. The calendar can.

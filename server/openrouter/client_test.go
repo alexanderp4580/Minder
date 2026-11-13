@@ -85,3 +85,21 @@ func TestChatToolsIncludeCancelAndDelete(t *testing.T) {
 		}
 	}
 }
+
+func TestChatToolsIncludeTheFinishedItemsLookup(t *testing.T) {
+	for _, tl := range tools() {
+		fn := tl.(map[string]any)["function"].(map[string]any)
+		if fn["name"] != "find_finished_items" {
+			continue
+		}
+		props := fn["parameters"].(map[string]any)["properties"].(map[string]any)
+		if _, ok := props["query"]; !ok {
+			t.Fatal("no query property")
+		}
+		if _, ok := props["list"]; !ok {
+			t.Fatal("no list property")
+		}
+		return
+	}
+	t.Fatal("find_finished_items is not offered")
+}

@@ -14,7 +14,7 @@ Provider fixtures use local HTTP servers. Real-model checks use temporary databa
 
 Tool schemas distinguish event ends, date-only ranges and deadlines; preserve travel zones and never invent missing clock times.
 
-`propose_cancel` and `propose_delete` need `item_id` and `expected_version`, like `propose_complete`.
+`propose_cancel` and `propose_delete` need `item_id` and `expected_version`, like `propose_complete`. `find_finished_items` takes an optional `query` and `list`.
 
 # Work Guidance
 
