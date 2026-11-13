@@ -22,6 +22,8 @@ Item JSON preserves `phone`, `email`, `website` and `booking_reference`; absent 
 
 Capture JSON retains the full candidate proposal as read-only detail fields; original evidence and subjects remain available in the source data.
 
+`entryFromJson` reads the optional `options` list; an absent list is empty.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.

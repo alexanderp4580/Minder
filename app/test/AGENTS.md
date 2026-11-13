@@ -24,6 +24,8 @@ Connection status tests cover the grace period, the header icon, recovery, no ba
 
 `links_test.dart` covers adjacent phone labels, non-breaking spaces, optional international trunk markers, leading-zero numeric references, Dutch/international numbers, booking references, dates, punctuation, overlapping links and encoded maps queries. `link_launcher_test.dart` covers the scheme/target boundary and platform failures. Calendar tests cover zone labels, expandable rows, maps and note links, and 320 px layouts at 1.4× text. `preview_card_test.dart` covers the separated Confirmed footer and its narrow-screen golden.
 
+Offer card tests (`offer_card_test.dart`) cover wire options, the card and its two buttons, the exact text a tap sends, buttons only on the newest offer, waiting buttons and plain minder entries.
+
 # Work Guidance
 
 Assert user-visible results and lifecycle effects rather than private method calls.

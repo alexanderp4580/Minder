@@ -27,7 +27,7 @@ class EntryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mine = entry.kind == EntryKind.user;
-    final boxed = mine || entry.kind == EntryKind.preview;
+    final boxed = mine || entry.kind == EntryKind.preview || _isOffer(entry);
     final time =
         clock(entry.createdAt.toLocal()) +
         (entry.costEur > 0 ? ' · ${cost(entry.costEur)}' : '');
@@ -78,6 +78,8 @@ class EntryView extends StatelessWidget {
           )
         else if (change != null && entry.kind == EntryKind.preview)
           _Preview(change: change, controller: controller)
+        else if (_isOffer(entry))
+          _Offer(entry: entry, controller: controller)
         else
           Text(
             entry.text,
@@ -119,6 +121,10 @@ class EntryView extends StatelessWidget {
 }
 
 const _muted = TextStyle(color: Tokens.muted);
+
+/// A minder entry with quick replies is a place-lookup offer.
+bool _isOffer(Entry entry) =>
+    entry.kind == EntryKind.minder && entry.options.length == 2;
 
 /// A button row under a message, aligned left with 12 px above it.
 class _Action extends StatelessWidget {
@@ -267,6 +273,57 @@ class _Preview extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// The lookup offer: a card with Skip and Look it up while it is the newest entry. A tap is an
+/// ordinary message, so the choice stays in the history.
+class _Offer extends StatelessWidget {
+  const _Offer({required this.entry, required this.controller});
+  final Entry entry;
+  final ChatController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final busy = controller.waiting || controller.acting;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'LOOK UP · ASKS FIRST',
+          style: TextStyle(fontSize: 12, color: Tokens.muted, letterSpacing: 1),
+        ),
+        const SizedBox(height: 8),
+        Text(entry.text),
+        if (controller.isLatest(entry))
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 10,
+                  child: OutlinedButton(
+                    onPressed: busy
+                        ? null
+                        : () => controller.send(entry.options[0]),
+                    child: Text(entry.options[0]),
+                  ),
+                ),
+                const SizedBox(width: Tokens.gap),
+                Expanded(
+                  flex: 13,
+                  child: FilledButton(
+                    onPressed: busy
+                        ? null
+                        : () => controller.send(entry.options[1]),
+                    child: Text(entry.options[1]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _ReminderActions extends StatelessWidget {

@@ -52,6 +52,7 @@ Entry entryFromJson(Map<String, dynamic> j) => Entry(
       j['capture_id'] as String? ??
       ((j['capture'] as Map<String, dynamic>?)?['id'] as String? ?? ''),
   costEur: (j['cost_eur'] as num?)?.toDouble() ?? 0,
+  options: [for (final o in j['options'] as List? ?? []) o as String],
 );
 
 Item itemFromJson(Map<String, dynamic> j) {

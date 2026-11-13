@@ -21,6 +21,8 @@ Capture/source values and repository methods are typed; dates without times stay
 
 `CaptureCandidate.details` is a read-only Item projection of a proposal for shared detail rendering. Its synthetic ID never authorizes item changes. `capture_questions.dart` supplies duration choices for older captures and English duration labels.
 
+`Entry.options` holds quick replies the server computed; only a place-lookup offer has them (`Skip`, `Look it up`).
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.

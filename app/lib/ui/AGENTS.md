@@ -33,6 +33,8 @@ Calendar cards expand by tapping the card or its 44 px Details / Hide details bu
 
 `CalendarItemDetails` shows available start, end, deadline, duration, type, address, Phone, Email, Website, Booking reference, remaining Notes and reminders. Contact rows open their external apps; booking references remain selectable plain text with an explicit accessible value. New and legacy confirmation previews show the same labels. Starts/Ends become Departs/Arrives only with two different, nonempty timezones. Local wall clocks retain their source zone. Addresses open Google Maps; `LinkedText` makes visible HTTPS, phone and email spans tappable and disposes its recognizers. Notes keep the shared 600-character cap. A failed launch shows a snackbar. Confirmed preview cards end with a full-width footer: divider, 16 px top gap, 12 px inner top padding, a check icon and semibold text; other resolved states use an information icon.
 
+A minder entry with two `options` is a place-lookup offer: a card labelled `LOOK UP · ASKS FIRST` with the text. While it is the newest entry it shows Skip (outlined) and Look it up (filled, 44 px). A tap calls `ChatController.send` with that label, so the choice is a normal message. The buttons wait while a send or action runs.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.

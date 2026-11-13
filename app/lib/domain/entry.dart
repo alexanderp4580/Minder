@@ -70,6 +70,7 @@ class Entry {
     this.captureId = '',
     this.reminder,
     this.costEur = 0,
+    this.options = const [],
   });
 
   final String id, kind, text;
@@ -80,4 +81,7 @@ class Entry {
   final Change? change;
   final ReminderInfo? reminder;
   final double costEur;
+
+  /// Quick replies the server computed for this entry. Only a place-lookup offer has them.
+  final List<String> options;
 }
