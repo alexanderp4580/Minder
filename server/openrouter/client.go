@@ -179,8 +179,11 @@ func captureTools() []any {
 		props[k] = v
 	}
 	props["action"] = map[string]any{"type": "string", "enum": []string{"create_item", "update_item", "cancel_item", "complete_item"}}
+	props["reminder_offsets_minutes"] = map[string]any{"type": "array", "description": "Reminders before the start or deadline, in minutes. Choose from 10, 30, 60, 120, 1440, 2880, 4320, 10080. Omit when the item has no start or deadline.", "items": map[string]any{"type": "integer", "enum": domain.ReminderOffsetChoices}}
 	proposal := map[string]any{"type": "object", "properties": props, "required": []string{"action"}, "additionalProperties": false}
 	evidence := map[string]any{"type": "object", "properties": map[string]any{"part": map[string]string{"type": "string"}, "excerpt": map[string]string{"type": "string"}}, "required": []string{"part", "excerpt"}, "additionalProperties": false}
-	candidate := map[string]any{"type": "object", "properties": map[string]any{"id": map[string]string{"type": "string"}, "proposal": proposal, "question": map[string]string{"type": "string"}, "evidence": map[string]any{"type": "array", "items": evidence}}, "required": []string{"proposal", "evidence"}, "additionalProperties": false}
-	return []any{tool("extract_capture", "Extract source-backed candidates or ask focused questions. Never save changes.", map[string]any{"candidates": map[string]any{"type": "array", "items": candidate}, "questions": map[string]any{"type": "array", "items": map[string]string{"type": "string"}}}, []string{"candidates", "questions"})}
+	options := map[string]any{"type": "array", "maxItems": 3, "description": "Up to three short quick replies for the question.", "items": map[string]string{"type": "string"}}
+	question := map[string]any{"type": "object", "properties": map[string]any{"text": map[string]string{"type": "string"}, "options": options}, "required": []string{"text"}, "additionalProperties": false}
+	candidate := map[string]any{"type": "object", "properties": map[string]any{"id": map[string]string{"type": "string"}, "proposal": proposal, "question": map[string]string{"type": "string"}, "options": options, "evidence": map[string]any{"type": "array", "items": evidence}}, "required": []string{"proposal", "evidence"}, "additionalProperties": false}
+	return []any{tool("extract_capture", "Extract source-backed candidates or ask focused questions. Never save changes.", map[string]any{"candidates": map[string]any{"type": "array", "items": candidate}, "questions": map[string]any{"type": "array", "items": question}}, []string{"candidates", "questions"})}
 }

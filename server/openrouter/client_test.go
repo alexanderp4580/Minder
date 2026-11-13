@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/alexanderp4580/Minder/server/assistant"
@@ -55,5 +56,17 @@ func TestImagePartsPreserveTextCaller(t *testing.T) {
 	content := messages[0].(map[string]any)["content"].([]any)
 	if len(content) != 2 || content[1].(map[string]any)["image_url"].(map[string]any)["url"] != "data:image/png;base64,AA==" {
 		t.Fatal(content)
+	}
+}
+
+func TestExtractionSchemaAllowsOptionsAndOffsets(t *testing.T) {
+	raw, err := json.Marshal(captureTools())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"reminder_offsets_minutes", `"options"`, `"maxItems":3`} {
+		if !strings.Contains(string(raw), want) {
+			t.Fatal("extract_capture schema lacks", want)
+		}
 	}
 }

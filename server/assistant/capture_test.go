@@ -164,3 +164,58 @@ func TestCaptureEvidenceRepairStopsAtBudgets(t *testing.T) {
 		})
 	}
 }
+
+type structuredModel struct{ messages []assistant.Message }
+
+func (m *structuredModel) Complete(_ context.Context, messages []assistant.Message) (assistant.Response, error) {
+	m.messages = messages
+	return assistant.Response{Calls: []assistant.Call{{Name: "extract_capture", Arguments: `{"candidates":[{"id":"fit","proposal":{"action":"create_item","title":"Fitting","kind":"event","start_at":"2026-11-20T14:30:00+01:00","reminder_offsets_minutes":[60,7,1440,99999]},"question":"How long will it take?","options":["30 minutes","45 minutes","1 hour","2 hours"],"evidence":[{"part":"1","excerpt":"Fitting"}]}],"questions":[{"text":"Is the location important?","options":["Skip","","Use the email address","Other","Fourth"]},"Who attends?"]}`}}, CostUSD: 0.001}, nil
+}
+
+func TestExtractionNormalisesQuestionOptionsAndOffsets(t *testing.T) {
+	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer db.Close()
+	m := &structuredModel{}
+	svc := assistant.New(db, command.New(db), m, 5, 1)
+	result, e := svc.Extract(context.Background(), domain.CaptureDocument{Parts: []domain.CapturePart{{ID: "1", Text: "Fitting"}}}, nil)
+	if e != nil || len(result.Candidates) != 1 || len(result.Questions) != 2 {
+		t.Fatal(result, e)
+	}
+	candidate := result.Candidates[0]
+	if len(candidate.Options) != 3 || candidate.Options[2] != "1 hour" {
+		t.Fatal("candidate options must cap at three", candidate.Options)
+	}
+	if got := candidate.Proposal.ReminderOffsets; len(got) != 2 || got[0] != 1440 || got[1] != 60 {
+		t.Fatal("invalid offsets must be dropped and the rest kept longest first", got)
+	}
+	first := result.Questions[0]
+	if len(first.Options) != 3 || first.Options[0] != "Skip" || first.Options[1] != "Use the email address" || first.ID == "" {
+		t.Fatal("question options", first)
+	}
+	if result.Questions[1].Text != "Who attends?" || result.Questions[1].ID == first.ID {
+		t.Fatal("bare string question or ids", result.Questions)
+	}
+}
+
+func TestPromptAsksLikeAnAssistantNotFromAChecklist(t *testing.T) {
+	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer db.Close()
+	m := &structuredModel{}
+	svc := assistant.New(db, command.New(db), m, 5, 1)
+	_, _ = svc.Extract(context.Background(), domain.CaptureDocument{Parts: []domain.CapturePart{{ID: "1", Text: "Fitting"}}}, nil)
+	prompt := m.messages[0].Content
+	for _, want := range []string{"thoughtful assistant", "quick replies", "reminder_offsets_minutes", "location", "short list"} {
+		if !strings.Contains(prompt, want) {
+			t.Fatal("prompt lacks", want)
+		}
+	}
+	if strings.Contains(prompt, "needs a location") {
+		t.Fatal("prompt hard-codes a required field")
+	}
+}

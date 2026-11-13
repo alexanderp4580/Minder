@@ -10,7 +10,7 @@ Items, built-in profile defaults, proposals, chat values, recurrence, reminder p
 
 Use the standard library only. Keep HTTP, SQL, SDKs and adapter imports out.
 `Complete` advances recurrence; `SnoozeAt` uses the item zone. UTC storage times retain their item timezone.
-`ProjectReminder` derives a schedule projection; persistence writes it atomically with item/profile changes. An item may hold `reminder_offsets_minutes` (10, 30, 60, 120, 1440, 2880, 4320, 10080; `NormalizeOffsets` sorts longest first). `NextReminder` picks the earliest offset after a time, drops past offsets and anchors date-only items at 09:00 local.
+`CaptureQuestion` (`id`, `text`, `options`) also decodes a bare string, the form older stored captures use. `ProjectReminder` derives a schedule projection; persistence writes it atomically with item/profile changes. An item may hold `reminder_offsets_minutes` (10, 30, 60, 120, 1440, 2880, 4320, 10080; `NormalizeOffsets` sorts longest first). `NextReminder` picks the earliest offset after a time, drops past offsets and anchors date-only items at 09:00 local.
 
 Items distinguish event end from deadline, and date-only ranges from instants. Event ranges are half-open; Overlaps uses the viewing timezone. Travel retains start/end zones. Date-only recurrence advances local dates without creating a timed reminder.
 

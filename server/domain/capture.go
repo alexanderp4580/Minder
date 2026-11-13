@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 const MaxEmailBytes = 20 << 20
 
@@ -26,7 +29,7 @@ type Capture struct {
 	Coverage             []CaptureCoverage   `json:"coverage"`
 	Candidates           []CaptureCandidate  `json:"candidates"`
 	Answers              []CaptureAnswer     `json:"answers,omitempty"`
-	Questions            []string            `json:"questions,omitempty"`
+	Questions            []CaptureQuestion   `json:"questions,omitempty"`
 	Error                string              `json:"error,omitempty"`
 	Attempts             int                 `json:"attempts"`
 	Calls                int                 `json:"calls"`
@@ -58,6 +61,7 @@ type CaptureCandidate struct {
 	State    string            `json:"state"`
 	Proposal Proposal          `json:"proposal"`
 	Question string            `json:"question,omitempty"`
+	Options  []string          `json:"options,omitempty"`
 	Evidence []CaptureEvidence `json:"evidence,omitempty"`
 	ChangeID string            `json:"change_id,omitempty"`
 	ItemID   string            `json:"item_id,omitempty"`
@@ -88,7 +92,7 @@ type CaptureDocument struct {
 }
 type CaptureExtraction struct {
 	Candidates []CaptureCandidate `json:"candidates"`
-	Questions  []string           `json:"questions,omitempty"`
+	Questions  []CaptureQuestion  `json:"questions,omitempty"`
 }
 
 func (c Capture) Due(now time.Time) bool {
@@ -124,4 +128,27 @@ func (c *Capture) UpdateReviewState() {
 type CaptureDelivery struct {
 	CaptureID, DeviceID, Token string
 	Revision                   int
+}
+
+// CaptureQuestion is something the assistant needs to know, with up to three quick replies.
+type CaptureQuestion struct {
+	ID      string   `json:"id,omitempty"`
+	Text    string   `json:"text"`
+	Options []string `json:"options,omitempty"`
+}
+
+// UnmarshalJSON also accepts a bare string, the form stored before quick replies existed.
+func (q *CaptureQuestion) UnmarshalJSON(data []byte) error {
+	var text string
+	if json.Unmarshal(data, &text) == nil {
+		*q = CaptureQuestion{Text: text}
+		return nil
+	}
+	type plain CaptureQuestion
+	var v plain
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	*q = CaptureQuestion(v)
+	return nil
 }
