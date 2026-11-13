@@ -42,6 +42,7 @@ type Item struct {
 	Recurrence      *Recurrence `json:"recurrence,omitempty"`
 	RemindAt        string      `json:"remind_at,omitempty"`
 	NagMinutes      int         `json:"nag_minutes,omitempty"`
+	ReminderOffsets []int       `json:"reminder_offsets_minutes,omitempty"`
 	ID              string      `json:"id"`
 	Title           string      `json:"title"`
 	Status          string      `json:"status"`
@@ -73,37 +74,39 @@ type Proposal struct {
 	ClearStartTimezone bool `json:"clear_start_timezone,omitempty"`
 	ClearEndTimezone   bool `json:"clear_end_timezone,omitempty"`
 
-	StartAt             string      `json:"start_at,omitempty"`
-	ClearStart          bool        `json:"clear_start,omitempty"`
-	DurationMinutes     int         `json:"duration_minutes,omitempty"`
-	ClearDuration       bool        `json:"clear_duration,omitempty"`
-	Priority            int         `json:"priority,omitempty"`
-	ClearPriority       bool        `json:"clear_priority,omitempty"`
-	Location            string      `json:"location,omitempty"`
-	ClearLocation       bool        `json:"clear_location,omitempty"`
-	List                string      `json:"list,omitempty"`
-	ClearList           bool        `json:"clear_list,omitempty"`
-	Profile             string      `json:"profile,omitempty"`
-	ClearProfile        bool        `json:"clear_profile,omitempty"`
-	Recurrence          *Recurrence `json:"recurrence,omitempty"`
-	ClearRecurrence     bool        `json:"clear_recurrence,omitempty"`
-	ProfileID           string      `json:"profile_id,omitempty"`
-	ProfileName         string      `json:"profile_name,omitempty"`
-	ProfileRemindBefore *int        `json:"profile_remind_before_minutes,omitempty"`
-	ProfileNag          *int        `json:"profile_nag_minutes,omitempty"`
-	RemindAt            string      `json:"remind_at,omitempty"`
-	NagMinutes          int         `json:"nag_minutes,omitempty"`
-	ClearReminder       bool        `json:"clear_reminder,omitempty"`
-	ClearNag            bool        `json:"clear_nag,omitempty"`
-	Action              string      `json:"action"`
-	ItemID              string      `json:"item_id,omitempty"`
-	ExpectedVersion     int         `json:"expected_version,omitempty"`
-	Title               string      `json:"title,omitempty"`
-	DueAt               string      `json:"due_at,omitempty"`
-	Timezone            string      `json:"timezone,omitempty"`
-	Notes               string      `json:"notes,omitempty"`
-	ClearDue            bool        `json:"clear_due,omitempty"`
-	ClearNotes          bool        `json:"clear_notes,omitempty"`
+	StartAt              string      `json:"start_at,omitempty"`
+	ClearStart           bool        `json:"clear_start,omitempty"`
+	DurationMinutes      int         `json:"duration_minutes,omitempty"`
+	ClearDuration        bool        `json:"clear_duration,omitempty"`
+	Priority             int         `json:"priority,omitempty"`
+	ClearPriority        bool        `json:"clear_priority,omitempty"`
+	Location             string      `json:"location,omitempty"`
+	ClearLocation        bool        `json:"clear_location,omitempty"`
+	List                 string      `json:"list,omitempty"`
+	ClearList            bool        `json:"clear_list,omitempty"`
+	Profile              string      `json:"profile,omitempty"`
+	ClearProfile         bool        `json:"clear_profile,omitempty"`
+	Recurrence           *Recurrence `json:"recurrence,omitempty"`
+	ClearRecurrence      bool        `json:"clear_recurrence,omitempty"`
+	ProfileID            string      `json:"profile_id,omitempty"`
+	ProfileName          string      `json:"profile_name,omitempty"`
+	ProfileRemindBefore  *int        `json:"profile_remind_before_minutes,omitempty"`
+	ProfileNag           *int        `json:"profile_nag_minutes,omitempty"`
+	RemindAt             string      `json:"remind_at,omitempty"`
+	NagMinutes           int         `json:"nag_minutes,omitempty"`
+	ClearReminder        bool        `json:"clear_reminder,omitempty"`
+	ReminderOffsets      []int       `json:"reminder_offsets_minutes,omitempty"`
+	ClearReminderOffsets bool        `json:"clear_reminder_offsets,omitempty"`
+	ClearNag             bool        `json:"clear_nag,omitempty"`
+	Action               string      `json:"action"`
+	ItemID               string      `json:"item_id,omitempty"`
+	ExpectedVersion      int         `json:"expected_version,omitempty"`
+	Title                string      `json:"title,omitempty"`
+	DueAt                string      `json:"due_at,omitempty"`
+	Timezone             string      `json:"timezone,omitempty"`
+	Notes                string      `json:"notes,omitempty"`
+	ClearDue             bool        `json:"clear_due,omitempty"`
+	ClearNotes           bool        `json:"clear_notes,omitempty"`
 }
 type Field struct {
 	Name string `json:"name"`
@@ -197,7 +200,12 @@ func Validate(i *Item) error {
 	if i.Priority < 0 || i.Priority > 5 {
 		return &Invalid{"priority", "Use a priority from 1 (highest) to 5."}
 	}
-	if i.NagMinutes < 0 || i.NagMinutes > 1440 || (i.NagMinutes != 0 && i.RemindAt == "") {
+	offsets, e := NormalizeOffsets(i.ReminderOffsets)
+	if e != nil {
+		return e
+	}
+	i.ReminderOffsets = offsets
+	if i.NagMinutes < 0 || i.NagMinutes > 1440 || (i.NagMinutes != 0 && i.RemindAt == "" && len(offsets) == 0) {
 		return &Invalid{"nag_minutes", "Set a reminder and a nag interval from 0 to 1,440 minutes."}
 	}
 	if i.RemindAt != "" {

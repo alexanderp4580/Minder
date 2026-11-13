@@ -61,6 +61,12 @@ func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error 
 	if p.Location != "" {
 		i.Location = p.Location
 	}
+	if p.ClearReminderOffsets {
+		i.ReminderOffsets = nil
+	}
+	if len(p.ReminderOffsets) > 0 {
+		i.ReminderOffsets = p.ReminderOffsets
+	}
 	if p.ClearList {
 		i.List = ""
 	}

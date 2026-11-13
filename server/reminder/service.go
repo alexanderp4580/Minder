@@ -57,10 +57,18 @@ func (s *Service) ScheduleDue(now time.Time) error {
 			if err = tx.QueueDeliveries(id, now); err != nil {
 				return err
 			}
-			scheduleAt := schedule.At.Unix()
+			fired := schedule.At
+			scheduleAt := fired.Unix()
 			schedule.State = "waiting"
 			schedule.At = time.Unix(0, 0)
-			if schedule.NagMinutes > 0 {
+			after := fired
+			if now.After(after) {
+				after = now
+			}
+			if later, ok := domain.NextReminder(item, after); ok {
+				schedule.State = "active"
+				schedule.At = later
+			} else if schedule.NagMinutes > 0 {
 				schedule.State = "active"
 				schedule.At = now.Add(time.Duration(schedule.NagMinutes) * time.Minute)
 			}
@@ -68,7 +76,7 @@ func (s *Service) ScheduleDue(now time.Time) error {
 				return err
 			}
 			next := "none"
-			if schedule.NagMinutes > 0 {
+			if schedule.State == "active" {
 				next = schedule.At.UTC().Format(time.RFC3339)
 			}
 			slog.Info("reminder fired", "item_id", item.ID, "occurrence_id", id, "entry_id", entry.ID, "generation", schedule.Generation, "scheduled_at", rem.ScheduledAt, "late", rem.Late, "late_seconds", now.Unix()-scheduleAt, "nag_minutes", schedule.NagMinutes, "next", next)
