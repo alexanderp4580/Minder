@@ -109,7 +109,7 @@ APK 0.7.0 reached Telegram once (message 1995). Evidence and limits: [docs/evide
 
 On branch `place-lookup` (worktree `Minder-place-lookup`, from `main` at `127e4c6`); not merged, not deployed. App 0.8.0+24.
 When a request names a venue without an address, chat shows an offer card (Skip, Look it up). Look it up runs one Serper places search for the offered query and the next preview carries the address in location and the website in notes. Skip and any other text run no search. The server needs `SERPER_API_KEY` (TokenCrypt secret `serper_api_key`) as a Coolify process variable; without it chat is unchanged.
-Design: [docs/superpowers/specs/2026-11-13-place-lookup-design.md](docs/superpowers/specs/2026-11-13-place-lookup-design.md). Plan and evidence: [docs/superpowers/plans/2026-11-13-place-lookup.md](docs/superpowers/plans/2026-11-13-place-lookup.md), [docs/evidence/place-lookup.md](docs/evidence/place-lookup.md). Phone approval is pending.
+Design: [docs/superpowers/specs/2026-11-13-place-lookup-design.md](docs/superpowers/specs/2026-11-13-place-lookup-design.md). Plan and evidence: [docs/superpowers/plans/2026-11-13-place-lookup.md](docs/superpowers/plans/2026-11-13-place-lookup.md), [docs/evidence/place-lookup.md](docs/evidence/place-lookup.md). APK 0.8.0 reached Telegram once (message 2006). The chat browser check `toolchain/local-check` is stale at its offline step (see the evidence). Phone approval is pending.
 
 ## App icon and faster highlights
 
