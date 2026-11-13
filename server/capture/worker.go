@@ -203,8 +203,13 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		if e = tx.PutCapture(current); e != nil {
 			return e
 		}
-		_, e = tx.PutEntry(domain.Entry{ID: current.EntryID, Kind: "capture", Text: "Review the email details.", Capture: &current})
-		return e
+		if _, e = tx.PutEntry(domain.Entry{ID: current.EntryID, Kind: "capture", Text: "Review the email details.", Capture: &current}); e != nil {
+			return e
+		}
+		if hasOpenQuestions(current) {
+			return postQuestions(tx, current)
+		}
+		return nil
 	})
 	if e != nil {
 		return failed(e, false)

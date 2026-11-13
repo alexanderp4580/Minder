@@ -60,6 +60,9 @@ func (s *Service) answer(ctx context.Context, id string, revision int, text stri
 		c.LeaseUntil = 0
 		c.Attempts = 0
 		c.Error = ""
+		if e = closeQuestions(tx, c, "Questions answered."); e != nil {
+			return e
+		}
 		if e = tx.PutCapture(c); e != nil {
 			return e
 		}
@@ -91,6 +94,9 @@ func (s *Service) Dismiss(ctx context.Context, id string, revision int) (out dom
 		}
 		c.Status = "reviewed"
 		c.Questions = nil
+		if e = closeQuestions(tx, c, "Questions dismissed."); e != nil {
+			return e
+		}
 		if e = tx.PutCapture(c); e != nil {
 			return e
 		}

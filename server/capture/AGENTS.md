@@ -10,7 +10,7 @@ capture package.
 
 Use persistence/blob/model interfaces. Only validated command previews may change items. Preserve originals before acknowledging ingestion; no infrastructure imports.
 
-Dismiss closes an open review at its current revision: it discards non-terminal candidates, fails their pending previews, keeps the source and changes no items. Capture contexts and answers stay separate from normal chat. Preserve independent and terminal candidates. Publish validated previews, coverage and job completion in one transaction. Retries keep originals and obey attempt/model budgets.
+Open questions post as one `question` entry (`q-<capture>-<revision>`) after the email card; answering or dismissing turns them into a short `minder` note. Dismiss closes an open review at its current revision: it discards non-terminal candidates, fails their pending previews, keeps the source and changes no items. Capture contexts and answers stay separate from normal chat. Preserve independent and terminal candidates. Publish validated previews, coverage and job completion in one transaction. Retries keep originals and obey attempt/model budgets.
 
 # Work Guidance
 
