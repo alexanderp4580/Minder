@@ -1,17 +1,19 @@
 # Handoff
 
-State on 2026-11-13. Production runs commit `ab94726`, the head of `main` and of `notification-body-tap`.
+State on 2026-11-13. Production runs `d04c3a8` from `fix-connection-message`; `main` and `notification-body-tap` remain at `ab94726`.
 `main` holds `m0-chat`, `notification-body-tap`, `app-icon-orbital` and `delete-items`. The owner asked for the merge and the deployment on 2026-11-13. `origin/main` and `origin/notification-body-tap` are both at `ab94726`. The worktree `Minder-m0-chat` is on `fix-connection-message`.
 
 ## Current work: approved controls and booking fields
 
-The owner approved the brand guide and clarified that phone, email, website and booking reference belong in separate fields like Address, not Notes. App version is 0.9.0+25 on `fix-connection-message`.
+The owner approved the brand guide and clarified that phone, email, website and booking reference belong in separate fields like Address, not Notes. App version is 0.9.1+26 on `fix-connection-message`.
 
 The client uses neutral square text actions, chevrons, the approved address block and separate contact/reference rows. New proposals and stored items carry optional `phone`, `email`, `website` and `booking_reference` strings. Notes retain remaining instructions. Clearly labelled older note metadata is separated for display; server edits promote it before clear/Undo so cleared data cannot reappear. Conflicts and conditional instructions remain visible. Bare calendar UID/sequence Ref lines stay in Notes.
 
-HTML conversion preserves safe contact/link targets and cell separation before extraction. No schema migration is needed: item JSON already stores optional fields. The server changes require deployment; production remains at `ab94726`. Do not merge or deploy without the owner's authorization.
+HTML conversion preserves safe contact/link targets and cell separation before extraction. No schema migration is needed: item JSON already stores optional fields. The owner authorized delivery and deployment. Commit `d04c3a8` deployed successfully through Coolify (`ory0emc19xfx2eroyyrh48k6`); the application reports running:healthy. The previous verified runtime is `fc21e5e`. Coolify tracks `fix-connection-message` pinned to that exact commit. Phone approval still gates merging to main.
 
-Local checks passed: 147 Flutter tests, Go race/vet, analysis/format, all four browser scenarios, and a real-model synthetic booking confirmed into temporary SQLite with separate fields. APK 0.9.0+25 built and its signature matches 0.8.0. Telegram delivery is unconfirmed after URLError; check the pending owner answer before retrying. Source: server `03c51fd`, client/guide `04a3530`.
+Local checks passed: 147 Flutter tests, Go race/vet, analysis/format, all four browser scenarios, and a real-model synthetic booking confirmed into temporary SQLite with separate fields. APK 0.9.0+25 built and its signature matches 0.8.0. Telegram delivery succeeded once on the authorized retry (message 2000). Source: server `03c51fd`, client/guide `04a3530`.
+
+The later phone screenshot exposed raw evidence in the email card and missing duration suggestions. The 0.9.1 patch replaces quotes/internal IDs with shared structured fields, uses an English heading and extracted descriptions, and puts 30-minute/alternative choices inside expanded details. Source evidence stays literal for validation and original attachments remain available. The latest full check passed (150 Flutter tests). Browser flows passed, including inline duration submission and persisted fields. An accessible booking-reference defect found by the browser check was fixed before shipping. Source is `d04c3a8`. APK 0.9.1+26 reached Telegram once (message 2001, 19,289,894 bytes), with the matching signing certificate. The server deployment finished on that exact source commit. Main remains unchanged for phone review.
 
 Verification and APK status: [calendar controls evidence](docs/evidence/calendar-controls.md).
 
@@ -70,7 +72,7 @@ Architecture: [docs/architecture.md](docs/architecture.md).
 Evidence: [docs/evidence/architecture-cleanup.md](docs/evidence/architecture-cleanup.md).
 
 `CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL` are configured in Coolify as runtime-only variables.
-Read-back matched the live Cloudflare app and owner policy. They apply on the next deployment.
+Earlier read-back matched the live Cloudflare app and owner policy; deployment owns activation.
 `cmd/minder` contains no Cloudflare identity settings.
 
 ## Calendar spacing
@@ -99,9 +101,9 @@ The calendar spacing and opaque cards remain unchanged.
 
 ## Delete and cancel items
 
-In `main` and deployed at `ab94726`. App 0.7.0+23 (the server also gained the finished-items lookup, which needs no app change).
+Merged into `main` at `ab94726` and included in current production. App 0.7.0+23 (the server also gained the finished-items lookup, which needs no app change).
 Chat can cancel, delete and look up finished items (a second model call, only on request). The calendar has a Delete control. A delete removes the item and its associated data. A failed send returns its text to the composer and leaves no Retry block.
-APK 0.7.0 reached Telegram once (message 1995). Evidence and limits: [docs/evidence/delete-items.md](docs/evidence/delete-items.md). The server needs a deploy before delete works on a phone. Phone approval is pending.
+APK 0.7.0 reached Telegram once (message 1995). Evidence and limits: [docs/evidence/delete-items.md](docs/evidence/delete-items.md). The delete server changes are deployed. Phone approval is pending.
 
 ## App icon and faster highlights
 
@@ -119,7 +121,7 @@ Evidence and limits: [docs/evidence/app-icon.md](docs/evidence/app-icon.md). Pho
 - App version 0.4.8+17. APK 0.4.8 reached Telegram once (message 1975). The server is unchanged.
 - Verified on the emulator with a direct broadcast, not a rendered button. Evidence and limits: [docs/evidence/notification-actions.md](docs/evidence/notification-actions.md).
 - Not checked: a physical phone, Android 12 and later background limits, battery restrictions, and the failure message with notifications on.
-- Merge after the owner approves the buttons on a phone. No deployment is needed.
+- The source is already in main and production; phone verification of the buttons remains pending.
 
 ### Keyboard auto-scroll fix
 
@@ -130,7 +132,7 @@ User scrolling away pauses viewport following. Returning to the bottom or a new 
 The regression test reproduced a 244 px gap after keyboard opening before the fix.
 It covers sending during keyboard dismissal, preserving the reading position, resuming at the bottom and receiving a reply.
 Verification: `toolchain/check` exited 0 on 2026-11-12: 56 Flutter tests, analyze, format, Go race tests/vet, toolchain/hook tests, architecture, DOX and orbital export checks.
-Physical phone verification remains pending. This change has no APK delivery or deployment yet.
+Physical phone verification remains pending. Later APKs and deployments include this change.
 The email extractor allows one evidence correction per batch (`96d1778`); see the email capture section.
 
 Leftovers on this machine:
@@ -142,7 +144,7 @@ Send each APK once. A 504 from Telegram can mean the file arrived.
 
 ## Email capture implementation
 
-Local app version: 0.6.0+20 on `notification-body-tap` (email review refinement: [design](docs/superpowers/specs/2026-11-13-email-review-refinement-design.md)). Production runs `fb99b50` with email capture live: Worker `minder-email-ingress`, routing for the `minder` subdomain and an Access service-token policy. A real forward from an allowed Gmail address reached the server and produced one candidate on 2026-11-12 (Worker log: all stages, status 201). APK 0.5.0+18 reached Telegram (message 1990). App 0.5.1+19 adds the Do nothing button and clearer zero-item wording. Phone review, attachment download and Confirm remain unverified.
+Earlier app version: 0.6.0+20 on `notification-body-tap` (email review refinement: [design](docs/superpowers/specs/2026-11-13-email-review-refinement-design.md)). The initial live email release ran `fb99b50`: Worker `minder-email-ingress`, routing for the `minder` subdomain and an Access service-token policy. A real forward from an allowed Gmail address reached the server and produced one candidate on 2026-11-12 (Worker log: all stages, status 201). APK 0.5.0+18 reached Telegram (message 1990). App 0.5.1+19 adds the Do nothing button and clearer zero-item wording. Phone review, attachment download and Confirm remain unverified.
 
 App 0.6.0+20 changes the flow: the email card lists what was found, questions arrive as their own message with agent-chosen quick replies, and the final card shows the title once, Starts/Ends with timezone, `45 minutes`, Address, bullet notes, Type Appointment and reminder chips (10 minutes to 1 week; the agent preselects). One item can hold several reminders: `reminder_offsets_minutes` on the item, one schedule row that advances to the next unfired offset. A header icon shows the connection only after 2 seconds offline.
 Known gaps: the app does not re-register a stale push token on resume (tap Enable notifications); normal chat still asks for a location by fixed rule (`server/assistant/prompt.go`).
@@ -153,7 +155,7 @@ The Worker delivers directly to Minder without a Cloudflare content buffer. Both
 
 Verification and limits: [email capture evidence](docs/evidence/email-capture.md).
 Activation, private environment parameters, persistence and rollback: [operations](docs/email-capture-operations.md).
-Live Cloudflare/DNS/Access setup, provider account readback and phone approval remain pending. No emulator is available for native attachment opening.
+Live ingestion was verified as described above. Phone approval and native attachment opening remain unverified.
 Keep the branch for phone review; preserve the earlier keyboard and notification work.
 
 ## Navigation, header and composer
@@ -173,9 +175,7 @@ Reference and tracing steps: [docs/logging.md](docs/logging.md).
 
 ## Deployment and APK status
 
-Production runs `ab94726`, deployed on 2026-11-13 as Coolify deployment `bi6zx3vbht0tv4fvwsyxf3o2`. The app is `running:healthy`. Startup showed schema version 5, no migrations, email capture and Firebase push configured, and the reminder worker running with 9 items and 1 device.
-The Coolify application builds the branch `notification-body-tap` at a pinned commit (`git_commit_sha`). It does not follow `main`.
-The first production heartbeat reported one registered device, five items and no active schedule.
+Current runtime and APK status are recorded in Current work above and the linked evidence. Coolify builds `fix-connection-message` at a pinned `git_commit_sha`; it does not follow main. The earlier `ab94726` deployment ran schema version 5 with email capture and Firebase push configured.
 Notifications did not arrive on 2026-11-12. The old build logged nothing that explains it. Watch the next reminder with the new logs.
 
 APK 0.4.6 carries the bar, the header rule, the composer spacing and the dimmer lines. Telegram confirmed one upload.
@@ -183,7 +183,7 @@ The build uses the cached debug signing key, so it installs over earlier builds.
 Earlier APK evidence: [docs/evidence/orbital-artwork.md](docs/evidence/orbital-artwork.md).
 
 The Coolify app is `ciw3jk5gkgiql8kfdomeyys2`.
-A Git push does not deploy. To deploy a commit: PATCH the application with `{"git_commit_sha": "<sha>"}` at `/api/v1/applications/<uuid>`, then POST `/api/v1/deploy?uuid=<uuid>&force=false`. Coolify rejects a GET. A deploy without the PATCH redeploys the old pinned commit and rebuilds nothing. Rollback is the same two calls with the previous commit (`0046c9a` before this release).
+A Git push does not deploy. To deploy a commit: PATCH the application with `{"git_branch":"fix-connection-message","git_commit_sha":"<sha>"}` at `/api/v1/applications/<uuid>`, then POST `/api/v1/deploy?uuid=<uuid>&force=false`. Coolify rejects a GET. A deploy without the PATCH redeploys the old pinned commit and rebuilds nothing. Rollback is the same two calls with the branch and commit captured before deployment.
 The prior handoff recommends normal deploys; forced deploys rebuild all layers.
 `.dockerignore` controls the build context. Check a new COPY source before deploying.
 
@@ -208,7 +208,7 @@ Specs: [docs/m1-spec.md](docs/m1-spec.md), [docs/calendar-spec.md](docs/calendar
 
 - Phone checks of lists, profiles, recurrence, follow-up questions and calendar behaviour.
 - Phone check of the bottom bar, the header rule and the composer spacing.
-- Trace the next real reminder with [docs/logging.md](docs/logging.md). Production shows one device and no active schedule.
+- Trace the next real reminder with [docs/logging.md](docs/logging.md). The last recorded reminder heartbeat was from the earlier deployment; inspect current runtime counts when tracing.
 - Pass the Git revision into the image build so `server configuration` shows it.
 - Android emulator notification check; the prior handoff records no emulator container.
 - Date-only handling: "Buy milk tomorrow" can omit the due time without a question.
