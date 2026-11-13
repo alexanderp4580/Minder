@@ -86,3 +86,24 @@ func TestLoadRejectsUnknownEnvironment(t *testing.T) {
 		t.Fatalf("want ENV error, got %v", err)
 	}
 }
+
+func TestSerperSettings(t *testing.T) {
+	env := func(values map[string]string) func(string) string {
+		return func(key string) string { return values[key] }
+	}
+	off, err := Load(env(nil))
+	if err != nil || off.SerperKey != "" || off.SerperEndpoint != "" {
+		t.Fatalf("default %+v %v", off, err)
+	}
+	on, err := Load(env(map[string]string{"SERPER_API_KEY": "k", "SERPER_URL": "https://google.serper.dev/places"}))
+	if err != nil || on.SerperKey != "k" || on.SerperEndpoint != "https://google.serper.dev/places" {
+		t.Fatalf("set %+v %v", on, err)
+	}
+	_, err = Load(env(map[string]string{"SERPER_API_KEY": "secret-value", "SERPER_URL": "http://example.test"}))
+	if err == nil || !strings.Contains(err.Error(), "SERPER_URL") || strings.Contains(err.Error(), "secret-value") || strings.Contains(err.Error(), "example.test") {
+		t.Fatalf("production override %v", err)
+	}
+	if _, err = Load(env(map[string]string{"ENV": "test", "SERPER_URL": "http://127.0.0.1:1"})); err != nil {
+		t.Fatalf("test override %v", err)
+	}
+}

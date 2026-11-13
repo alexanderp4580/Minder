@@ -11,6 +11,8 @@ Database/listener paths, model settings, cost values and Firebase runtime settin
 Read from an injected environment lookup. Reject unknown environments and custom production model endpoints.
 Cost limits and conversion rates must be finite positive numbers. Errors identify settings, never credential values.
 
+Place lookup is opt-in through SERPER_API_KEY. SERPER_URL may override the endpoint only outside production (production allows `https://google.serper.dev/places`).
+
 Email capture is opt-in through EMAIL_CAPTURE_ENABLED. Validate allowed senders, recipient, source directory and base64 HMAC key without logging their values.
 
 # Work Guidance

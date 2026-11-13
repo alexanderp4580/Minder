@@ -11,6 +11,7 @@ type Settings struct {
 	Email                                         EmailSettings
 	DatabasePath, WebDir, BrandDir, ListenAddr    string
 	ModelKey, Model, ModelEndpoint                string
+	SerperKey, SerperEndpoint                     string
 	MonthlyLimitEUR, USDToEUR                     float64
 	FirebaseServiceAccount, FirebaseAndroidConfig string
 }
@@ -36,11 +37,16 @@ func Load(getenv func(string) string) (Settings, error) {
 		ModelKey:               getenv("OPENROUTER_API_KEY"),
 		Model:                  getenv("MODEL"),
 		ModelEndpoint:          getenv("OPENROUTER_URL"),
+		SerperKey:              getenv("SERPER_API_KEY"),
+		SerperEndpoint:         getenv("SERPER_URL"),
 		FirebaseServiceAccount: getenv("FIREBASE_SERVICE_ACCOUNT_JSON"),
 		FirebaseAndroidConfig:  getenv("FIREBASE_ANDROID_CONFIG"),
 	}
 	if environment == "production" && cfg.ModelEndpoint != "" && cfg.ModelEndpoint != "https://openrouter.ai/api/v1/chat/completions" {
 		return Settings{}, fmt.Errorf("OPENROUTER_URL cannot override the production endpoint")
+	}
+	if environment == "production" && cfg.SerperEndpoint != "" && cfg.SerperEndpoint != "https://google.serper.dev/places" {
+		return Settings{}, fmt.Errorf("SERPER_URL cannot override the production endpoint")
 	}
 	var err error
 	cfg.MonthlyLimitEUR, err = positiveNumber(value("MONTHLY_LIMIT_EUR", "5"), "MONTHLY_LIMIT_EUR")
