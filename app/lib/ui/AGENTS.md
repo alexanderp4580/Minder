@@ -22,7 +22,7 @@ OrbitalBackground owns decorative painting and animation lifecycle. Use distinct
 `orbital_artwork_data.dart` is generated from the canonical SVGs in brand/; run toolchain/export-orbits.py after SVG changes.
 Keep static artwork/glow and foreground isolated from moving highlight repaints. Stop motion for reduced motion, hidden routes and backgrounded apps.
 
-CaptureView shows processing/review/questions, a Do nothing button on every open review (not processing, failed or reviewed), a clear zero-item message without a proposals line, source attachments, extraction warnings and explicit source deletion preview. Existing preview controls apply individual candidates; no item changes happen on arrival.
+QuestionView shows the open questions of an email as their own message, with agent-chosen quick replies and one free reply; quick replies answer through CaptureController. CaptureView shows processing/review status and what was found (title, when, address), a Do nothing button on every open review (not processing, failed or reviewed), a clear zero-item message without a proposals line, source attachments, extraction warnings and explicit source deletion preview. Existing preview controls apply individual candidates; no item changes happen on arrival.
 
 Calendar items with source links open a read-only email/attachment dialog; authenticated downloads remain available after the original capture leaves recent chat.
 

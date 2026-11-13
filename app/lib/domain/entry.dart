@@ -7,7 +7,8 @@ abstract final class EntryKind {
       preview = 'preview',
       result = 'result',
       error = 'error',
-      reminder = 'reminder';
+      reminder = 'reminder',
+      question = 'question';
 }
 
 enum ChangeState { pending, confirmed, discarded, failed }

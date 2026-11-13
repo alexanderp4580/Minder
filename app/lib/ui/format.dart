@@ -1,3 +1,4 @@
+import '../domain/capture.dart';
 import '../domain/entry.dart';
 
 const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -204,4 +205,13 @@ List<PreviewRow> previewRows(Change change) {
     );
   }
   return rows;
+}
+
+/// When an email candidate happens, as one short phrase: "Fri 20 Nov 14:30" or "Due 20 Nov".
+String candidateWhen(CaptureCandidate c) {
+  if (c.startAt.isNotEmpty) return fieldValue(c.startAt);
+  if (c.startDate.isNotEmpty) return c.startDate;
+  if (c.dueAt.isNotEmpty) return 'Due ${fieldValue(c.dueAt)}';
+  if (c.dueDate.isNotEmpty) return 'Due ${c.dueDate}';
+  return '';
 }

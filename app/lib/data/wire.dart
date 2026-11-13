@@ -114,7 +114,17 @@ Capture captureFromJson(Map<String, dynamic> j) => Capture(
   error: j['error'] as String? ?? '',
   deleted: j['deleted'] == true,
   coverageAcknowledged: j['coverage_acknowledged'] == true,
-  questions: [for (final q in j['questions'] as List? ?? []) q as String],
+  questions: [
+    for (final q in j['questions'] as List? ?? [])
+      if (q is String)
+        CaptureQuestion(text: q)
+      else
+        CaptureQuestion(
+          id: (q as Map<String, dynamic>)['id'] as String? ?? '',
+          text: q['text'] as String? ?? '',
+          options: [for (final o in q['options'] as List? ?? []) o as String],
+        ),
+  ],
   coverage: [
     for (final p in j['coverage'] as List? ?? [])
       if (p['status'] != 'parsed' && p['status'] != 'not-actionable')
@@ -138,6 +148,12 @@ Capture captureFromJson(Map<String, dynamic> j) => Capture(
           title: c['proposal']['title'] as String? ?? '',
           changeId: c['change_id'] as String? ?? '',
           question: c['question'] as String? ?? '',
+          options: [for (final o in c['options'] as List? ?? []) o as String],
+          startAt: c['proposal']['start_at'] as String? ?? '',
+          startDate: c['proposal']['start_date'] as String? ?? '',
+          dueAt: c['proposal']['due_at'] as String? ?? '',
+          dueDate: c['proposal']['due_date'] as String? ?? '',
+          location: c['proposal']['location'] as String? ?? '',
           evidence: [
             for (final e in c['evidence'] as List? ?? [])
               '${e['part']}: ${e['excerpt']}',

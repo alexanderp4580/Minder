@@ -4,6 +4,7 @@ import '../application/capture_controller.dart';
 import '../application/chat_controller.dart';
 import '../domain/capture.dart';
 import '../domain/capture_repository.dart';
+import 'format.dart';
 import 'tokens.dart';
 
 class CaptureView extends StatefulWidget {
@@ -16,7 +17,6 @@ class CaptureView extends StatefulWidget {
 
 class _CaptureViewState extends State<CaptureView> {
   final _answer = TextEditingController();
-  String? _candidateId;
   CaptureController? _controller;
   @override
   void initState() {
@@ -91,13 +91,16 @@ class _CaptureViewState extends State<CaptureView> {
             Text(switch (capture.status) {
               'received' => 'Received. Waiting to process.',
               'processing' => 'Reading email and attachments…',
-              'needs-answer' => 'Some details need your answer.',
+              'needs-answer' =>
+                capture.candidates.isEmpty
+                    ? 'Some details need your answer.'
+                    : 'Found in this email. I have a few questions.',
               'failed' =>
                 capture.error.isEmpty
                     ? 'Processing failed. The original is available.'
                     : capture.error,
               'reviewed' => 'Review complete.',
-              _ => 'Review the proposals in chat.',
+              _ => 'Found in this email:',
             }),
           if (noItems)
             const Padding(
@@ -107,39 +110,33 @@ class _CaptureViewState extends State<CaptureView> {
               ),
             ),
           for (final candidate in capture.candidates)
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              childrenPadding: const EdgeInsets.only(bottom: 8),
-              title: Text(
-                candidate.title.isEmpty ? 'Proposed item' : candidate.title,
-              ),
-              subtitle: Text(
-                candidate.question.isEmpty
-                    ? candidate.state
-                    : candidate.question,
-              ),
-              children: [
-                if (candidate.state == 'pending' ||
-                    candidate.state == 'needs-answer')
-                  TextButton(
-                    onPressed: () =>
-                        setState(() => _candidateId = candidate.id),
-                    child: const Text('Clarify this item'),
-                  ),
-                for (final evidence in candidate.evidence)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      evidence,
-                      style: const TextStyle(color: Tokens.muted),
+            Material(
+              type: MaterialType.transparency,
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(bottom: 8),
+                title: Text(
+                  candidate.title.isEmpty ? 'Proposed item' : candidate.title,
+                ),
+                subtitle: Text(
+                  [
+                    candidateWhen(candidate),
+                    candidate.location,
+                    if (candidate.state == 'confirmed') 'Confirmed',
+                    if (candidate.state == 'discarded') 'Discarded',
+                  ].where((part) => part.isNotEmpty).join(' · '),
+                ),
+                children: [
+                  for (final evidence in candidate.evidence)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        evidence,
+                        style: const TextStyle(color: Tokens.muted),
+                      ),
                     ),
-                  ),
-              ],
-            ),
-          for (final question in capture.questions)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(question),
+                ],
+              ),
             ),
           for (final warning in capture.coverage)
             Padding(
@@ -147,32 +144,30 @@ class _CaptureViewState extends State<CaptureView> {
               child: Text(warning, style: const TextStyle(color: Tokens.muted)),
             ),
           if (!capture.processing && capture.status != 'reviewed') ...[
-            const SizedBox(height: 12),
-            TextField(
-              controller: _answer,
-              minLines: 1,
-              maxLines: 4,
-              decoration: InputDecoration(
-                labelText: _candidateId == null
-                    ? 'Answer or clarify this email'
-                    : 'Clarify the selected item',
+            if (capture.candidates.isEmpty) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _answer,
+                minLines: 1,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Answer or clarify this email',
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            FilledButton(
-              onPressed: controller.busy
-                  ? null
-                  : () async {
-                      if (_answer.text.trim().isEmpty) return;
-                      await controller.answer(
-                        capture,
-                        _answer.text,
-                        candidateId: _candidateId,
-                      );
-                      if (mounted && controller.error == null) _answer.clear();
-                    },
-              child: const Text('Send answer'),
-            ),
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: controller.busy
+                    ? null
+                    : () async {
+                        if (_answer.text.trim().isEmpty) return;
+                        await controller.answer(capture, _answer.text);
+                        if (mounted && controller.error == null) {
+                          _answer.clear();
+                        }
+                      },
+                child: const Text('Send answer'),
+              ),
+            ],
             if (capture.status != 'failed')
               OutlinedButton(
                 onPressed: controller.busy

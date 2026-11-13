@@ -60,7 +60,7 @@ void main() {
         },
       ],
     });
-    expect(capture.questions.single, 'What date?');
+    expect(capture.questions.single.text, 'What date?');
     expect(capture.attachments.single.name, 'original.eml');
     expect(capture.candidates.single.evidence.single, '1: Flight');
   });

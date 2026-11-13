@@ -14,7 +14,7 @@ Calendar requests ignore superseded results. Notification state reflects registr
 Disposed notification controllers stop work after pending native results and leave unhandled actions for retry.
 Controllers cancel their own work; they do not close injected shared repositories.
 
-CaptureController owns targeted answers, dismissal, source actions and disposal guards. Capture events never clear unrelated chat waiting. Calendar selection includes occupied event/date ranges.
+CaptureController owns targeted and quick-reply answers, dismissal, source actions and disposal guards. Capture events never clear unrelated chat waiting. Calendar selection includes occupied event/date ranges.
 
 # Work Guidance
 

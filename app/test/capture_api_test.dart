@@ -8,6 +8,7 @@ import 'package:minder/application/chat_controller.dart';
 import 'package:minder/data/chat_api.dart';
 import 'package:minder/domain/capture.dart';
 import 'package:minder/ui/capture_view.dart';
+import 'package:minder/ui/question_view.dart';
 import 'package:minder/ui/tokens.dart';
 import 'package:minder/ui/item_sources.dart';
 
@@ -47,12 +48,12 @@ void main() {
         theme: Tokens.theme,
         home: Scaffold(
           body: SingleChildScrollView(
-            child: CaptureView(
+            child: QuestionView(
               capture: const Capture(
                 id: 'source',
                 status: 'needs-answer',
                 revision: 2,
-                questions: ['What date?'],
+                questions: [CaptureQuestion(text: 'What date?')],
               ),
               chat: chat,
             ),
