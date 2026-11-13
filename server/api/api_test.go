@@ -371,3 +371,50 @@ func TestSetRemindersRouteUpdatesPendingChangesOnly(t *testing.T) {
 		t.Fatal("confirmed change", w.Code)
 	}
 }
+
+func TestDeleteItemRouteGivesAPreviewThatConfirmsThroughTheChangeRoutes(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() { s.Close() })
+	commands := command.New(s)
+	h := testServer(t, s, commands, replier{s}, nil, "")
+	created, e := commands.Preview(domain.Proposal{Action: "create_item", Title: "Fitting", DueAt: "2099-01-01T10:00:00Z", Timezone: "Europe/Amsterdam"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = commands.Confirm(created.Change.ID); e != nil {
+		t.Fatal(e)
+	}
+	items, _ := s.Items()
+	id := items[0].ID
+	post := func(path, body string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodPost, path, strings.NewReader(body)))
+		return w
+	}
+	if w := post("/v1/items/missing/delete", `{"expected_version":1}`); w.Code != 404 {
+		t.Fatal("unknown item", w.Code, w.Body.String())
+	}
+	if w := post("/v1/items/"+id+"/delete", `{"expected_version":9}`); w.Code != 409 {
+		t.Fatal("stale version", w.Code, w.Body.String())
+	}
+	if w := post("/v1/items/"+id+"/delete", `{"expected_version":1,"extra":1}`); w.Code != 400 {
+		t.Fatal("unknown field", w.Code)
+	}
+	w := post("/v1/items/"+id+"/delete", `{"expected_version":1}`)
+	var preview domain.Entry
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &preview) != nil || preview.Change == nil || preview.Change.Action != "delete_item" || preview.Change.State != "pending" {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if left, _ := s.Items(); len(left) != 1 {
+		t.Fatal("the preview deleted the item")
+	}
+	if w := post("/v1/changes/"+preview.Change.ID+"/confirm", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"undo_id"`) {
+		t.Fatal("confirm", w.Code, w.Body.String())
+	}
+	if left, _ := s.Items(); len(left) != 0 {
+		t.Fatal("confirm kept the item")
+	}
+}
