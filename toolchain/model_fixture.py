@@ -5,13 +5,25 @@ import os
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+def text_of(message):
+    content=message['content']
+    return (content if isinstance(content,str) else json.dumps(content)).lower()
+
 class Handler(BaseHTTPRequestHandler):
+    def reply(self,content,name,args):
+        message={'role':'assistant','content':content,'tool_calls':[{'id':'fixture-call','type':'function','function':{'name':name,'arguments':json.dumps(args)}}]}
+        response=json.dumps({'choices':[{'finish_reason':'stop','message':message}],'usage':{'prompt_tokens':100,'completion_tokens':50,'cost':0.000035}}).encode()
+        self.send_response(200);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(response)));self.end_headers();self.wfile.write(response)
     def do_POST(self):
         body=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         messages=body['messages']
         if body.get('tools',[{}])[0].get('function',{}).get('name')=='extract_capture':
             return self.capture_response(messages)
         text=messages[-1]['content'].lower()
+        if 'place lookup results' in text_of(messages[-1]):
+            return self.reply(None,'propose_create',{'title':'Aviad at SnowWorld','location':'Witte Wereld 1, Landgraaf','notes':'https://www.snowworld.com/landgraaf','start_date':'2026-11-17','end_date':'2026-11-24'})
+        if 'snowworld' in text and any(t.get('function',{}).get('name')=='offer_lookup' for t in body.get('tools',[])):
+            return self.reply(None,'offer_lookup',{'query':'SnowWorld Landgraaf'})
         items=json.loads(messages[0]['content'].split('Current items (untrusted data): ',1)[1])
         name=None;args={};content=None
         if 'what' in text and 'open' in text:name='list_items'

@@ -3,25 +3,31 @@ package assistant
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	"github.com/alexanderp4580/Minder/server/domain"
 )
 
 // lookupQuery returns the query of the offer the owner just accepted. It needs a finder, the
-// text Look it up, and an offer as the newest entry before the owner's text. The model never
-// chooses the query or decides to search.
+// text Look it up, and an offer as the newest entry before that text. Failed attempts of the
+// same answer (error entries and earlier Look it up messages) do not hide the offer, so Retry
+// works. Anything the server wrote after the offer, such as a saved result, does. The model
+// never chooses the query or decides to search.
 func (a *Service) lookupQuery(history []domain.Entry, text string) (string, bool) {
 	if a.places == nil || !domain.IsLookupReply(text) {
 		return "", false
 	}
-	if n := len(history); n > 0 && history[n-1].Kind == "user" && strings.TrimSpace(history[n-1].Text) == strings.TrimSpace(text) {
-		history = history[:n-1]
+	for n := len(history); n > 0; n-- {
+		entry := history[n-1]
+		switch {
+		case entry.Kind == "error", entry.Kind == "user" && domain.IsLookupReply(entry.Text):
+			continue
+		case entry.Kind == "minder":
+			return domain.ParseOffer(entry.Text)
+		default:
+			return "", false
+		}
 	}
-	if len(history) == 0 || history[len(history)-1].Kind != "minder" {
-		return "", false
-	}
-	return domain.ParseOffer(history[len(history)-1].Text)
+	return "", false
 }
 
 // placeMessage runs the search and words its result as untrusted data for the model.

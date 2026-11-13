@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+mkdir -p .local docs/evidence
+./toolchain/run go go build -o /workspace/.local/minder ./cmd/minder
+free_port() { python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()'; }
+check_port=$(free_port); model_port=$(free_port); serper_port=$(free_port)
+check_db=$(mktemp "$PWD/.local/place-lookup-XXXXXX.db")
+MODEL_FIXTURE_PORT="$model_port" python3 toolchain/model_fixture.py & fixture_pid=$!
+SERPER_FIXTURE_PORT="$serper_port" python3 toolchain/serper_fixture.py & serper_pid=$!
+ENV=development AUTH_MODE=dev DATABASE_PATH="$check_db" OPENROUTER_API_KEY=local-fixture OPENROUTER_URL="http://127.0.0.1:$model_port" SERPER_API_KEY=local-fixture SERPER_URL="http://127.0.0.1:$serper_port" WEB_DIR=app/build/web LISTEN_ADDR="127.0.0.1:$check_port" .local/minder > .local/place-lookup-server.log 2>&1 &
+check_pid=$!
+trap 'kill "$check_pid" "$fixture_pid" "$serper_pid" 2>/dev/null || true' EXIT
+curl --fail --silent --retry 5 --retry-delay 1 --retry-connrefused http://127.0.0.1:$check_port/v1/health
+MINDER_URL=http://127.0.0.1:$check_port SERPER_CALLS_URL=http://127.0.0.1:$serper_port/calls node toolchain/place-lookup-check.cjs

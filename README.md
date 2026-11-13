@@ -19,6 +19,7 @@ toolchain/run flutter flutter build web --release --no-wasm-dry-run
 Run the server with `ENV=development AUTH_MODE=dev`. Use `ENV=test AUTH_MODE=dev` for test fixtures. Production requires authentication.
 Set `DATABASE_PATH`, `WEB_DIR` and `LISTEN_ADDR` to the local database, web build and listener.
 Provide `OPENROUTER_API_KEY` through the environment. `MONTHLY_LIMIT_EUR` defaults to 5; `USD_TO_EUR` defaults to 1.
+Set `SERPER_API_KEY` to turn on the place lookup; without it chat offers none. `SERPER_URL` may override the endpoint outside production only. The lookup sends the offered query text to Serper after the owner taps Look it up.
 Production requires `CF_ISSUER`, `CF_AUDIENCE` and `OWNER_EMAIL`.
 Set them in the deployment environment before starting this build. The server has no identity defaults.
 `CF_ISSUER` must be an HTTPS origin. Unknown `ENV` values fail startup.

@@ -105,6 +105,12 @@ Merged into `main` at `ab94726` and included in current production. App 0.7.0+23
 Chat can cancel, delete and look up finished items (a second model call, only on request). The calendar has a Delete control. A delete removes the item and its associated data. A failed send returns its text to the composer and leaves no Retry block.
 APK 0.7.0 reached Telegram once (message 1995). Evidence and limits: [docs/evidence/delete-items.md](docs/evidence/delete-items.md). The delete server changes are deployed. Phone approval is pending.
 
+## Place lookup
+
+On branch `place-lookup` (worktree `Minder-place-lookup`, from `main` at `127e4c6`); not merged, not deployed. App 0.8.0+24.
+When a request names a venue without an address, chat shows an offer card (Skip, Look it up). Look it up runs one Serper places search for the offered query and the next preview carries the address in location and the website in notes. Skip and any other text run no search. The server needs `SERPER_API_KEY` (TokenCrypt secret `serper_api_key`) as a Coolify process variable; without it chat is unchanged.
+Design: [docs/superpowers/specs/2026-11-13-place-lookup-design.md](docs/superpowers/specs/2026-11-13-place-lookup-design.md). Plan and evidence: [docs/superpowers/plans/2026-11-13-place-lookup.md](docs/superpowers/plans/2026-11-13-place-lookup.md), [docs/evidence/place-lookup.md](docs/evidence/place-lookup.md). Phone approval is pending.
+
 ## App icon and faster highlights
 
 In `main` and deployed (server side). App 0.6.2+22.

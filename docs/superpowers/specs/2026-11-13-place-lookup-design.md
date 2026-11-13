@@ -1,6 +1,6 @@
 # Place lookup with Serper
 
-Status: draft, waiting for the owner's approval. Inline execution, no sub-agents.
+Status: approved by the owner ("Implement", 2026-11-13). Inline execution, no sub-agents.
 
 ## Intent
 
@@ -29,7 +29,7 @@ The owner types "Aviad Landgraaf SnowWorld 17 to 24 november". Chat saves the ti
 
 - **Offer.** The model calls `offer_lookup` (`query`, at most 100 characters) alone. The server stores a minder entry with fixed text: `Look up "<query>" on Google for its address and website?` The tool exists only when a place finder is configured.
 - **Buttons.** The server marks an entry as an offer when its text has exactly that format and sets `options: ["Skip", "Look it up"]` on the wire. The value is computed when entries are served, not stored, so there is no migration. The app draws the offer as a card, like a preview, with the buttons inside it, and only for the newest chat entry. *Look it up* is the primary button. A tap calls the normal send path, so the choice appears in the history as your message.
-- **Gate.** In `reply`, before any model call: the newest history entry is a minder entry in the offer format, and the owner's text, trimmed and case-folded with a trailing full stop removed, equals `look it up` (the tap sends exactly that, and typing it works the same). The server parses the query from that entry. The model never supplies the query or decides to search.
+- **Gate.** In `reply`, before any model call: the newest history entry, skipping error entries and earlier `Look it up` messages (so Retry works), is a minder entry in the offer format, and the owner's text, trimmed and case-folded with a trailing full stop removed, equals `look it up` (the tap sends exactly that, and typing it works the same). The server parses the query from that entry. The model never supplies the query or decides to search.
 - **Search.** `server/serper` posts `{q, gl: "nl", hl: "en"}` to the places endpoint with a deadline and a bounded reply. It keeps at most three places (`title`, `address`, `category`, `website`, rating). It sends the key in a header and never logs it.
 - **Result.** One model call follows, so there is no extra billed call. The messages gain the owner's text and the places as untrusted data. The model proposes the create or update with the address in `location` and the website in `notes`. No match or a Serper error becomes data saying so; the model tells the owner and proposes the item without an address.
 - **Skip.** Any other text goes through the normal flow. The prompt tells the model to propose the item without a lookup after a skipped offer, and never to offer twice for one request.

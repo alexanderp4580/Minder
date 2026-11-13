@@ -4,7 +4,7 @@ Verification evidence.
 
 # Ownership
 
-M0/M1 checks, architecture evidence, calendar layout checks, orbital animation/APK checks, app icon redesign checks, delete-items checks, navigation, header, logging, notification action calendar details and English email review checks, the approved concept reference and generated comparison/browser screenshots.
+M0/M1 checks, architecture evidence, calendar layout checks, orbital animation/APK checks, app icon redesign checks, delete-items checks, place-lookup checks, navigation, header, logging, notification action calendar details and English email review checks, the approved concept reference and generated comparison/browser screenshots.
 
 # Local Contracts
 

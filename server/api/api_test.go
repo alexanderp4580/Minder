@@ -418,3 +418,46 @@ func TestDeleteItemRouteGivesAPreviewThatConfirmsThroughTheChangeRoutes(t *testi
 		t.Fatal("confirm kept the item")
 	}
 }
+
+func TestChatServesOptionsOnlyForAPlaceLookupOffer(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() { s.Close() })
+	offer, _ := domain.OfferText("SnowWorld Landgraaf")
+	for _, entry := range []domain.Entry{{Kind: "minder", Text: "Hello."}, {Kind: "minder", Text: offer}, {Kind: "user", Text: offer}} {
+		if _, e = s.AddEntry(entry); e != nil {
+			t.Fatal(e)
+		}
+	}
+	srv := httptest.NewServer(testServer(t, s, command.New(s), replier{s}, nil, ""))
+	defer srv.Close()
+	for _, path := range []string{"/v1/chat", "/v1/chat?after=1"} {
+		resp, e := http.Get(srv.URL + path)
+		if e != nil {
+			t.Fatal(e)
+		}
+		var got []map[string]any
+		e = json.NewDecoder(resp.Body).Decode(&got)
+		resp.Body.Close()
+		if e != nil || len(got) == 0 {
+			t.Fatalf("%s: %v %v", path, got, e)
+		}
+		for _, entry := range got {
+			options, has := entry["options"]
+			isOffer := entry["kind"] == "minder" && entry["text"] == offer
+			if has != isOffer || (has && strings.Join(toStrings(options), ",") != "Skip,Look it up") {
+				t.Fatalf("%s: entry %v options %v", path, entry["text"], options)
+			}
+		}
+	}
+}
+
+func toStrings(v any) []string {
+	var out []string
+	for _, x := range v.([]any) {
+		out = append(out, x.(string))
+	}
+	return out
+}

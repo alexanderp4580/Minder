@@ -34,9 +34,9 @@ const placeRule = "When a request names a specific venue or place and gives no a
 
 // systemPrompt is the rules plus the current time and the owner's data.
 // The items are untrusted text; the rules tell the model not to obey them.
-func systemPrompt(now time.Time, lists []string, profiles []domain.Profile, items []domain.Item) string {
+func systemPrompt(now time.Time, lists []string, profiles []domain.Profile, items []domain.Item, extraRules ...string) string {
 	data := func(v any) string { b, _ := json.Marshal(v); return string(b) }
-	return strings.Join(rules, " ") +
+	return strings.Join(append(append([]string{}, rules...), extraRules...), " ") +
 		" Current local time: " + now.Format(time.RFC3339) + ". Default timezone: Europe/Amsterdam." +
 		" Existing lists: " + data(lists) + "." +
 		" Profiles: " + data(profiles) + "." +

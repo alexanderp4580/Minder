@@ -19,6 +19,7 @@ Pinned Podman runners, build helpers and verification scripts.
 - `model_fixture.py` supplies the test OpenRouter endpoint on loopback port 8181. Never run it in production.
 - The calendar browser scenario checks selection, typed detail expansion/collapse and return to Chat.
 - The chat browser scenario checks delayed offline status without a message or Retry block, restored composer text after failed sends, and recovery/resend through the header icon.
+- `serper_fixture.py` supplies a fake Serper places endpoint on a temporary port and lists the queries it received at `GET /calls`. `place-lookup-local-check` and `place-lookup-check.cjs` run the offer card against compiled web, the model fixture and that endpoint: the offer runs no search, Look it up runs exactly one, Skip runs none. Never run the fixtures in production.
 - Chat, reminder, calendar and email local checks each start an isolated model fixture on a temporary port. Run browser scenarios in sequence.
 - `email-local-check` and `email-check.cjs` cover signed ingestion, compiled-web answers/downloads/review, the appointment flow (question message, expanded structured email details, targeted inline duration reply, reminder chip, Confirm and separate saved phone/email/website/booking-reference fields) and real SQLite provenance and reminder schedules.
 - Real-model checks use temporary databases and provider cost values. `real-model-multi-check.py [runs]` checks two proposals.
@@ -35,7 +36,7 @@ The owner authorized orbital preview APK builds and Telegram delivery. Preserve 
 
 # Verification
 
-`toolchain/check` runs the complete local static/unit suite. Release web and the three browser scenarios verify rendered integration.
+`toolchain/check` runs the complete local static/unit suite. Release web and the browser scenarios (chat, reminder, calendar, place lookup) verify rendered integration.
 Structure checker regressions run with `python3 -B -m unittest discover -s toolchain/tests -v`.
 The callback check and phone notification checks remain separate from Flutter unit tests.
 

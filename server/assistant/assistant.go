@@ -123,11 +123,11 @@ func (a *Service) reply(ctx context.Context, text string, trace *replyTrace) ([]
 		return nil, e
 	}
 	zone, _ := time.LoadLocation("Europe/Amsterdam")
-	prompt := systemPrompt(time.Now().In(zone), lists, profiles, contextItems(items))
+	var extraRules []string
 	if a.places != nil {
-		prompt += " " + placeRule
+		extraRules = append(extraRules, placeRule)
 	}
-	messages := []Message{{Role: "system", Content: prompt}}
+	messages := []Message{{Role: "system", Content: systemPrompt(time.Now().In(zone), lists, profiles, contextItems(items), extraRules...)}}
 	trace.stage = "load history"
 	history, e := a.repository.History(0, 20)
 	if e != nil {

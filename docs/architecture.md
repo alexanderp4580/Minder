@@ -27,6 +27,7 @@ Coolify runs the container with a persistent database volume.
 | `conversation` | Message acceptance, concurrency, replies and cancellation | `domain` |
 | `reminder` | Scheduling, actions, device validation and delivery worker | `domain`, `port` |
 | `openrouter` | HTTP model adapter and tool schema | `domain`, `assistant` |
+| `serper` | Serper places HTTP adapter | `domain`, `assistant` |
 | `push` | FCM adapter and token classification | None |
 | `access` | Owner authentication and Cloudflare JWT adapter | None |
 | `config` | Process settings and startup validation | None |
@@ -44,7 +45,7 @@ Domain and application packages have no SQLite, HTTP client or provider SDK impo
 The API accepts query, command, message, reminder and authentication interfaces.
 `conversation` validates and accepts messages, runs one reply at a time and records safe errors.
 `Close` cancels and waits for active replies. Process shutdown also waits for the reminder worker before closing SQLite.
-`openrouter` implements the assistant model interface. `push` implements the reminder sender interface.
+`openrouter` implements the assistant model interface. `serper` implements the optional place finder: the model may offer a lookup, and the server searches only after the owner taps Look it up on a fresh offer. `push` implements the reminder sender interface.
 
 ### Changes and storage
 
