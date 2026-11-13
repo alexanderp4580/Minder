@@ -41,4 +41,4 @@ Serve locally with `python3 -I -m http.server 8899 --directory brand` and open `
 No child instruction files.
 
 `app-icon.svg` is the canonical app icon. `toolchain/render-icons.py` exports all Android, web and public grant-logo assets.
-It has two layers: `minder-orbit` (Void with the Orbital halo and three thin ellipses) and `minder-mark` (the Michroma M outline with a soft rim glow, a Text-colour body that dims away from the top right, and a thin bright rim). The M path is converted from `app/assets/fonts/Michroma-Regular.ttf` (OFL). It is 52 units wide, inside the Android adaptive safe zone. The icon has no Signal red.
+It has two layers: `minder-orbit` (Void with the Orbital halo and three thin ellipses) and `minder-mark` (the Michroma M outline with a soft rim glow, a near-white body (`#ffffff` falling to `#dcdcdc` toward the bottom left), a soft white glow masked to the top-right and bottom-left corners, and a thin bright rim). The M path is converted from `app/assets/fonts/Michroma-Regular.ttf` (OFL). It is 52 units wide, inside the Android adaptive safe zone. The icon has no Signal red.

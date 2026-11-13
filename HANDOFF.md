@@ -114,7 +114,7 @@ Design: [docs/superpowers/specs/2026-11-13-place-lookup-design.md](docs/superpow
 ## App icon and faster highlights
 
 In `main` and deployed (server side). App 0.6.2+22.
-The launcher icon is the Michroma M with a lit rim over the Orbital background, no red. Orbital highlights loop in 68.571 s with ease in and out (mean speed 2.625 times the original 180 s linear loop); their brightness is unchanged.
+The launcher icon is the Michroma M, near-white with a glow at two corners and a lit rim, over the Orbital background, no red. Orbital highlights loop in 68.571 s with ease in and out (mean speed 2.625 times the original 180 s linear loop); their brightness is unchanged.
 APK 0.6.1 reached Telegram once (message 1993; 102.857 s linear loop). APK 0.6.2 reached Telegram once (message 1994). Telegram credentials come from TokenCrypt (`telegram_astrabot_token`, `telegram_astrabot_chatid`).
 Evidence and limits: [docs/evidence/app-icon.md](docs/evidence/app-icon.md). Phone approval is pending.
 

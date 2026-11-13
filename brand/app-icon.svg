@@ -4,8 +4,10 @@
   <defs>
     <radialGradient id="halo"><stop stop-color="#f2f2f2"/><stop offset=".4" stop-color="#f2f2f2" stop-opacity=".22"/><stop offset="1" stop-color="#f2f2f2" stop-opacity="0"/></radialGradient>
     <linearGradient id="orbit-line" x1="0" y1="0" x2="108" y2="108" gradientUnits="userSpaceOnUse"><stop stop-color="#f2f2f2" stop-opacity=".75"/><stop offset=".5" stop-color="#f2f2f2" stop-opacity=".12"/><stop offset="1" stop-color="#f2f2f2" stop-opacity=".5"/></linearGradient>
-    <linearGradient id="body" x1="86" y1="30" x2="24" y2="78" gradientUnits="userSpaceOnUse"><stop stop-color="#e6e6e6"/><stop offset="1" stop-color="#6e6e6e"/></linearGradient>
+    <linearGradient id="body" x1="86" y1="30" x2="24" y2="78" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#dcdcdc"/></linearGradient>
     <linearGradient id="rim" x1="86" y1="30" x2="24" y2="78" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff"/><stop offset=".55" stop-color="#ffffff" stop-opacity=".8"/><stop offset="1" stop-color="#ffffff" stop-opacity=".3"/></linearGradient>
+    <radialGradient id="spot"><stop stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <mask id="corners" maskUnits="userSpaceOnUse" x="0" y="0" width="108" height="108"><rect width="108" height="108" fill="#000"/><circle cx="80" cy="37.5" r="15" fill="url(#spot)"/><circle cx="28" cy="70.5" r="11" fill="url(#spot)" opacity=".6"/></mask>
     <filter id="soft" x="-30%" y="-40%" width="160%" height="180%"><feGaussianBlur stdDeviation="2.4"/></filter>
     <path id="letter" d="M28 70.53V37.47H34.16L54.15 64.44L73.84 37.47H80V70.53H75.87V41.22L56.13 68.36H52.39L32.13 41.22V70.53Z"/>
   </defs>
@@ -21,7 +23,7 @@
     </g>
   </g>
   <g id="minder-mark">
-    <use href="#letter" fill="none" stroke="url(#rim)" stroke-width="2" opacity=".55" filter="url(#soft)"/>
+    <use href="#letter" fill="none" stroke="#ffffff" stroke-width="2.2" opacity=".9" filter="url(#soft)" mask="url(#corners)"/>
     <use href="#letter" fill="url(#body)"/>
     <use href="#letter" fill="none" stroke="url(#rim)" stroke-width=".4"/>
   </g>

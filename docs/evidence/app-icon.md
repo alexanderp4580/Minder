@@ -4,7 +4,7 @@ Date: 2026-11-13. Version 0.6.2+22. Merged into local `main`; not pushed.
 
 ## Current state
 
-The launcher icon is the Michroma M with a lit rim over the Orbital background. It has no Signal red.
+The launcher icon is the Michroma M, near-white with a glow at two corners and a lit rim, over the Orbital background. It has no Signal red.
 `brand/app-icon.svg` has two layers, `minder-orbit` and `minder-mark`. The M outline comes from `app/assets/fonts/Michroma-Regular.ttf` and is 52 units wide.
 `toolchain/render-icons.py` exports the Android adaptive background and foreground as bitmaps, the monochrome vector, the legacy and web PNGs, the favicon and the grant logo.
 The adaptive background shrinks the orbit art to 75 percent so the lines stay inside circle and squircle masks.
