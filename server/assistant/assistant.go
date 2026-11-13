@@ -226,6 +226,10 @@ func (a *Service) reply(ctx context.Context, text string, trace *replyTrace) ([]
 			p.Action = "update_item"
 		case "propose_complete":
 			p.Action = "complete_item"
+		case "propose_cancel":
+			p.Action = "cancel_item"
+		case "propose_delete":
+			p.Action = "delete_item"
 		case "propose_profile":
 			p.Action = "update_profile"
 			if p.ProfileID == "" {

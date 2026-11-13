@@ -354,3 +354,25 @@ func TestPromptTellsTheModelHowToMoveAnItem(t *testing.T) {
 type unavailableModel struct{ fakeModel }
 
 func (*unavailableModel) Ready() error { return &domain.ModelError{Message: "No model key"} }
+
+func TestCancelRequestProposesACancellationNotACompletion(t *testing.T) {
+	a, s, f := newAssistant(t, Response{CostUSD: 0.001})
+	i := domain.Item{ID: "a", Title: "Dentist", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", DueAt: "2026-11-12T09:00:00Z"}
+	if e := s.Write(func(tx *store.Tx) error { return tx.PutItem(i) }); e != nil {
+		t.Fatal(e)
+	}
+	f.r = Response{Calls: []Call{{Name: "propose_cancel", Arguments: `{"item_id":"a","expected_version":1}`}}, CostUSD: 0.001}
+	entries, e := a.Reply(context.Background(), "Cancel the dentist")
+	if e != nil || len(entries) != 1 || entries[0].Change == nil || entries[0].Change.Action != "cancel_item" {
+		t.Fatalf("%+v %v", entries, e)
+	}
+}
+
+func TestPromptSeparatesDoneCancelledAndDeleted(t *testing.T) {
+	system := systemPrompt(time.Now(), nil, nil, nil)
+	for _, want := range []string{"propose_complete", "propose_cancel", "propose_delete"} {
+		if !strings.Contains(system, want) {
+			t.Fatalf("prompt does not mention %s", want)
+		}
+	}
+}

@@ -70,3 +70,18 @@ func TestExtractionSchemaAllowsOptionsAndOffsets(t *testing.T) {
 		}
 	}
 }
+
+func TestChatToolsIncludeCancelAndDelete(t *testing.T) {
+	names := map[string][]string{}
+	for _, tl := range tools() {
+		fn := tl.(map[string]any)["function"].(map[string]any)
+		req := fn["parameters"].(map[string]any)["required"].([]string)
+		names[fn["name"].(string)] = req
+	}
+	for _, n := range []string{"propose_cancel", "propose_delete"} {
+		req, ok := names[n]
+		if !ok || len(req) != 2 || req[0] != "item_id" || req[1] != "expected_version" {
+			t.Fatalf("%s: %v %v", n, ok, req)
+		}
+	}
+}

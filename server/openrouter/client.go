@@ -153,7 +153,7 @@ func tools() []any {
 	props["recurrence"] = map[string]any{"type": "object", "description": "Repeat rule. The item needs a due time.", "properties": map[string]any{"every": map[string]any{"type": "string", "enum": []string{"daily", "weekly", "monthly", "yearly"}}, "interval": map[string]string{"type": "integer"}, "after_completion": flag}, "required": []string{"every", "interval"}, "additionalProperties": false}
 	props["clear_recurrence"] = flag
 	out := []any{}
-	for _, n := range []string{"propose_create", "propose_update", "propose_complete"} {
+	for _, n := range []string{"propose_create", "propose_update", "propose_complete", "propose_cancel", "propose_delete"} {
 		required := []string{"title"}
 		if n != "propose_create" {
 			required = []string{"item_id", "expected_version"}
