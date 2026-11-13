@@ -14,7 +14,7 @@ Provider fixtures use local HTTP servers. Real-model checks use temporary databa
 
 Tool schemas distinguish event ends, date-only ranges and deadlines; preserve travel zones and never invent missing clock times.
 
-`propose_cancel` and `propose_delete` need `item_id` and `expected_version`, like `propose_complete`. `find_finished_items` takes an optional `query` and `list`.
+`propose_cancel` and `propose_delete` need `item_id` and `expected_version`, like `propose_complete`. `find_finished_items` takes an optional `query` and `list`. `offer_lookup` (`query`, required) exists only when `Client.PlaceLookup` is true, and never in email capture.
 
 
 Item and capture tool schemas expose phone, email, website and booking_reference as separate strings and support clear flags. Notes hold remaining instructions.

@@ -103,3 +103,38 @@ func TestChatToolsIncludeTheFinishedItemsLookup(t *testing.T) {
 	}
 	t.Fatal("find_finished_items is not offered")
 }
+
+func toolNames(t *testing.T, c *Client, messages []assistant.Message) []string {
+	t.Helper()
+	var seen map[string]any
+	reply := `{"choices":[{"finish_reason":"stop","message":{"content":"Hi"}}],"usage":{"cost":0.001}}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&seen)
+		w.Write([]byte(reply))
+	}))
+	t.Cleanup(srv.Close)
+	c.URL = srv.URL
+	if _, e := c.Complete(context.Background(), messages); e != nil {
+		t.Fatal(e)
+	}
+	var names []string
+	for _, tool := range seen["tools"].([]any) {
+		names = append(names, tool.(map[string]any)["function"].(map[string]any)["name"].(string))
+	}
+	return names
+}
+
+func TestOfferToolExistsOnlyWhenPlaceLookupIsOn(t *testing.T) {
+	chat := []assistant.Message{{Role: "user", Content: "Hello"}}
+	if names := toolNames(t, &Client{Key: "k"}, chat); strings.Contains(strings.Join(names, ","), "offer_lookup") {
+		t.Fatalf("tools %v", names)
+	}
+	names := toolNames(t, &Client{Key: "k", PlaceLookup: true}, chat)
+	if !strings.Contains(strings.Join(names, ","), "offer_lookup") || !strings.Contains(strings.Join(names, ","), "propose_create") {
+		t.Fatalf("tools %v", names)
+	}
+	email := []assistant.Message{{Purpose: "email", Role: "user", Content: "Hello"}}
+	if names := toolNames(t, &Client{Key: "k", PlaceLookup: true}, email); strings.Contains(strings.Join(names, ","), "offer_lookup") {
+		t.Fatalf("email tools %v", names)
+	}
+}

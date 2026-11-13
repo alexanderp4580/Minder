@@ -23,6 +23,8 @@ const maxOutputTokens = 4000
 type Client struct {
 	Key, Model, URL string
 	Client          *http.Client
+	// PlaceLookup adds the offer_lookup tool. Main sets it when a place finder is configured.
+	PlaceLookup bool
 }
 
 func (m *Client) Ready() error {
@@ -47,6 +49,8 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 	selectedTools := tools()
 	if len(messages) > 0 && messages[0].Purpose == "email" {
 		selectedTools = captureTools()
+	} else if m.PlaceLookup {
+		selectedTools = append(selectedTools, tool("offer_lookup", "Offer to look up a place on Google for its address and website. Call it alone when the request names a venue or place without an address. The owner is asked first; nothing is searched yet.", map[string]any{"query": map[string]string{"type": "string", "description": "The place name and town, at most 100 characters."}}, []string{"query"}))
 	}
 	payload := map[string]any{"model": model, "messages": messages, "tools": selectedTools, "max_tokens": maxOutputTokens, "usage": map[string]bool{"include": true}}
 	b, _ := json.Marshal(payload)

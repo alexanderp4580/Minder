@@ -43,12 +43,19 @@ type Service struct {
 	repository  Repository
 	commands    Proposer
 	model       Model
+	places      PlaceFinder
 	limit, rate float64
 	mu          sync.Mutex
 }
 
 func New(s Repository, c Proposer, m Model, limit, rate float64) *Service {
 	return &Service{repository: s, commands: c, model: m, limit: limit, rate: rate}
+}
+
+// WithPlaces turns on the place lookup: the offer tool and the gate that runs it.
+func (a *Service) WithPlaces(p PlaceFinder) *Service {
+	a.places = p
+	return a
 }
 func (a *Service) Preflight() error {
 	cost, e := a.repository.MonthCost()
@@ -116,7 +123,11 @@ func (a *Service) reply(ctx context.Context, text string, trace *replyTrace) ([]
 		return nil, e
 	}
 	zone, _ := time.LoadLocation("Europe/Amsterdam")
-	messages := []Message{{Role: "system", Content: systemPrompt(time.Now().In(zone), lists, profiles, contextItems(items))}}
+	prompt := systemPrompt(time.Now().In(zone), lists, profiles, contextItems(items))
+	if a.places != nil {
+		prompt += " " + placeRule
+	}
+	messages := []Message{{Role: "system", Content: prompt}}
 	trace.stage = "load history"
 	history, e := a.repository.History(0, 20)
 	if e != nil {
@@ -150,9 +161,29 @@ func (a *Service) reply(ctx context.Context, text string, trace *replyTrace) ([]
 			return nil, e
 		}
 	}
+	if query, ok := a.lookupQuery(history, text); ok {
+		// The owner accepted an offer: search for the query they saw, then let the model use the result.
+		trace.stage = "place lookup"
+		messages = append(messages, Message{Role: "user", Content: a.placeMessage(ctx, query)})
+	}
 	r, e := a.ask(ctx, messages, trace)
 	if e != nil {
 		return nil, e
+	}
+	if a.places != nil {
+		if query, found, e := offerLookup(r); e != nil {
+			return nil, e
+		} else if found {
+			// The offer stands alone; the lookup waits for the owner's tap.
+			trace.stage = "offer lookup"
+			slog.Info("place lookup offered", "query_len", utf8.RuneCountInString(query), "trace_id", domain.TraceID(ctx))
+			offer, _ := domain.OfferText(query)
+			entry, e := a.repository.AddEntry(domain.Entry{Kind: "minder", Text: offer, CostEUR: r.CostUSD * a.rate})
+			if e != nil {
+				return nil, e
+			}
+			return []domain.Entry{entry}, nil
+		}
 	}
 	if lookup, found, e := finishedLookup(r); e != nil {
 		return nil, e
