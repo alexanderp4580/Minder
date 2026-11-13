@@ -14,6 +14,8 @@ Main logs process failures after run returns, so deferred cleanup executes.
 Main builds the logger (`logging.go`), logs the effective settings with secrets reduced to set or unset flags, and routes HTTP server errors into the same log.
 Shutdown logs each stage: signal, HTTP server, worker, conversation and database.
 
+With `SERPER_API_KEY` set, main enables the place lookup (offer tool and Serper adapter); without it chat is unchanged.
+
 Opt-in email capture composes signed ingress, private files, document adapters and isolated model extraction. Shutdown waits for both email and reminder workers before SQLite closes.
 
 # Work Guidance

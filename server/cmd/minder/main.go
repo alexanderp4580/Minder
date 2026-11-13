@@ -26,6 +26,7 @@ import (
 	"github.com/alexanderp4580/Minder/server/openrouter"
 	"github.com/alexanderp4580/Minder/server/push"
 	"github.com/alexanderp4580/Minder/server/reminder"
+	"github.com/alexanderp4580/Minder/server/serper"
 	"github.com/alexanderp4580/Minder/server/store"
 )
 
@@ -67,6 +68,10 @@ func run(logger *slog.Logger) error {
 	commands := command.New(database)
 	model := &openrouter.Client{Key: settings.ModelKey, Model: settings.Model, URL: settings.ModelEndpoint}
 	assistantService := assistant.New(database, commands, model, settings.MonthlyLimitEUR, settings.USDToEUR)
+	if settings.SerperKey != "" {
+		model.PlaceLookup = true
+		assistantService.WithPlaces(&serper.Client{Key: settings.SerperKey, URL: settings.SerperEndpoint})
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	messages := conversation.New(ctx, database, assistantService)

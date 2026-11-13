@@ -46,7 +46,7 @@ func TestStartupSummaryShowsSettingsButNeverSecrets(t *testing.T) {
 	settings := config.Settings{
 		DatabasePath: "/data/minder.db", WebDir: "/app/web", ListenAddr: "0.0.0.0:8080",
 		ModelKey: "sk-SECRETMODELKEY", Model: "anthropic/x", MonthlyLimitEUR: 5, USDToEUR: 0.92,
-		FirebaseServiceAccount: `{"private_key":"SECRETFIREBASE"}`, FirebaseAndroidConfig: `{"api_key":"PUBLICKEY"}`,
+		SerperKey: "SECRETSERPERKEY", FirebaseServiceAccount: `{"private_key":"SECRETFIREBASE"}`, FirebaseAndroidConfig: `{"api_key":"PUBLICKEY"}`,
 	}
 	var buf bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&buf, nil))
@@ -55,7 +55,7 @@ func TestStartupSummaryShowsSettingsButNeverSecrets(t *testing.T) {
 	if err := json.Unmarshal(bytes.TrimSpace(buf.Bytes()), &r); err != nil {
 		t.Fatal(err)
 	}
-	if r["msg"] != "server configuration" || r["database_path"] != "/data/minder.db" || r["model_key_set"] != true || r["firebase_service_account_set"] != true || r["auth_mode"] != "cloudflare" || r["monthly_limit_eur"] != float64(5) || r["model"] != "anthropic/x" || r["pid"] == nil {
+	if r["msg"] != "server configuration" || r["database_path"] != "/data/minder.db" || r["model_key_set"] != true || r["serper_key_set"] != true || r["firebase_service_account_set"] != true || r["auth_mode"] != "cloudflare" || r["monthly_limit_eur"] != float64(5) || r["model"] != "anthropic/x" || r["pid"] == nil {
 		t.Fatalf("summary incomplete: %v", r)
 	}
 	if strings.Contains(buf.String(), "SECRET") || strings.Contains(buf.String(), "PUBLICKEY") {

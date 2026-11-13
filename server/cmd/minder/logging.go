@@ -54,7 +54,7 @@ func logStartup(logger *slog.Logger, s config.Settings, authMode string) {
 	logger.Info("server configuration",
 		"pid", os.Getpid(), "host", host, "go", runtime.Version(), "revision", revision, "dirty", modified,
 		"listen_addr", s.ListenAddr, "database_path", s.DatabasePath, "web_dir", s.WebDir, "brand_dir", s.BrandDir,
-		"auth_mode", authMode, "model", s.Model, "model_endpoint", s.ModelEndpoint, "model_key_set", s.ModelKey != "",
+		"auth_mode", authMode, "model", s.Model, "model_endpoint", s.ModelEndpoint, "model_key_set", s.ModelKey != "", "serper_key_set", s.SerperKey != "",
 		"monthly_limit_eur", s.MonthlyLimitEUR, "usd_to_eur", s.USDToEUR,
 		"firebase_service_account_set", s.FirebaseServiceAccount != "", "firebase_android_config_set", s.FirebaseAndroidConfig != "",
 	)
