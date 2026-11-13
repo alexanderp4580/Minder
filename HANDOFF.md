@@ -55,7 +55,7 @@ Evidence: [docs/evidence/calendar-spacing.md](docs/evidence/calendar-spacing.md)
 The owner chose Orbital and approved animated backgrounds for Chat and Calendar, plus APK delivery.
 `OrbitalBackground` displays fixed artwork exported from the canonical SVGs in brand/.
 Calendar follows measured reference curves; Chat uses a shifted, tighter composition.
-Atmosphere, edge gradients and soft glow stay still. Short highlights travel along cached paths over 180 seconds.
+Atmosphere, edge gradients and soft glow stay still. Short highlights travel along cached paths over about 69 seconds (68.571 s per loop), easing in and out.
 Static artwork and foreground are isolated from highlight repaints.
 Reduced motion keeps the scene still. Hidden routes and backgrounded apps stop ticking.
 Tests verify movement, lifecycle pauses, distinct scenes and stable foreground builds.
@@ -64,6 +64,13 @@ Phone frame timing and battery use remain unmeasured.
 The owner approved reconstructing the artwork and moving highlights along its fixed paths.
 The SVGs own geometry and lighting; toolchain/export-orbits.py keeps Flutter and HTML exports aligned.
 The calendar spacing and opaque cards remain unchanged.
+
+## App icon and faster highlights
+
+Branch `app-icon-orbital` (from `notification-body-tap`; not merged, not pushed, not deployed). App 0.6.2+22.
+The launcher icon is the Michroma M with a lit rim over the Orbital background, no red. Orbital highlights loop in 68.571 s with ease in and out (mean speed 2.625 times the original 180 s linear loop); their brightness is unchanged.
+APK 0.6.1 reached Telegram once (message 1993; 102.857 s linear loop). APK 0.6.2 reached Telegram once (message 1994). Telegram credentials come from TokenCrypt (`telegram_astrabot_token`, `telegram_astrabot_chatid`).
+Evidence and limits: [docs/evidence/app-icon.md](docs/evidence/app-icon.md). Phone approval is pending.
 
 ## Open work
 

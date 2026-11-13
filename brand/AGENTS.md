@@ -14,11 +14,11 @@ This `brand/` folder owns `index.html`, `app-icon.svg`, its PNG preview and the 
 - The Components section mirrors the component rules of `docs/mockups/common.css`; change both in the same edit.
 - Chat and Calendar share the Calendar header treatment, one title row and a rule below it that fades left to right. Both use the same spacing. Headers have no buttons. Keep presence/status copy out of headers. A shared two-item bottom bar (Chat, Calendar) is 56 px high.
 - The calendar example defines 8/16/24/32 px spacing, grouped month arrows, an inset selection frame and a scrolling agenda. Keep it aligned with Flutter and the shared mockup styles.
-- Orbital SVGs own fixed paths, lighting and edge gradients in a 462×868 reference plane. Small highlights travel along paths over 180 seconds. Honour reduced motion.
+- Orbital SVGs own fixed paths, lighting and edge gradients in a 462×868 reference plane. Small highlights travel along paths over about 69 seconds, easing in and out. Honour reduced motion.
 - The concept reference is docs/evidence/orbital-concepts.png. SVGs are authoring inputs; the app compiles exported paths and the guide embeds exported SVGs. No runtime asset route is needed.
 - Run `python3 toolchain/export-orbits.py` after artwork edits. It exports Flutter geometry/lighting and inline SVGs in the guide and mockups. Do not hand-edit exports.
 - Items not yet verified carry "to check" or "Design pending".
-- Fonts load from Google Fonts. Icons load from jsDelivr (@carbon/icons, pinned version). The primary logo is the word Minder. App launchers and OAuth consent use the M badge in `app-icon.svg`.
+- Fonts load from Google Fonts. Icons load from jsDelivr (@carbon/icons, pinned version). The primary logo is the word Minder. App launchers and OAuth consent use the app icon in `app-icon.svg`.
 
 # Work Guidance
 
@@ -36,5 +36,5 @@ Serve locally with `python3 -I -m http.server 8899 --directory brand` and open `
 
 No child instruction files.
 
-`app-icon.svg` is the canonical app badge. `toolchain/render-icons.py` exports all Android, web and public grant-logo assets.
-The M uses Text colour. Its four focus corners use Signal. The background uses Void.
+`app-icon.svg` is the canonical app icon. `toolchain/render-icons.py` exports all Android, web and public grant-logo assets.
+It has two layers: `minder-orbit` (Void with the Orbital halo and three thin ellipses) and `minder-mark` (the Michroma M outline with a soft rim glow, a Text-colour body that dims away from the top right, and a thin bright rim). The M path is converted from `app/assets/fonts/Michroma-Regular.ttf` (OFL). It is 52 units wide, inside the Android adaptive safe zone. The icon has no Signal red.

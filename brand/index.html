@@ -319,7 +319,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
 .orbit-surface{position:relative;overflow:hidden;background:var(--void)}
 .orbit-surface > :not(.orbit-artwork){position:relative;z-index:1}
 .orbit-surface > .orbit-artwork{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
-.orbit-travel path{animation:orbit-travel 180s linear infinite}
+.orbit-travel path{animation:orbit-travel 68.571s ease-in-out infinite}
 @keyframes orbit-travel{to{stroke-dashoffset:-1000}}
 @media(prefers-reduced-motion:reduce){.orbit-travel{display:none}}
 
@@ -476,7 +476,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
    <li>Use 32 px in tiles and 24 px in lists. Use 20 px inside buttons.</li>
    <li>Show an icon next to a text label. Use the Text colour or the button text colour.</li>
    <li>Move uses the two-way horizontal arrows. Open uses the diagonal arrow. Never use one for the other.</li>
-   <li>The primary logo is the word Minder. App launchers and OAuth consent use the M badge with Signal focus corners.</li>
+   <li>The primary logo is the word Minder. App launchers and OAuth consent use the app icon: the Michroma M with a lit rim over the Orbital background.</li>
    <li><img src="app-icon.svg" width="96" height="96" alt="Minder app icon"></li>
   </ul>
   <h3>Source</h3>
@@ -542,7 +542,7 @@ footer{padding:28px 20px 28px calc(var(--col) + 24px);font-size:12px;letter-spac
   <p>Below 360 px, use 16 px side padding and a 20 px title. Show loading and connection errors in the content area.</p>
   <h3>Orbital background</h3>
   <p>Fixed Bézier paths follow the approved Orbital artwork. Calendar keeps the reference composition; Chat uses a shifted, tighter variant.</p>
-  <p>Keep the paths, edge glow and atmospheric lighting still. Move small highlights along the paths over 180 seconds. Cards stay opaque. Decoration does not use Signal red.</p>
+  <p>Keep the paths, edge glow and atmospheric lighting still. Move small highlights along the paths over about 69 seconds, easing in and out. Cards stay opaque. Decoration does not use Signal red.</p>
   <p>Pause motion on hidden screens and when the app is in the background. Reduced motion shows a still composition.</p>
   <h3>Calendar</h3>
   <p>Give the month a 24 px heading and the year its own 14 px line. Group the two arrows on the right.</p>

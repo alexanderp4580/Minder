@@ -33,7 +33,7 @@ class _OrbitalBackgroundState extends State<OrbitalBackground>
     _artwork = OrbitalArtwork(widget.scene);
     _motion = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 180),
+      duration: const Duration(milliseconds: 68571),
     );
     _foreground =
         WidgetsBinding.instance.lifecycleState == null ||
@@ -142,7 +142,13 @@ class _HighlightPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (enabled) artwork.paintHighlights(canvas, size, motion.value);
+    if (enabled) {
+      artwork.paintHighlights(
+        canvas,
+        size,
+        Curves.easeInOut.transform(motion.value),
+      );
+    }
   }
 
   @override

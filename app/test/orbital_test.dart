@@ -66,6 +66,43 @@ void main() {
     },
   );
 
+  testWidgets('highlights complete a loop in 68.571 s', (tester) async {
+    await tester.pumpWidget(scene());
+    final start = await pixels(tester);
+    await tester.pump(const Duration(milliseconds: 34285));
+    final half = await pixels(tester);
+    expect(half, isNot(orderedEquals(start)));
+    await tester.pump(const Duration(milliseconds: 34286));
+    expect(await pixels(tester), orderedEquals(start));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('highlights ease in and out of each loop', (tester) async {
+    int changed(Uint8List a, Uint8List b) {
+      var count = 0;
+      for (var i = 0; i < a.length; i++) {
+        if (a[i] != b[i]) count++;
+      }
+      return count;
+    }
+
+    await tester.pumpWidget(scene());
+    final start = await pixels(tester);
+    await tester.pump(const Duration(milliseconds: 6857));
+    final early = await pixels(tester);
+    await tester.pump(const Duration(milliseconds: 20571));
+    final before = await pixels(tester);
+    await tester.pump(const Duration(milliseconds: 6857));
+    final middle = await pixels(tester);
+    expect(
+      changed(start, early),
+      lessThan(changed(before, middle) ~/ 2),
+      reason:
+          'the first tenth of a loop covers less ground than the middle tenth',
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('highlights move without rebuilding foreground content', (
     tester,
   ) async {

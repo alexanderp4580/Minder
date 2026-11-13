@@ -92,7 +92,7 @@ The calendar follows the Layout section of the brand guide.
 - `brand/orbital-calendar.svg` and `brand/orbital-chat.svg` own the artwork in a 462×868 reference plane.
 - Fixed Bézier paths follow the visible reference curves. Calendar uses the reference composition; Chat uses a shifted, tighter variant.
 - The SVGs define atmospheric lighting, local edge gradients and a soft edge glow. Keep these layers still.
-- Move short highlights along the paths over 180 seconds. The geometry does not rotate or change shape.
+- Move short highlights along the paths over about 69 seconds (one loop is 68.571 s), easing in and out. The geometry does not rotate or change shape.
 - Fit the reference plane with its aspect ratio preserved, aligned at the top and centred horizontally. Clip excess artwork at the viewport edge.
 - Cache path metrics on size changes. Isolate static artwork and foreground from highlight repaints.
 - Reduced motion hides travelling highlights. Hidden routes and backgrounded apps stop animation.
