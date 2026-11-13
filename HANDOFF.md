@@ -1,7 +1,7 @@
 # Handoff
 
-State on 2026-11-13. Production runs commit `2033008`. Local `main` is ahead of `origin/main` and not deployed.
-Local `main` holds `m0-chat`, `notification-body-tap` and `app-icon-orbital` (fast-forward merge on 2026-11-13 at the owner's request; not pushed). The worktree `Minder-m0-chat` is on `app-icon-orbital`, equal to `main`.
+State on 2026-11-13. Production runs commit `ab94726`, the head of `main` and of `notification-body-tap`.
+`main` holds `m0-chat`, `notification-body-tap`, `app-icon-orbital` and `delete-items`. The owner asked for the merge and the deployment on 2026-11-13. `origin/main` and `origin/notification-body-tap` are both at `ab94726`. The worktree `Minder-m0-chat` is on `delete-items`.
 
 ## Current source
 
@@ -67,20 +67,20 @@ The calendar spacing and opaque cards remain unchanged.
 
 ## Delete and cancel items
 
-Branch `delete-items` (from local `main`; not merged, not pushed, not deployed). App 0.7.0+23 (the server also gained the finished-items lookup, which needs no app change).
+In `main` and deployed at `ab94726`. App 0.7.0+23 (the server also gained the finished-items lookup, which needs no app change).
 Chat can cancel, delete and look up finished items (a second model call, only on request). The calendar has a Delete control. A delete removes the item and its associated data. A failed send returns its text to the composer and leaves no Retry block.
 APK 0.7.0 reached Telegram once (message 1995). Evidence and limits: [docs/evidence/delete-items.md](docs/evidence/delete-items.md). The server needs a deploy before delete works on a phone. Phone approval is pending.
 
 ## App icon and faster highlights
 
-Merged into local `main` (not pushed, not deployed). App 0.6.2+22.
+In `main` and deployed (server side). App 0.6.2+22.
 The launcher icon is the Michroma M with a lit rim over the Orbital background, no red. Orbital highlights loop in 68.571 s with ease in and out (mean speed 2.625 times the original 180 s linear loop); their brightness is unchanged.
 APK 0.6.1 reached Telegram once (message 1993; 102.857 s linear loop). APK 0.6.2 reached Telegram once (message 1994). Telegram credentials come from TokenCrypt (`telegram_astrabot_token`, `telegram_astrabot_chatid`).
 Evidence and limits: [docs/evidence/app-icon.md](docs/evidence/app-icon.md). Phone approval is pending.
 
 ## Open work
 
-### Notification actions and email capture (in local `main`, not pushed, not deployed)
+### Notification actions and email capture (in `main`, deployed; phone approval pending)
 
 - `be4aeff`: the reminder notification has no content intent. Tapping its body does nothing.
 - `6c115a5`: Done and Snooze run in the background. `ReminderActionReceiver` starts a headless Flutter engine at the Dart entry point `notificationAction` and calls the reminder action with the app login. Open still opens the app.
@@ -141,8 +141,8 @@ Reference and tracing steps: [docs/logging.md](docs/logging.md).
 
 ## Deployment and APK status
 
-Production runs `2033008`, deployed on 2026-11-12 as Coolify deployment `wehc4yesilvupuyue3pzpp4v`. The app is `running:healthy`.
-The Coolify application builds from `main`. It built from `m0-chat` before this deployment.
+Production runs `ab94726`, deployed on 2026-11-13 as Coolify deployment `bi6zx3vbht0tv4fvwsyxf3o2`. The app is `running:healthy`. Startup showed schema version 5, no migrations, email capture and Firebase push configured, and the reminder worker running with 9 items and 1 device.
+The Coolify application builds the branch `notification-body-tap` at a pinned commit (`git_commit_sha`). It does not follow `main`.
 The first production heartbeat reported one registered device, five items and no active schedule.
 Notifications did not arrive on 2026-11-12. The old build logged nothing that explains it. Watch the next reminder with the new logs.
 
@@ -151,7 +151,7 @@ The build uses the cached debug signing key, so it installs over earlier builds.
 Earlier APK evidence: [docs/evidence/orbital-artwork.md](docs/evidence/orbital-artwork.md).
 
 The Coolify app is `ciw3jk5gkgiql8kfdomeyys2`.
-A Git push does not deploy. Deployment needs an explicit POST to `/deploy`.
+A Git push does not deploy. To deploy a commit: PATCH the application with `{"git_commit_sha": "<sha>"}` at `/api/v1/applications/<uuid>`, then POST `/api/v1/deploy?uuid=<uuid>&force=false`. Coolify rejects a GET. A deploy without the PATCH redeploys the old pinned commit and rebuilds nothing. Rollback is the same two calls with the previous commit (`0046c9a` before this release).
 The prior handoff recommends normal deploys; forced deploys rebuild all layers.
 `.dockerignore` controls the build context. Check a new COPY source before deploying.
 

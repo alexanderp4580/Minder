@@ -1,6 +1,6 @@
 # Delete and cancel items, quieter connection errors
 
-Date: 2026-11-13. Branch `delete-items` (from local `main`). App version 0.7.0+23. The finished-items lookup is server-only; the 0.7.0 APK needs no update for it. Not merged, not pushed, not deployed.
+Date: 2026-11-13. Branch `delete-items`. App version 0.7.0+23. The finished-items lookup is server-only; the 0.7.0 APK needs no update for it. Merged into `main` and deployed on 2026-11-13.
 Spec: [delete items design](../superpowers/specs/2026-11-13-delete-items-design.md). Plan: [delete items plan](../superpowers/plans/2026-11-13-delete-items.md).
 
 ## Behaviour
@@ -23,6 +23,11 @@ Spec: [delete items design](../superpowers/specs/2026-11-13-delete-items-design.
 | Calendar golden | Updated after viewing the new card with its Delete control |
 
 Artifact: `.local/artifacts/Minder-0.7.0-arm64.apk` (ignored by Git), 19,224,066 bytes, SHA-256 `3a2c35ba322adad6b9730d5c5d8287c47f667685ff845106bfbb5d867faeed2c`. aapt2 reports `io.liveleds.minder`, version 0.7.0, code 23. The signing certificate matches earlier APKs. Telegram confirmed one upload (message 1995).
+
+## Deployment
+
+The owner asked for the deployment. `main` and `notification-body-tap` were pushed as fast-forwards to `ab94726`. The first Coolify deploy rebuilt nothing, because the application pins `git_commit_sha` to `0046c9a`. After a PATCH to the pin and a second deploy (`bi6zx3vbht0tv4fvwsyxf3o2`), the build finished and the container passed its health check. Startup logs showed no errors: schema 5, no migrations applied, email capture and push configured, reminder worker running.
+A public `/v1/health` call returns 401 because Cloudflare Access fronts it. Nobody has used delete, cancel or the finished-items lookup against production yet.
 
 ## Limits
 
