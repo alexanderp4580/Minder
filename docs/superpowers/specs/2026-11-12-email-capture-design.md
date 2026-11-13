@@ -206,6 +206,7 @@ Capture status: received, processing, needs-answer, ready-for-review, reviewed, 
 Candidate status is separate: needs-answer, pending, confirmed, discarded or superseded.
 A capture remains needs-answer while any candidate or attachment coverage needs clarification; other candidates can still be confirmed.
 It becomes reviewed when all active candidates have terminal outcomes and all coverage warnings are acknowledged. A zero-item email shows "No actionable items found" with the source and an option to explain what to capture.
+Do nothing closes any open (not processing, failed or reviewed) capture at its current revision: remaining candidates become discarded, their previews fail, the capture is reviewed and the source stays. It changes no items and cannot be reopened by a later answer.
 Retry does not reopen confirmed/discarded candidates. A source with previous results keeps them visible while failed work retries.
 
 Persist sources, attachment manifests, jobs/leases, candidate revisions, follow-up answers, item-source links and minimal ingestion receipts.

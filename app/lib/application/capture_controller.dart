@@ -45,6 +45,10 @@ class CaptureController extends ChangeNotifier {
     );
     if (!_disposed) onEntry(entry);
   });
+  Future<void> dismiss(Capture c) => _act(() async {
+    final entry = await repository.dismissCapture(c.id, c.revision);
+    if (!_disposed) onEntry(entry);
+  });
   Future<void> retry(Capture c) => _act(() async {
     final entry = await repository.retryCapture(c.id);
     if (!_disposed) onEntry(entry);

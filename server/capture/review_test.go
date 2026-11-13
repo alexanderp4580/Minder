@@ -329,3 +329,62 @@ func TestConfirmedItemExposesItsEmailSources(t *testing.T) {
 		t.Fatal("item has no retrievable source", items, e)
 	}
 }
+
+type emptyExtractor struct{}
+
+func (emptyExtractor) Extract(context.Context, domain.CaptureDocument, []domain.CaptureAnswer) (domain.CaptureExtraction, error) {
+	return domain.CaptureExtraction{}, nil
+}
+
+func TestDismissClosesAnOpenCaptureWithoutChangingItems(t *testing.T) {
+	for name, extractor := range map[string]capture.Extractor{"candidates and questions": questionsExtractor{}, "zero items": emptyExtractor{}} {
+		t.Run(name, func(t *testing.T) {
+			db, e := store.Open(filepath.Join(t.TempDir(), "db"))
+			if e != nil {
+				t.Fatal(e)
+			}
+			defer db.Close()
+			files, _ := mailfiles.New(t.TempDir())
+			svc := capture.New(db, files, extractor)
+			svc.Parser = &mailparse.Parser{}
+			svc.Preview = command.PreviewIn
+			id, _, _ := svc.Ingest(context.Background(), domain.CaptureEnvelope{RequestID: "dismiss"}, []byte("From: owner@example.com\r\n\r\nHotel"))
+			if e = svc.ProcessNext(context.Background(), time.Now()); e != nil {
+				t.Fatal(e)
+			}
+			c, _ := svc.Get(id)
+			if _, e = svc.Dismiss(context.Background(), id, c.Revision+1); e == nil {
+				t.Fatal("stale revision dismissed")
+			}
+			entry, e := svc.Dismiss(context.Background(), id, c.Revision)
+			if e != nil || entry.Capture == nil || entry.Capture.Status != "reviewed" {
+				t.Fatal(entry, e)
+			}
+			c, _ = svc.Get(id)
+			for _, candidate := range c.Candidates {
+				if candidate.State != "discarded" {
+					t.Fatal("candidate left open", candidate)
+				}
+				if candidate.ChangeID != "" {
+					if _, e = command.New(db).Confirm(candidate.ChangeID); e == nil {
+						t.Fatal("dismissed preview still confirmable")
+					}
+				}
+			}
+			if items, _ := db.Items(); len(items) != 0 {
+				t.Fatal("dismiss changed items", items)
+			}
+			if f, _, e := svc.Attachment(id, "original"); e != nil {
+				t.Fatal("source not kept", e)
+			} else {
+				f.Close()
+			}
+			if _, e = svc.Dismiss(context.Background(), id, c.Revision); e == nil {
+				t.Fatal("reviewed capture dismissed twice")
+			}
+			if _, e = svc.Answer(context.Background(), id, c.Revision, "reopen"); e == nil {
+				t.Fatal("answer reopened a dismissed capture")
+			}
+		})
+	}
+}

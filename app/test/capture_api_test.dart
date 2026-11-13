@@ -69,6 +69,64 @@ void main() {
     chat.dispose();
     api.close();
   });
+  testWidgets(
+    'Do nothing closes an open email and zero-item emails read clearly',
+    (tester) async {
+      final api = ChatApi(
+        'https://example.test',
+        client: MockClient((request) async {
+          expect(request.url.path, '/v1/captures/source/dismiss');
+          expect(jsonDecode(request.body), {'revision': 2});
+          return http.Response(
+            jsonEncode({
+              'id': 'capture-entry',
+              'cursor': 9,
+              'kind': 'capture',
+              'text': 'Nothing to do. The email is kept.',
+              'created_at': '2026-11-12T10:00:00Z',
+              'capture': {
+                'id': 'source',
+                'revision': 2,
+                'status': 'reviewed',
+                'candidates': [],
+                'attachments': [],
+              },
+            }),
+            200,
+          );
+        }),
+      );
+      final chat = ChatController(api);
+      Future<void> show(Capture capture) => tester.pumpWidget(
+        MaterialApp(
+          theme: Tokens.theme,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: CaptureView(capture: capture, chat: chat),
+            ),
+          ),
+        ),
+      );
+      await show(
+        const Capture(id: 'source', status: 'ready-for-review', revision: 2),
+      );
+      expect(find.text('Review the proposals in chat.'), findsNothing);
+      expect(
+        find.text('No actionable items found. Tell Minder what to capture.'),
+        findsOneWidget,
+      );
+      expect(tester.getSize(find.text('Do nothing')).height, greaterThan(0));
+      await tester.ensureVisible(find.text('Do nothing'));
+      await tester.tap(find.text('Do nothing'));
+      await tester.pumpAndSettle();
+      expect(chat.entries.single.capture!.status, 'reviewed');
+      await show(const Capture(id: 'source', status: 'reviewed', revision: 2));
+      expect(find.text('Do nothing'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      chat.dispose();
+      api.close();
+    },
+  );
   test(
     'attachments use owner authentication and preserve binary bytes',
     () async {

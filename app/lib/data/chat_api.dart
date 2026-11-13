@@ -195,6 +195,14 @@ class ChatApi
     ) as Map<String, dynamic>,
   );
   @override
+  Future<Entry> dismissCapture(String id, int revision) async => entryFromJson(
+    await _request(
+      'POST',
+      '/v1/captures/${Uri.encodeComponent(id)}/dismiss',
+      body: {'revision': revision},
+    ) as Map<String, dynamic>,
+  );
+  @override
   Future<Entry> retryCapture(String id) =>
       _post('/v1/captures/${Uri.encodeComponent(id)}/retry');
   @override

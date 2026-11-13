@@ -97,7 +97,7 @@ Send each APK once. A 504 from Telegram can mean the file arrived.
 
 ## Email capture implementation
 
-Local app version: 0.5.0+18 on `notification-body-tap`. Production runs `fb99b50` with email capture live: Worker `minder-email-ingress`, routing for the `minder` subdomain and an Access service-token policy. A real forward from an allowed Gmail address reached the server and produced one candidate on 2026-11-12 (Worker log: all stages, status 201). APK 0.5.0+18 reached Telegram (message 1990). Phone review, attachment download and Confirm remain unverified.
+Local app version: 0.5.1+19 on `notification-body-tap`. Production runs `fb99b50` with email capture live: Worker `minder-email-ingress`, routing for the `minder` subdomain and an Access service-token policy. A real forward from an allowed Gmail address reached the server and produced one candidate on 2026-11-12 (Worker log: all stages, status 201). APK 0.5.0+18 reached Telegram (message 1990). App 0.5.1+19 adds the Do nothing button and clearer zero-item wording. Phone review, attachment download and Confirm remain unverified.
 The owner approved the specification and inline implementation. The Worker, Go ingestion/parser/review pipeline, Flutter review flow and deployment runbook are present.
 
 Minder retains originals and attachments, asks targeted follow-up questions and requires Confirm for each item change. Travel items preserve both time zones and hotel checkout dates. Sources remain accessible from calendar items.

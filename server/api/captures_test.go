@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/alexanderp4580/Minder/server/domain"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -100,3 +101,59 @@ func TestEmailIngestLogsEachOutcomeWithoutContent(t *testing.T) {
 		}
 	}
 }
+
+type dismissReviewer struct {
+	id       string
+	revision int
+}
+
+func (d *dismissReviewer) Get(string) (domain.Capture, error) { return domain.Capture{}, nil }
+func (d *dismissReviewer) Answer(context.Context, string, int, string) (domain.Entry, error) {
+	return domain.Entry{}, nil
+}
+func (d *dismissReviewer) AnswerCandidate(context.Context, string, int, string, string) (domain.Entry, error) {
+	return domain.Entry{}, nil
+}
+func (d *dismissReviewer) Acknowledge(context.Context, string, int) (domain.Entry, error) {
+	return domain.Entry{}, nil
+}
+func (d *dismissReviewer) Dismiss(_ context.Context, id string, revision int) (domain.Entry, error) {
+	d.id, d.revision = id, revision
+	if revision != 3 {
+		return domain.Entry{}, domain.ErrConflict
+	}
+	return domain.Entry{Kind: "capture", Text: "Nothing to do. The email is kept."}, nil
+}
+func (d *dismissReviewer) Retry(string) (domain.Entry, error) { return domain.Entry{}, nil }
+func (d *dismissReviewer) Attachment(string, string) (io.ReadCloser, domain.CaptureAttachment, error) {
+	return nil, domain.CaptureAttachment{}, domain.ErrNotFound
+}
+
+func TestDismissRouteNeedsTheOwnerAndTheCurrentRevision(t *testing.T) {
+	reviewer := &dismissReviewer{}
+	s := New(nil, nil, nil, nil, rejectOwner{}, "")
+	s.Captures = reviewer
+	post := func(body string) int {
+		w := httptest.NewRecorder()
+		s.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/v1/captures/abc/dismiss", bytes.NewBufferString(body)))
+		return w.Code
+	}
+	if code := post(`{"revision":3}`); code != 401 || reviewer.id != "" {
+		t.Fatal("machine or anonymous caller reached dismiss", code)
+	}
+	s = New(nil, nil, nil, nil, allowOwner{}, "")
+	s.Captures = reviewer
+	if code := post(`{"revision":3}`); code != 200 || reviewer.id != "abc" || reviewer.revision != 3 {
+		t.Fatal(code, reviewer)
+	}
+	if code := post(`{"revision":2}`); code != 409 {
+		t.Fatal("stale revision", code)
+	}
+	if code := post(`{"revision":3,"extra":1}`); code != 400 {
+		t.Fatal("unknown field accepted", code)
+	}
+}
+
+type allowOwner struct{}
+
+func (allowOwner) Authenticate(*http.Request) error { return nil }

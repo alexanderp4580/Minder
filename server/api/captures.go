@@ -62,6 +62,7 @@ type CaptureReviewer interface {
 	Answer(context.Context, string, int, string) (domain.Entry, error)
 	AnswerCandidate(context.Context, string, int, string, string) (domain.Entry, error)
 	Acknowledge(context.Context, string, int) (domain.Entry, error)
+	Dismiss(context.Context, string, int) (domain.Entry, error)
 	Retry(string) (domain.Entry, error)
 	Attachment(string, string) (io.ReadCloser, domain.CaptureAttachment, error)
 }
@@ -104,6 +105,27 @@ func (s *Server) answerCapture(w http.ResponseWriter, r *http.Request) {
 	} else {
 		entry, e = s.Captures.Answer(r.Context(), r.PathValue("id"), answer.Revision, answer.Text)
 	}
+	if e != nil {
+		fail(w, e)
+		return
+	}
+	write(w, 200, entry)
+}
+func (s *Server) dismissCapture(w http.ResponseWriter, r *http.Request) {
+	if s.Captures == nil {
+		http.NotFound(w, r)
+		return
+	}
+	var body struct {
+		Revision int `json:"revision"`
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1000))
+	decoder.DisallowUnknownFields()
+	if e := decoder.Decode(&body); e != nil {
+		fail(w, &domain.Invalid{Field: "dismiss", Message: "The request is unreadable."})
+		return
+	}
+	entry, e := s.Captures.Dismiss(r.Context(), r.PathValue("id"), body.Revision)
 	if e != nil {
 		fail(w, e)
 		return

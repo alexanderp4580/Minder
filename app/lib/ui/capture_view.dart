@@ -58,6 +58,10 @@ class _CaptureViewState extends State<CaptureView> {
     if (capture.deleted) {
       return const Text('Email source deleted. Confirmed items remain.');
     }
+    final noItems =
+        !capture.processing &&
+        capture.candidates.isEmpty &&
+        capture.status == 'ready-for-review';
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -83,20 +87,19 @@ class _CaptureViewState extends State<CaptureView> {
           if (capture.sender.isNotEmpty)
             Text(capture.sender, style: const TextStyle(color: Tokens.muted)),
           const SizedBox(height: 8),
-          Text(switch (capture.status) {
-            'received' => 'Received. Waiting to process.',
-            'processing' => 'Reading email and attachments…',
-            'needs-answer' => 'Some details need your answer.',
-            'failed' =>
-              capture.error.isEmpty
-                  ? 'Processing failed. The original is available.'
-                  : capture.error,
-            'reviewed' => 'Review complete.',
-            _ => 'Review the proposals in chat.',
-          }),
-          if (!capture.processing &&
-              capture.candidates.isEmpty &&
-              capture.status != 'failed')
+          if (!noItems)
+            Text(switch (capture.status) {
+              'received' => 'Received. Waiting to process.',
+              'processing' => 'Reading email and attachments…',
+              'needs-answer' => 'Some details need your answer.',
+              'failed' =>
+                capture.error.isEmpty
+                    ? 'Processing failed. The original is available.'
+                    : capture.error,
+              'reviewed' => 'Review complete.',
+              _ => 'Review the proposals in chat.',
+            }),
+          if (noItems)
             const Padding(
               padding: EdgeInsets.only(top: 8),
               child: Text(
@@ -170,6 +173,13 @@ class _CaptureViewState extends State<CaptureView> {
                     },
               child: const Text('Send answer'),
             ),
+            if (capture.status != 'failed')
+              OutlinedButton(
+                onPressed: controller.busy
+                    ? null
+                    : () => controller.dismiss(capture),
+                child: const Text('Do nothing'),
+              ),
           ],
           if (capture.needsCoverageReview && !capture.processing)
             OutlinedButton(

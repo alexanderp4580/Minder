@@ -10,6 +10,7 @@ abstract interface class CaptureRepository {
     bool acknowledgeCoverage = false,
     String? candidateId,
   });
+  Future<Entry> dismissCapture(String id, int revision);
   Future<Entry> retryCapture(String id);
   Future<Entry> deleteCapture(String id, int revision);
   Future<AttachmentDownload> downloadAttachment(

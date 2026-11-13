@@ -51,25 +51,8 @@ func (s *Service) answer(ctx context.Context, id string, revision int, text stri
 				continue
 			}
 			candidate.State = "superseded"
-			if candidate.ChangeID != "" {
-				p, e := tx.Pending(candidate.ChangeID)
-				if e != nil {
-					return e
-				}
-				if p.State == "pending" {
-					p.State = "failed"
-					if e = tx.PutPending(p); e != nil {
-						return e
-					}
-					entry, e := tx.Entry(p.EntryID)
-					if e != nil {
-						return e
-					}
-					entry.Change.State = "failed"
-					if _, e = tx.PutEntry(entry); e != nil {
-						return e
-					}
-				}
+			if e = failPending(tx, candidate.ChangeID); e != nil {
+				return e
 			}
 		}
 		c.Status = "received"
@@ -85,6 +68,60 @@ func (s *Service) answer(ctx context.Context, id string, revision int, text stri
 	})
 	return
 }
+
+// Dismiss closes an open review without changing items. The source stays available.
+func (s *Service) Dismiss(ctx context.Context, id string, revision int) (out domain.Entry, err error) {
+	err = s.repository.Transact(func(tx port.Transaction) error {
+		c, e := tx.Capture(id)
+		if e != nil {
+			return e
+		}
+		if c.Deleted || c.Revision != revision || c.Status == "processing" || c.Status == "received" || c.Status == "reviewed" || c.Status == "failed" {
+			return domain.ErrConflict
+		}
+		for n := range c.Candidates {
+			candidate := &c.Candidates[n]
+			if candidate.State == "confirmed" || candidate.State == "discarded" {
+				continue
+			}
+			candidate.State = "discarded"
+			if e = failPending(tx, candidate.ChangeID); e != nil {
+				return e
+			}
+		}
+		c.Status = "reviewed"
+		c.Questions = nil
+		if e = tx.PutCapture(c); e != nil {
+			return e
+		}
+		out, e = tx.PutEntry(domain.Entry{ID: c.EntryID, Kind: "capture", Text: "Nothing to do. The email is kept.", Capture: &c})
+		return e
+	})
+	return
+}
+
+// failPending withdraws a still-pending preview so it can no longer be confirmed.
+func failPending(tx port.Transaction, changeID string) error {
+	if changeID == "" {
+		return nil
+	}
+	p, e := tx.Pending(changeID)
+	if e != nil || p.State != "pending" {
+		return e
+	}
+	p.State = "failed"
+	if e = tx.PutPending(p); e != nil {
+		return e
+	}
+	entry, e := tx.Entry(p.EntryID)
+	if e != nil {
+		return e
+	}
+	entry.Change.State = "failed"
+	_, e = tx.PutEntry(entry)
+	return e
+}
+
 func (s *Service) Retry(id string) (out domain.Entry, err error) {
 	err = s.repository.Transact(func(tx port.Transaction) error {
 		c, e := tx.Capture(id)

@@ -71,6 +71,7 @@ func New(s Queries, c Commands, messages Messages, reminders ReminderActions, v 
 	m.HandleFunc("POST /v1/email/ingest", srv.ingestEmail)
 	m.HandleFunc("GET /v1/captures/{id}", srv.getCapture)
 	m.HandleFunc("POST /v1/captures/{id}/answers", srv.answerCapture)
+	m.HandleFunc("POST /v1/captures/{id}/dismiss", srv.dismissCapture)
 	m.HandleFunc("POST /v1/captures/{id}/retry", srv.retryCapture)
 	m.HandleFunc("POST /v1/captures/{id}/delete", srv.deleteCapture)
 	m.HandleFunc("GET /v1/captures/{id}/attachments/{attachmentId}", srv.captureAttachment)
