@@ -1,6 +1,6 @@
 # App icon redesign and faster highlights
 
-Date: 2026-11-13. Branch: `app-icon-orbital` (from `notification-body-tap`, not merged, not pushed). Version 0.6.1+21, then 0.6.2+22.
+Date: 2026-11-13. Branch: `app-icon-orbital` (from `notification-body-tap`; merged into local `main`, not pushed). Version 0.6.1+21, then 0.6.2+22.
 
 The owner chose the Michroma M with a lit rim (variant C) over the Orbital background, then asked for 75 percent more intense background animation. A first change raised highlight alphas; the owner rejected it. Highlight brightness is unchanged. APK 0.6.1 made highlights 1.75 times faster (102.857 s loop). The owner then asked for another 50 percent: APK 0.6.2 loops in 68.571 s, 2.625 times the original 180 s speed. APK 0.6.1 and the first 0.6.2 draft moved linearly (`AnimationController.repeat()`, no curve). The owner then asked for ease in and out: the highlight painter now applies `Curves.easeInOut` to the loop value, so highlights slow near each loop point and peak at about 1.5 times the mean speed mid-loop.
 

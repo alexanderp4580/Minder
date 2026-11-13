@@ -1,7 +1,7 @@
 # Handoff
 
-State on 2026-11-12. Production runs commit `2033008` from branch `main`.
-Branch `m0-chat` is merged into `main`. The worktree `Minder-m0-chat` is on branch `notification-body-tap`, which has unmerged work (see "Open work").
+State on 2026-11-13. Production runs commit `2033008`. Local `main` is ahead of `origin/main` and not deployed.
+Local `main` holds `m0-chat`, `notification-body-tap` and `app-icon-orbital` (fast-forward merge on 2026-11-13 at the owner's request; not pushed). The worktree `Minder-m0-chat` is on `app-icon-orbital`, equal to `main`.
 
 ## Current source
 
@@ -67,14 +67,14 @@ The calendar spacing and opaque cards remain unchanged.
 
 ## App icon and faster highlights
 
-Branch `app-icon-orbital` (from `notification-body-tap`; not merged, not pushed, not deployed). App 0.6.2+22.
+Merged into local `main` (not pushed, not deployed). App 0.6.2+22.
 The launcher icon is the Michroma M with a lit rim over the Orbital background, no red. Orbital highlights loop in 68.571 s with ease in and out (mean speed 2.625 times the original 180 s linear loop); their brightness is unchanged.
 APK 0.6.1 reached Telegram once (message 1993; 102.857 s linear loop). APK 0.6.2 reached Telegram once (message 1994). Telegram credentials come from TokenCrypt (`telegram_astrabot_token`, `telegram_astrabot_chatid`).
 Evidence and limits: [docs/evidence/app-icon.md](docs/evidence/app-icon.md). Phone approval is pending.
 
 ## Open work
 
-### Branch `notification-body-tap` (not merged, not pushed, not deployed)
+### Notification actions and email capture (in local `main`, not pushed, not deployed)
 
 - `be4aeff`: the reminder notification has no content intent. Tapping its body does nothing.
 - `6c115a5`: Done and Snooze run in the background. `ReminderActionReceiver` starts a headless Flutter engine at the Dart entry point `notificationAction` and calls the reminder action with the app login. Open still opens the app.
