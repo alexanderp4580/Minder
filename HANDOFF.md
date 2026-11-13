@@ -69,7 +69,7 @@ The calendar spacing and opaque cards remain unchanged.
 
 Branch `delete-items` (from local `main`; not merged, not pushed, not deployed). App 0.7.0+23.
 Chat can cancel and delete items. The calendar has a Delete control. A delete removes the item and its associated data. A failed send returns its text to the composer and leaves no Retry block.
-Evidence and limits: [docs/evidence/delete-items.md](docs/evidence/delete-items.md). The server needs a deploy before delete works on a phone. Phone approval is pending.
+APK 0.7.0 reached Telegram once (message 1995). Evidence and limits: [docs/evidence/delete-items.md](docs/evidence/delete-items.md). The server needs a deploy before delete works on a phone. Phone approval is pending.
 
 ## App icon and faster highlights
 

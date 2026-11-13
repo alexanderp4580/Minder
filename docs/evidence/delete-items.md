@@ -20,6 +20,8 @@ Spec: [delete items design](../superpowers/specs/2026-11-13-delete-items-design.
 | `toolchain/check` | Exit 0: 95 Flutter tests, Go race tests, vet, format, Worker tests, hooks, architecture, DOX, orbital exports |
 | Calendar golden | Updated after viewing the new card with its Delete control |
 
+Artifact: `.local/artifacts/Minder-0.7.0-arm64.apk` (ignored by Git), 19,224,066 bytes, SHA-256 `3a2c35ba322adad6b9730d5c5d8287c47f667685ff845106bfbb5d867faeed2c`. aapt2 reports `io.liveleds.minder`, version 0.7.0, code 23. The signing certificate matches earlier APKs. Telegram confirmed one upload (message 1995).
+
 ## Limits
 
 - The browser scenarios did not run. The owner interrupted the run and asked why it was needed, so it was skipped. The API test and the widget tests cover the same paths. Nobody has used delete on a phone.
