@@ -16,6 +16,8 @@ Items distinguish event end from deadline, and date-only ranges from instants. E
 
 Capture values carry source metadata, attachment manifests, coverage, candidate revisions and follow-up answers without provider or storage code.
 
+The place-lookup offer is a minder entry with fixed text (`OfferText`, `ParseOffer`); `IsLookupReply` accepts `Look it up`. `Entry` marshals a computed `options` (`Skip`, `Look it up`) for a well-formed offer only; nothing stores it.
+
 `Change.RemovedEntryIDs` (`removed_entry_ids`) lists chat entries a delete removed. `Audit.ItemDeleted` marks the audit row that lets Undo restore a deleted item.
 
 
