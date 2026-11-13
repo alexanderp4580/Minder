@@ -1,6 +1,6 @@
 # Email review refinement
 
-Status: draft, awaiting owner approval. Date: 2026-11-13. Builds on [email capture](2026-11-12-email-capture-design.md).
+Status: approved by the owner with the question change below. Date: 2026-11-13. Builds on [email capture](2026-11-12-email-capture-design.md).
 
 ## Intent
 
@@ -10,7 +10,7 @@ A forwarded email should feel like a short conversation, not a form. The owner s
 
 1. **Natural flow.** Three messages, in order:
    1. *Email received.* The email card appears at once. When extraction finishes, the same card shows what Minder found: each item's title, when, and where, plus the source file. It asks nothing.
-   2. *One question, only if needed.* A separate chat message from Minder, short and specific, for example "Is the location important? If so, where is it?" The agent supplies zero to three quick-reply buttons, such as "Skip" or "Use the address in the email". Typing always works. Answering sends one reply and continues.
+   2. *Questions, only if needed.* A separate chat message from Minder. The agent decides, as a thoughtful assistant would, what is missing or unclear and worth asking: a duration that matters, a location, a date, a time, who or what to bring. It asks as many questions as that takes, each short and specific. No fixed list of fields and no field is always asked; it never asks what the email already answers or what does not matter. Each question may carry up to three quick-reply buttons chosen by the agent (for example "Skip", "About 30 minutes"). Typing always works, and one free-text reply can answer several questions. Answered questions close; unanswered ones stay open.
    3. *Final item.* When nothing is missing, Minder posts one complete item card for approval (Confirm, Discard, Do nothing).
 2. **Item card.**
    - The title shows once.
@@ -28,7 +28,7 @@ A forwarded email should feel like a short conversation, not a form. The owner s
 - No new item kinds such as flight or hotel; those still use `event`, shown as Appointment, until the owner asks.
 - No auto-confirm. Email text never writes items on its own.
 - No visual redesign: keep the Orbital look, header rule and 44 px targets.
-- Anti-goal: a question the email already answers. The agent must not ask for a location that is in the email.
+- Anti-goal: a question the email already answers, or that does not change the item. No hard-coded checklist of fields to ask about.
 
 ## Constraints
 
@@ -42,11 +42,11 @@ A forwarded email should feel like a short conversation, not a form. The owner s
 - Email received, then a separate question message, then a full item for approval.
 - The first card carries the extracted information.
 - Reminder choices run from minutes up to one week, with some preselected by the agent.
-- Location example in the mockup was only an example; the question is asked only when needed.
+- Questions are the agent's judgment, can be several, and cover whatever is missing and useful (duration, location, date and so on). Nothing is locked in.
 
 ## My calls (change any)
 
-- Quick replies come from the agent per question, at most three, plus free typing. Guess.
+- Quick replies come from the agent per question, at most three, plus free typing. Several questions sit in one message, each with its own replies. Guess.
 - The first card updates in place when extraction finishes instead of posting a second message. Guess.
 - A notification still arrives once per review: "Email received" for card one is silent; the push fires for the question or the final item, whichever comes first. Guess.
 - Do nothing stays on every open review.
