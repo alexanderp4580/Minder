@@ -16,7 +16,7 @@ Expose fixed messages for internal/model failures. Serve only named branding fil
 
 The calendar items route accepts an optional validated IANA timezone for date-only overlap selection.
 
-Email ingress is a separate machine-authenticated POST route with signed envelope/body verification; machine credentials never authorize owner routes. Ingestion acknowledges only durable sources/jobs. Owner capture routes include answers, retry, delete and dismiss (`POST /v1/captures/{id}/dismiss`, body `{revision}`). Ingestion logs `email ingest accepted/rejected/failed` with reason codes and counts, never content.
+Email ingress is a separate machine-authenticated POST route with signed envelope/body verification; machine credentials never authorize owner routes. `POST /v1/changes/{id}/reminders` (body `{offsets}`) edits a pending change's reminders. Ingestion acknowledges only durable sources/jobs. Owner capture routes include answers, retry, delete and dismiss (`POST /v1/captures/{id}/dismiss`, body `{revision}`). Ingestion logs `email ingest accepted/rejected/failed` with reason codes and counts, never content.
 
 # Work Guidance
 

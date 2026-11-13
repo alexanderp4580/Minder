@@ -337,3 +337,37 @@ func testServer(t *testing.T, database *store.Store, commands Commands, replier 
 	t.Cleanup(messages.Close)
 	return New(database, commands, messages, reminder.New(database), auth, web)
 }
+
+func TestSetRemindersRouteUpdatesPendingChangesOnly(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() { s.Close() })
+	commands := command.New(s)
+	h := testServer(t, s, commands, replier{s}, nil, "")
+	entry, e := commands.Preview(domain.Proposal{Action: "create_item", Title: "Fitting", Kind: "event", StartAt: time.Now().UTC().Add(72 * time.Hour).Format(time.RFC3339)})
+	if e != nil {
+		t.Fatal(e)
+	}
+	post := func(body string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/v1/changes/"+entry.Change.ID+"/reminders", strings.NewReader(body)))
+		return w
+	}
+	if w := post(`{"offsets":[1440,60]}`); w.Code != 200 || !strings.Contains(w.Body.String(), `"reminder_offsets_minutes":[1440,60]`) {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if w := post(`{"offsets":[7]}`); w.Code != 400 {
+		t.Fatal("unknown offset", w.Code)
+	}
+	if w := post(`{"offsets":[10],"extra":1}`); w.Code != 400 {
+		t.Fatal("unknown field", w.Code)
+	}
+	if _, e = commands.Confirm(entry.Change.ID); e != nil {
+		t.Fatal(e)
+	}
+	if w := post(`{"offsets":[10]}`); w.Code != 409 {
+		t.Fatal("confirmed change", w.Code)
+	}
+}

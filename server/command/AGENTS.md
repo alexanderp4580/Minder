@@ -16,6 +16,8 @@ Event kind, end, zones and date-only attributes participate in previews, Confirm
 
 Capture-bound previews validate candidate revision on Confirm. Confirm/Discard update source state and provenance atomically. Source deletion requires a separate irreversible preview and redacts captured history before file cleanup.
 
+Pending item previews with a start or deadline carry `reminder_choices_minutes` and the chosen `reminder_offsets_minutes`; `SetReminders` edits them while the change is pending and conflicts afterwards.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

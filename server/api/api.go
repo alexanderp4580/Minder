@@ -29,6 +29,7 @@ type Commands interface {
 	Confirm(string) (domain.Entry, error)
 	Refresh(string) (domain.Entry, error)
 	Discard(string) (domain.Entry, error)
+	SetReminders(string, []int) (domain.Entry, error)
 	Undo(string) (domain.Entry, error)
 }
 type Messages interface {
@@ -81,6 +82,7 @@ func New(s Queries, c Commands, messages Messages, reminders ReminderActions, v 
 	m.HandleFunc("POST /v1/chat/messages", srv.message)
 	m.HandleFunc("POST /v1/changes/{id}/confirm", srv.confirm)
 	m.HandleFunc("POST /v1/changes/{id}/discard", srv.discard)
+	m.HandleFunc("POST /v1/changes/{id}/reminders", srv.setReminders)
 	m.HandleFunc("POST /v1/undo/{id}", srv.undo)
 	m.HandleFunc("GET /v1/reminders", srv.reminders)
 	m.HandleFunc("POST /v1/reminders/{id}/{action}", srv.reminderAction)
@@ -354,4 +356,24 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 			f.Flush()
 		}
 	}
+}
+
+func (s *Server) setReminders(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	note(w, "change_id", id)
+	var body struct {
+		Offsets []int `json:"offsets"`
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1000))
+	decoder.DisallowUnknownFields()
+	if e := decoder.Decode(&body); e != nil {
+		fail(w, &domain.Invalid{Field: "offsets", Message: "The request is unreadable."})
+		return
+	}
+	entry, e := s.commands.SetReminders(id, body.Offsets)
+	if e != nil {
+		fail(w, e)
+		return
+	}
+	write(w, http.StatusOK, entry)
 }

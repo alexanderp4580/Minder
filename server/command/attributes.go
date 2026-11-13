@@ -127,6 +127,7 @@ func itemFields(t port.Transaction, old, now domain.Item) []domain.Field {
 		{Name: "due_at", Old: old.DueAt, New: now.DueAt},
 		{Name: "duration_minutes", Old: zeroEmpty(old.DurationMinutes), New: zeroEmpty(now.DurationMinutes)},
 		{Name: "remind_at", Old: old.RemindAt, New: now.RemindAt},
+		{Name: "reminders", Old: offsetsText(old.ReminderOffsets), New: offsetsText(now.ReminderOffsets)},
 		{Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(now.NagMinutes)},
 		{Name: "priority", Old: zeroEmpty(old.Priority), New: zeroEmpty(now.Priority)},
 		{Name: "location", Old: old.Location, New: now.Location},
@@ -313,4 +314,25 @@ func zeroEmpty(n int) string {
 		return ""
 	}
 	return fmt.Sprint(n)
+}
+
+// offsetsText names reminder offsets longest first: "1 day, 1 hour".
+func offsetsText(offsets []int) string {
+	parts := make([]string, 0, len(offsets))
+	for _, m := range offsets {
+		unit, n := "minute", m
+		switch {
+		case m%10080 == 0:
+			unit, n = "week", m/10080
+		case m%1440 == 0:
+			unit, n = "day", m/1440
+		case m%60 == 0:
+			unit, n = "hour", m/60
+		}
+		if n != 1 {
+			unit += "s"
+		}
+		parts = append(parts, fmt.Sprintf("%d %s", n, unit))
+	}
+	return strings.Join(parts, ", ")
 }

@@ -120,6 +120,9 @@ type Change struct {
 	Fields    []Field `json:"fields"`
 	State     string  `json:"state"`
 	UndoID    string  `json:"undo_id,omitempty"`
+
+	ReminderOffsets []int `json:"reminder_offsets_minutes,omitempty"`
+	ReminderChoices []int `json:"reminder_choices_minutes,omitempty"`
 }
 type Entry struct {
 	CaptureID string   `json:"capture_id,omitempty"`

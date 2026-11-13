@@ -144,7 +144,9 @@ func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 	}
 	fields := itemFields(t, old, after)
 	var e error
-	*out, e = t.PutEntry(domain.Entry{CaptureID: p.CaptureID, Kind: "preview", Text: "Review this change.", Change: &domain.Change{ID: id, Action: p.Action, ItemTitle: after.Title, Fields: fields, State: "pending"}})
+	change := &domain.Change{ID: id, Action: p.Action, ItemTitle: after.Title, Fields: fields, State: "pending"}
+	setReminderChoices(change, after)
+	*out, e = t.PutEntry(domain.Entry{CaptureID: p.CaptureID, Kind: "preview", Text: "Review this change.", Change: change})
 	if e != nil {
 		return e
 	}
@@ -380,4 +382,54 @@ func (c *Service) Refresh(id string) (domain.Entry, error) {
 		slog.Info("change refreshed", "old_change_id", id, "new_change_id", fresh.Change.ID, "expected_version", p.Proposal.ExpectedVersion)
 	}
 	return fresh, err
+}
+
+// setReminderChoices offers reminder offsets on a pending item change that has a start or deadline.
+func setReminderChoices(change *domain.Change, item domain.Item) {
+	change.ReminderOffsets, change.ReminderChoices = nil, nil
+	if change.Action != "create_item" && change.Action != "update_item" {
+		return
+	}
+	if _, ok := domain.NextReminder(domain.Item{StartAt: item.StartAt, DueAt: item.DueAt, StartDate: item.StartDate, DueDate: item.DueDate, Timezone: item.Timezone, ReminderOffsets: []int{10}}, time.Time{}); !ok {
+		return
+	}
+	change.ReminderOffsets = item.ReminderOffsets
+	change.ReminderChoices = domain.ReminderOffsetChoices
+}
+
+// SetReminders changes the reminder offsets of a pending item change before it is confirmed.
+func (c *Service) SetReminders(id string, offsets []int) (out domain.Entry, err error) {
+	err = c.repository.Transact(func(t port.Transaction) error {
+		p, e := t.Pending(id)
+		if e != nil {
+			return e
+		}
+		if p.State != "pending" || p.AfterProfile != nil || p.BeforeCapture != nil {
+			return domain.ErrConflict
+		}
+		entry, e := t.Entry(p.EntryID)
+		if e != nil {
+			return e
+		}
+		if len(entry.Change.ReminderChoices) == 0 {
+			return domain.ErrConflict
+		}
+		p.After.ReminderOffsets = offsets
+		if e = domain.Validate(&p.After); e != nil {
+			return e
+		}
+		p.Proposal.ReminderOffsets = p.After.ReminderOffsets
+		p.Proposal.ClearReminderOffsets = len(p.After.ReminderOffsets) == 0
+		old := domain.Item{}
+		if p.Before != nil {
+			old = *p.Before
+		}
+		entry.Change.Fields = itemFields(t, old, p.After)
+		setReminderChoices(entry.Change, p.After)
+		if out, e = t.PutEntry(entry); e != nil {
+			return e
+		}
+		return t.PutPending(p)
+	})
+	return
 }
