@@ -87,7 +87,7 @@ Source: https://github.com/agent0ai/dox. License: [docs/dox-license.txt](docs/do
 - Keep Cloudflare configuration and identity values out of `cmd/minder`.
 - Never add co-author trailers. Git hooks in `.githooks/` strip them; configure `core.hooksPath` in fresh clones.
 - Agree scope and acceptance before each product slice. Then execute autonomously within the approved scope.
-- Current work runs inline without sub-agents. Use the existing `Minder-m0-chat` worktree on `m0-chat`.
+- Current work runs inline without sub-agents. Use the existing `Minder-m0-chat` worktree and continue its current feature branch.
 - Outside inline execution, delegated workers use Sonnet 5 or 5.5 unless the owner names another model.
 - Preserve unrelated edits. Do not reset, clean, discard work, merge or publish without authorization.
 - Phone approval gates merging to `main`. The owner authorized orbital preview APK builds and Telegram delivery.

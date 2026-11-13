@@ -1,6 +1,6 @@
 # Calendar page
 
-Status 2026-11-12. The owner asked for a calendar page. The page shows items and can delete them. Chat stays the place where you create and change items. Design rules: [foundation.md](foundation.md). Evidence: [evidence/m1.md](evidence/m1.md).
+Status 2026-11-13. The owner asked for a calendar page. The page shows items and can delete them. Chat stays the place where you create and change items. Design rules: [foundation.md](foundation.md). Evidence: [evidence/m1.md](evidence/m1.md).
 
 ## Behaviour
 
@@ -12,11 +12,14 @@ Status 2026-11-12. The owner asked for a calendar page. The page shows items and
 - An item sits on its start day, else its deadline day. An item with neither does not show. An item with a start shows "09:00". An item with only a deadline shows "Due 17:00".
 - An empty day says "Nothing planned."
 - Without a connection, the page keeps its last items and shows the error with a Retry button.
-- Times show in the device time zone.
+- Agenda times show in the device time zone. Expanded start/end rows use source wall clocks and timezones when supplied.
 - The authored Calendar orbital artwork sits behind the page. Motion and accessibility rules live in the foundation.
 - The page scrolls as one column. Calendar content is at most 520 px wide; the shared header is at most 760 px. Use 24 px content gutters at 360 px and above.
 - Short screens and enlarged text can scroll the agenda into view. Day rows grow to keep dates and markers visible.
 - Agenda cards have 20 px padding and an 18 px title. Shared spacing rules live in the brand guide and foundation.
+
+- Tap a card or its 44 px Details button to expand it in place. Hide details collapses it. Available rows show Starts, Ends, Due, Duration, Type (Appointment for event), Address, Notes and Reminders. Two different nonempty start/end timezones use Departs and Arrives. A timezone without a timestamp adds no row.
+- The address opens a Google Maps search. Notes show plain lines capped at 600 characters, with underlined phone numbers, email addresses and HTTPS links. Dates and booking references stay plain text. Links open only after a tap, through the dialer, email app or browser; a failed launch shows a message. Only HTTPS, tel and mailto targets open.
 
 ## Data
 

@@ -31,14 +31,14 @@ An appointment card in the calendar says "Departs" and "Arrives", and it hides e
 ## Design
 
 - **Link finder.** A pure function in the domain layer splits text into plain, phone, email and web spans.
-  - A web link starts with `http://`, `https://` or `www.`. Trailing `.,;:!?)` stays outside it.
+  - A web link starts with `https://` or `www.`. Trailing `.,;:!?)` stays outside it.
   - An email is `name@domain.tld`.
   - A phone number has 7 to 15 digits, may use `+`, spaces, dashes, dots and brackets, and is not glued to letters or digits. It must start with `+`, `00`, `0` or `(`, or have separators and at least 10 digits. ISO dates such as `2026-11-20` and references such as `ABC123456789` are not numbers.
-  - Targets are `tel:`, `mailto:` and `http(s):`. Nothing else opens.
+  - Targets are `tel:`, `mailto:` and `https:`. Nothing else opens.
 - **Maps.** `https://www.google.com/maps/search/?api=1&query=<address>`.
-- **Opening.** A `LinkLauncher` interface in the domain layer, implemented with `url_launcher` in the data layer, passed to the calendar screen like the source repository. Android needs `<queries>` entries for `tel`, `mailto`, `http` and `https`.
+- **Opening.** A `LinkLauncher` interface in the domain layer, implemented with `url_launcher` in the data layer, passed to the calendar screen like the source repository. Android needs `<queries>` entries for `tel`, `mailto` and `https`.
 - **Item model.** `Item` gains `notes`, `kind` and `reminderOffsets`.
-- **Card.** A "Details" / "Hide details" text button (44 px) appears when the item has details. The collapsed card keeps today's time, title and tags, without the Departs and Arrives chips unless the zones differ. The expanded card adds the rows above. Notes show as plain lines, at most 600 characters, with links.
+- **Card.** Tapping a card expands or collapses it. A "Details" / "Hide details" text button (44 px) appears when the item has details. The collapsed card keeps today's time, title and tags, without the Departs and Arrives chips unless the zones differ. The expanded card adds the rows above. Notes show as plain lines, at most 600 characters, with links.
 - **Security.** Notes come from email and are untrusted. The visible text is the link target. Tapping opens an external app; nothing opens on its own.
 
 ## Constraints

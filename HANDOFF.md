@@ -1,7 +1,17 @@
 # Handoff
 
 State on 2026-11-13. Production runs commit `ab94726`, the head of `main` and of `notification-body-tap`.
-`main` holds `m0-chat`, `notification-body-tap`, `app-icon-orbital` and `delete-items`. The owner asked for the merge and the deployment on 2026-11-13. `origin/main` and `origin/notification-body-tap` are both at `ab94726`. The worktree `Minder-m0-chat` is on `delete-items`.
+`main` holds `m0-chat`, `notification-body-tap`, `app-icon-orbital` and `delete-items`. The owner asked for the merge and the deployment on 2026-11-13. `origin/main` and `origin/notification-body-tap` are both at `ab94726`. The worktree `Minder-m0-chat` is on `fix-connection-message`.
+
+## Current client work
+
+The owner approved calendar details and links with “Fix all”, asked to continue the current work, and requested a clearer Confirmed footer. Work runs inline on `fix-connection-message`; keep this branch for phone review. No server change or deployment is needed.
+
+- `d0f0f68` fixes the stale connection message: dropped streams feed the delayed offline icon; a successful sync clears background error copy. Failed sends retain composer text.
+- `4f45e7e`: calendar cards expand on a card tap or Details. Available rows retain kind, notes, reminders, source wall clocks and timezones. Starts/Ends become Departs/Arrives only across different zones. Address opens Google Maps; note links open the dialer, email app or browser. The launcher permits HTTPS, tel and mailto, and reports failed launches. Notes retain the 600-character cap.
+- Confirmed preview cards have a divider, more space, a check icon and semibold text.
+- APK 0.8.0+24 reached Telegram once (message 1998). Full repository checks (135 Flutter tests), release web/APK builds, matching signing certificate and all three browser scenarios passed. Phone review is pending. Details: [calendar details evidence](docs/evidence/calendar-details.md).
+
 
 ## Current source
 

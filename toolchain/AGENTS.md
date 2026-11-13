@@ -17,6 +17,8 @@ Pinned Podman runners, build helpers and verification scripts.
 - Named volumes cache dependencies, Android tools and the debug signing key. Preserve them for installable APK updates.
 - Flutter uses Java 17, at most two Gradle workers and cached NDK 28.2.13676358.
 - `model_fixture.py` supplies the test OpenRouter endpoint on loopback port 8181. Never run it in production.
+- The calendar browser scenario checks selection, typed detail expansion/collapse and return to Chat.
+- The chat browser scenario checks delayed offline status without a message or Retry block, restored composer text after failed sends, and recovery/resend through the header icon.
 - Chat, reminder, calendar and email local checks each start an isolated model fixture on a temporary port. Run browser scenarios in sequence.
 - `email-local-check` and `email-check.cjs` cover signed ingestion, compiled-web answers/downloads/review, the appointment flow (question message, quick reply, reminder chip, Confirm) and real SQLite provenance and reminder schedules.
 - Real-model checks use temporary databases and provider cost values. `real-model-multi-check.py [runs]` checks two proposals.
