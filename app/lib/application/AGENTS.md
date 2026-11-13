@@ -14,7 +14,7 @@ Calendar requests ignore superseded results. Notification state reflects registr
 Disposed notification controllers stop work after pending native results and leave unhandled actions for retry.
 Controllers cancel their own work; they do not close injected shared repositories.
 
-CaptureController owns targeted and quick-reply answers, dismissal, source actions and disposal guards. Capture events never clear unrelated chat waiting. Calendar selection includes occupied event/date ranges.
+ChatController marks `showOffline` only after the connection stays down for the grace period (2 seconds); background transport failures (`RepositoryFailure.transport`) never set `error`, while failed sends and actions keep their inline Retry. CaptureController owns targeted and quick-reply answers, dismissal, source actions and disposal guards. Capture events never clear unrelated chat waiting. Calendar selection includes occupied event/date ranges.
 
 # Work Guidance
 

@@ -10,9 +10,13 @@ class ChatController extends ChangeNotifier {
   ChatController(
     this.repository, {
     this.pollInterval = const Duration(seconds: 5),
+    this.offlineGrace = const Duration(seconds: 2),
   });
   final ChatRepository repository;
   final Duration pollInterval;
+
+  /// How long the connection must stay down before the header shows it.
+  final Duration offlineGrace;
   final List<Entry> _entries = [];
   List<Entry> get entries => List.unmodifiable(_entries);
   int cursor = 0;
@@ -25,7 +29,10 @@ class ChatController extends ChangeNotifier {
   String _lastText = '';
   Future<Entry> Function()? _retryAction;
   bool _disposed = false, _syncing = false;
-  Timer? _poll, _reconnect;
+  Timer? _poll, _reconnect, _offlineTimer;
+
+  /// True once the connection has been down for [offlineGrace].
+  bool showOffline = false;
   StreamSubscription<Entry>? _subscription;
   void _notify() {
     if (!_disposed) notifyListeners();
@@ -45,9 +52,34 @@ class ChatController extends ChangeNotifier {
     }
     connected = true;
     needsSignIn = false;
+    _connectionOk();
+  }
+
+  void _connectionOk() {
+    _offlineTimer?.cancel();
+    _offlineTimer = null;
+    showOffline = false;
+  }
+
+  void _connectionLost() {
+    connected = false;
+    _offlineTimer ??= Timer(offlineGrace, () {
+      showOffline = true;
+      _notify();
+    });
+  }
+
+  /// A background failure: transport drops only feed the header icon.
+  void _backgroundFailed(Object e) {
+    if (e is RepositoryFailure && e.transport) {
+      _connectionLost();
+    } else {
+      _failed(e);
+    }
   }
 
   void _failed(Object e) {
+    if (e is RepositoryFailure && e.transport) _connectionLost();
     error = e is RepositoryFailure
         ? e.message
         : 'Check your connection. Then try again.';
@@ -78,9 +110,10 @@ class ChatController extends ChangeNotifier {
       }
       connected = true;
       needsSignIn = false;
+      _connectionOk();
       if (_retryAction == null && _lastText.isEmpty) error = null;
     } catch (e) {
-      _failed(e);
+      _backgroundFailed(e);
     } finally {
       _syncing = false;
       _notify();
@@ -98,7 +131,7 @@ class ChatController extends ChangeNotifier {
           },
           onError: (Object e) {
             if (_disposed) return;
-            _failed(e);
+            _backgroundFailed(e);
             _scheduleReconnect();
             _notify();
           },
@@ -205,6 +238,7 @@ class ChatController extends ChangeNotifier {
     _disposed = true;
     _poll?.cancel();
     _reconnect?.cancel();
+    _offlineTimer?.cancel();
     _subscription?.cancel();
     super.dispose();
   }

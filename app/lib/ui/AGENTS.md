@@ -26,7 +26,7 @@ QuestionView shows the open questions of an email as their own message, with age
 
 Calendar items with source links open a read-only email/attachment dialog; authenticated downloads remain available after the original capture leaves recent chat.
 
-Preview cards come from `previewRows`: the title shows once, Starts/Ends carry their timezone inline, Duration and Type read as words (Appointment for `event`), Address is the `location` field, notes show as plain-text bullets capped at 600 characters, and reminders are `ReminderChips` that call `setReminders` while the change is pending.
+ScreenHeader takes an optional `trailing` control; Chat shows a 44 px offline icon there (tap to retry) and no connection banner. Preview cards come from `previewRows`: the title shows once, Starts/Ends carry their timezone inline, Duration and Type read as words (Appointment for `event`), Address is the `location` field, notes show as plain-text bullets capped at 600 characters, and reminders are `ReminderChips` that call `setReminders` while the change is pending.
 
 # Work Guidance
 

@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'tokens.dart';
 
 class ScreenHeader extends StatelessWidget {
-  const ScreenHeader({super.key, required this.title});
+  const ScreenHeader({super.key, required this.title, this.trailing});
 
   final String title;
+
+  /// A control at the right end of the title row, such as the connection status.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -47,6 +50,7 @@ class ScreenHeader extends StatelessWidget {
                           ),
                         ),
                       ),
+                      ?trailing,
                     ],
                   ),
                 ),

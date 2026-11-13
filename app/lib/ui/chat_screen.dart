@@ -105,7 +105,27 @@ class _ChatScreenState extends State<ChatScreen> {
                 constraints: const BoxConstraints(maxWidth: Tokens.pageWidth),
                 child: Column(
                   children: [
-                    const ScreenHeader(title: 'CHAT'),
+                    ScreenHeader(
+                      title: 'CHAT',
+                      trailing: c.showOffline
+                          ? Semantics(
+                              button: true,
+                              label: 'Offline. Tap to retry',
+                              excludeSemantics: true,
+                              child: IconButton(
+                                onPressed: c.sync,
+                                constraints: const BoxConstraints.tightFor(
+                                  width: Tokens.minTarget,
+                                  height: Tokens.minTarget,
+                                ),
+                                icon: const Icon(
+                                  Icons.cloud_off_outlined,
+                                  color: Tokens.alert,
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
                     if (c.loading)
                       const Padding(
                         padding: EdgeInsets.only(top: Tokens.relatedGap),

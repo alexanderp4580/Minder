@@ -45,7 +45,9 @@ class FakeRepository implements ChatRepository {
   int sends = 0;
   @override
   Future<List<Entry>> history(int after) async {
-    if (offline) throw const RepositoryFailure('Check your connection.');
+    if (offline) {
+      throw const RepositoryFailure('Check your connection.', transport: true);
+    }
     return List.of(saved.where((e) => e.cursor > after));
   }
 
@@ -53,7 +55,9 @@ class FakeRepository implements ChatRepository {
   Stream<Entry> watch(int after) => events.stream;
   @override
   Future<Entry> send(String text) async {
-    if (offline) throw const RepositoryFailure('Check your connection.');
+    if (offline) {
+      throw const RepositoryFailure('Check your connection.', transport: true);
+    }
     sends++;
     return entry('u$sends', sends, 'user', text: text);
   }
@@ -448,6 +452,94 @@ void main() {
       repo.close();
     },
   );
+
+  group('connection status', () {
+    Future<void> finish(WidgetTester tester, ChatController c) async {
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    }
+
+    Future<(FakeRepository, ChatController)> screen(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(412, 892);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final repo = FakeRepository();
+      final c = ChatController(
+        repo,
+        pollInterval: const Duration(days: 1),
+        offlineGrace: const Duration(seconds: 2),
+      );
+      await c.start();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: Tokens.theme,
+          home: ChatScreen(controller: c),
+        ),
+      );
+      return (repo, c);
+    }
+
+    testWidgets('a one second drop shows nothing', (tester) async {
+      final (repo, c) = await screen(tester);
+      repo.offline = true;
+      await c.sync();
+      await tester.pump(const Duration(seconds: 1));
+      repo.offline = false;
+      await c.sync();
+      await tester.pump(const Duration(seconds: 3));
+      expect(c.showOffline, isFalse);
+      expect(find.byIcon(Icons.cloud_off_outlined), findsNothing);
+      await finish(tester, c);
+    });
+
+    testWidgets('a three second drop shows the header icon', (tester) async {
+      final (repo, c) = await screen(tester);
+      repo.offline = true;
+      await c.sync();
+      await tester.pump(const Duration(seconds: 3));
+      expect(c.showOffline, isTrue);
+      expect(find.byIcon(Icons.cloud_off_outlined), findsOneWidget);
+      expect(find.bySemanticsLabel('Offline. Tap to retry'), findsOneWidget);
+      await finish(tester, c);
+    });
+
+    testWidgets('recovery hides the icon', (tester) async {
+      final (repo, c) = await screen(tester);
+      repo.offline = true;
+      await c.sync();
+      await tester.pump(const Duration(seconds: 3));
+      repo.offline = false;
+      await tester.tap(find.byIcon(Icons.cloud_off_outlined));
+      await tester.pump();
+      await tester.pump();
+      expect(c.showOffline, isFalse);
+      expect(find.byIcon(Icons.cloud_off_outlined), findsNothing);
+      await finish(tester, c);
+    });
+
+    testWidgets('no banner or Retry block for transport failures', (
+      tester,
+    ) async {
+      final (repo, c) = await screen(tester);
+      repo.offline = true;
+      await c.sync();
+      await tester.pump(const Duration(seconds: 5));
+      expect(c.error, isNull);
+      expect(find.text('Check your connection. Then try again.'), findsNothing);
+      expect(find.text('Retry'), findsNothing);
+      await finish(tester, c);
+    });
+
+    testWidgets('a failed send keeps its inline Retry', (tester) async {
+      final (repo, c) = await screen(tester);
+      repo.offline = true;
+      await c.send('Call plumber');
+      await tester.pump();
+      expect(c.error, isNotNull);
+      expect(find.text('Retry'), findsOneWidget);
+      await finish(tester, c);
+    });
+  });
 }
 
 class GrowingRepository extends FakeRepository {

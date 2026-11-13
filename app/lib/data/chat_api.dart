@@ -69,7 +69,10 @@ class ChatApi
     } on RepositoryFailure {
       rethrow;
     } catch (_) {
-      throw const RepositoryFailure('Check your connection. Then try again.');
+      throw const RepositoryFailure(
+        'Check your connection. Then try again.',
+        transport: true,
+      );
     }
   }
 
@@ -249,7 +252,10 @@ class ChatApi
     } on RepositoryFailure {
       rethrow;
     } catch (_) {
-      throw const RepositoryFailure('Check your connection. Then try again.');
+      throw const RepositoryFailure(
+        'Check your connection. Then try again.',
+        transport: true,
+      );
     }
   }
 
