@@ -2,6 +2,7 @@ package assistant
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -373,6 +374,49 @@ func TestPromptSeparatesDoneCancelledAndDeleted(t *testing.T) {
 	for _, want := range []string{"propose_complete", "propose_cancel", "propose_delete"} {
 		if !strings.Contains(system, want) {
 			t.Fatalf("prompt does not mention %s", want)
+		}
+	}
+}
+
+func TestDeleteRequestProposesADeletion(t *testing.T) {
+	a, s, f := newAssistant(t, Response{CostUSD: 0.001})
+	i := domain.Item{ID: "a", Title: "Dentist", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", DueAt: "2026-11-12T09:00:00Z"}
+	if e := s.Write(func(tx *store.Tx) error { return tx.PutItem(i) }); e != nil {
+		t.Fatal(e)
+	}
+	f.r = Response{Calls: []Call{{Name: "propose_delete", Arguments: `{"item_id":"a","expected_version":1}`}}, CostUSD: 0.001}
+	entries, e := a.Reply(context.Background(), "Delete the dentist, I added it by mistake")
+	if e != nil || len(entries) != 1 || entries[0].Change == nil || entries[0].Change.Action != "delete_item" {
+		t.Fatalf("%+v %v", entries, e)
+	}
+}
+
+func TestDeletedItemLeavesTheAgentsContext(t *testing.T) {
+	a, s, f := newAssistant(t, Response{CostUSD: 0.001})
+	c := command.New(s)
+	p, e := c.Preview(domain.Proposal{Action: "create_item", Title: "Dentist", DueAt: "2099-01-01T10:00:00Z", Timezone: "Europe/Amsterdam"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = c.Confirm(p.Change.ID); e != nil {
+		t.Fatal(e)
+	}
+	items, _ := s.Items()
+	d, e := c.Preview(domain.Proposal{Action: "delete_item", ItemID: items[0].ID, ExpectedVersion: items[0].Version})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = c.Confirm(d.Change.ID); e != nil {
+		t.Fatal(e)
+	}
+	f.r = Response{Text: "Done.", CostUSD: 0.001}
+	if _, e = a.Reply(context.Background(), "Add a dentist visit tomorrow"); e != nil {
+		t.Fatal(e)
+	}
+	seen, _ := json.Marshal(f.messages)
+	for _, old := range []string{"Saved: Dentist.", items[0].ID} {
+		if strings.Contains(string(seen), old) {
+			t.Fatalf("the model still sees %q of a deleted item", old)
 		}
 	}
 }

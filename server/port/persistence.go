@@ -7,10 +7,21 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 )
 
+// Purged lists what PurgeItem removed that the caller must act on.
+type Purged struct {
+	// EntryIDs are the chat entries removed with the item.
+	EntryIDs []string
+	// OrphanSources are email sources that no remaining item uses.
+	OrphanSources []string
+}
+
 type Items interface {
 	Item(string) (domain.Item, error)
 	PutItem(domain.Item) error
 	DeleteItem(string) error
+	// PurgeItem deletes an item with its reminders, earlier changes, audit rows,
+	// chat entries and source links. The pending change keepPending and its entries stay.
+	PurgeItem(id, keepPending string) (Purged, error)
 }
 type Profiles interface {
 	Profile(string) (domain.Profile, error)

@@ -123,6 +123,9 @@ type Change struct {
 
 	ReminderOffsets []int `json:"reminder_offsets_minutes,omitempty"`
 	ReminderChoices []int `json:"reminder_choices_minutes,omitempty"`
+
+	// RemovedEntryIDs lists chat entries a delete took away, so clients can drop them.
+	RemovedEntryIDs []string `json:"removed_entry_ids,omitempty"`
 }
 type Entry struct {
 	CaptureID string   `json:"capture_id,omitempty"`
@@ -152,6 +155,7 @@ type Pending struct {
 }
 type Audit struct {
 	DeletedCaptureID string
+	ItemDeleted      bool
 
 	BeforeProfile *Profile
 	AfterProfile  *Profile

@@ -73,6 +73,10 @@ func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 		entry, e := previewCaptureDeletion(t, p)
 		*out = entry
 		return e
+	case "delete_item":
+		entry, e := previewItemDeletion(t, p)
+		*out = entry
+		return e
 	case "create_item":
 		after = domain.Item{ID: domain.NewID(), Title: p.Title, DueAt: p.DueAt, Timezone: p.Timezone, Notes: p.Notes, RemindAt: p.RemindAt, NagMinutes: p.NagMinutes, Status: "open", Version: 1, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}
 		if e := setAttributes(t, p, &after); e != nil {
@@ -171,6 +175,9 @@ func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 		}
 		if p.BeforeCapture != nil {
 			return confirmCaptureDeletion(t, &p, &out)
+		}
+		if p.Proposal.Action == "delete_item" {
+			return confirmItemDeletion(t, &p, &out)
 		}
 		if e = validateCaptureRevision(t, p.Proposal); e != nil {
 			return e
@@ -280,6 +287,9 @@ func (c *Service) Undo(id string) (out domain.Entry, err error) {
 		}
 		if a.AfterProfile != nil {
 			return undoProfile(t, &a, &out)
+		}
+		if a.ItemDeleted {
+			return undoItemDeletion(t, &a, &out)
 		}
 		current, e := t.Item(a.After.ID)
 		if e != nil {
