@@ -17,6 +17,29 @@ class RecordingLauncher implements LinkLauncher {
 }
 
 void main() {
+  testWidgets(
+    'task details distinguish scheduled work, deadline and explicit notification',
+    (tester) async {
+      final item = itemFromJson({
+        'id': 'task',
+        'title': 'Questionnaire',
+        'status': 'open',
+        'kind': 'task',
+        'start_at': '2026-11-23T12:00:00Z',
+        'due_at': '2026-11-26T12:00:00Z',
+        'remind_at': '2026-11-23T12:00:00Z',
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: CalendarItemDetails(item: item)),
+        ),
+      );
+      expect(find.text('Scheduled'), findsOneWidget);
+      expect(find.text('Deadline'), findsOneWidget);
+      expect(find.text('Notification'), findsOneWidget);
+      expect(item.placedAt, DateTime.parse('2026-11-23T12:00:00Z').toLocal());
+    },
+  );
   testWidgets('detail pairs survive the wire and render with web links', (
     tester,
   ) async {

@@ -38,6 +38,7 @@ const fs = require('node:fs');
     ...Array.from({ length: 70 }, () => 'Clinic information: the reception desk is inside the main entrance. Waiting rooms and accessible facilities are on the ground floor.'),
     '',
     'Required preparation: complete and return the patient questionnaire before your first appointment. Complete it once for this course of appointments.',
+    'The questionnaire deadline is 2 December 2026 at 09:00 Europe/Amsterdam, before the initial consultation begins.',
     'The questionnaire asks for current medication, allergies and contact details.',
   ].join('\n');
   assert.ok(body.length > 8000, 'Exercise a long source, not just a short appointment list');
@@ -104,7 +105,7 @@ const fs = require('node:fs');
   }
   const unchangedVisits = capture.candidates.filter(c => c.id !== pastedResult.task.id).map(c => [c.id, c.proposal]);
   const answered = await post(`/v1/captures/${pastedID}/answers`, {
-    revision: capture.revision, candidate_id: pastedResult.task.id, text: pastedResult.choices[1].option,
+    revision: capture.revision, candidate_id: pastedResult.task.id, text: 'Actually, make the task itself 3 days before the first appointment.',
   });
   assert.equal(answered.status, 200);
   capture = await until('questionnaire timing answer', async () => {
@@ -116,16 +117,47 @@ const fs = require('node:fs');
   const updated = capture.candidates.find(c => c.id === pastedResult.task.id);
   assert.ok(updated, 'Answer updates the existing task');
   const proposal = updated.proposal;
+  const day = value => new Date(value).toLocaleDateString('en-CA', { timeZone: 'Europe/Amsterdam' });
+  assert.equal(day(proposal.start_at || proposal.start_date), '2026-11-29', 'Custom reply schedules the task itself three days before the first appointment');
+  assert.equal(day(proposal.due_at || proposal.due_date), '2026-12-02', 'The source deadline stays separate from the work date');
   const anchor = Date.parse(proposal.due_at || proposal.start_at || ((proposal.due_date || proposal.start_date || '') + 'T09:00:00+01:00'));
-  const reminders = proposal.remind_at ? [Date.parse(proposal.remind_at)] : (proposal.reminder_offsets_minutes || []).map(minutes => anchor - minutes * 60000);
-  assert.ok(reminders.some(at => new Date(at).toLocaleDateString('en-CA', { timeZone: 'Europe/Amsterdam' }) === '2026-11-30'), 'Chosen two-day option produces a reminder on 30 November');
+  const reminders = proposal.reminder_offsets_minutes?.length
+    ? proposal.reminder_offsets_minutes.map(minutes => anchor - minutes * 60000)
+    : proposal.remind_at ? [Date.parse(proposal.remind_at)] : [];
+  assert.ok(reminders.some(at => day(at) === '2026-11-29'), 'The effective reminder follows the chosen work date, including offset precedence');
   assert.ok(reminders.every(at => at < Date.parse(appointments[0][1])), 'Questionnaire reminders precede the first appointment');
   for (const [id, prior] of unchangedVisits) assert.deepEqual(capture.candidates.find(c => c.id === id)?.proposal, prior, 'Timing answer leaves other appointments unchanged');
+  assert.ok(updated.change_id, 'A valid pending preview follows the custom answer');
+  const confirmed = await post(`/v1/changes/${updated.change_id}/confirm`);
+  assert.equal(confirmed.status, 200, 'Confirm saves the scheduled task');
+  const items = await get('/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-31T00:00:00Z');
+  const stored = items.find(item => item.kind === 'task');
+  assert.ok(stored);
+  assert.equal(day(stored.start_at || stored.start_date), '2026-11-29');
+  assert.equal(day(stored.due_at || stored.due_date), '2026-12-02');
+  // The same intent after Confirm is an ordinary composer message, not a review answer.
+  const moved = await post('/v1/chat/messages', {text:'Move work on the questionnaire to 4 days before the first appointment. Keep the deadline and notify me at the work time.'});
+  assert.equal(moved.status, 202);
+  let movePreview;
+  for (let attempt=0; attempt<300; attempt++) {
+    const history=await get('/v1/chat?after=0&limit=300');
+    assert.ok(!history.some(entry=>entry.kind==='error'),'Moving a confirmed task must not fail');
+    movePreview=history.find(entry=>entry.kind==='preview'&&entry.change?.action==='update_item'&&entry.change.state==='pending');
+    if(movePreview)break;
+    await new Promise(resolve=>setTimeout(resolve,500));
+  }
+  assert.ok(movePreview,'A normal chat correction proposes a real task-date update');
+  assert.equal((await post(`/v1/changes/${movePreview.change.id}/confirm`)).status,200);
+  const movedTask=(await get('/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-31T00:00:00Z')).find(item=>item.id===stored.id);
+  assert.equal(day(movedTask.start_at||movedTask.start_date),'2026-11-28','Confirmed task moves its scheduled date');
+  assert.equal(day(movedTask.due_at||movedTask.due_date),'2026-12-02','Moving work keeps the source deadline');
 
   const result = {
     forwardedItems: 4, pastedItems: 4, statedDurationsKept: true,
     forwardedQuestion: forwarded.task.question, forwardedOptions: forwarded.task.options,
     pastedQuestion: pastedResult.task.question, pastedOptions: pastedResult.task.options,
+    taskScheduledThreeDaysBefore: true, deadlineKept: true,
+    confirmedTaskMovedFromMainChat: true,
     selectedReminderBeforeFirstAppointment: true, otherAppointmentsUnchanged: true,
   };
   fs.writeFileSync('.local/real-model-preparation-results.json', JSON.stringify(result, null, 2));

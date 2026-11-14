@@ -426,10 +426,13 @@ func (c *Service) SetReminders(id string, offsets []int) (out domain.Entry, err 
 			return domain.ErrConflict
 		}
 		p.After.ReminderOffsets = offsets
+		p.After.RemindAt = ""
 		if e = domain.Validate(&p.After); e != nil {
 			return e
 		}
 		p.Proposal.ReminderOffsets = p.After.ReminderOffsets
+		p.Proposal.RemindAt = ""
+		p.Proposal.ClearReminder = true
 		p.Proposal.ClearReminderOffsets = len(p.After.ReminderOffsets) == 0
 		old := domain.Item{}
 		if p.Before != nil {

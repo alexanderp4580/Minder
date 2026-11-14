@@ -319,6 +319,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           Expanded(
                             child: TextField(
                               controller: _text,
+                              style: const TextStyle(color: Tokens.text),
+                              cursorColor: Tokens.text,
                               minLines: 1,
                               maxLines: 4,
                               textInputAction: TextInputAction.send,

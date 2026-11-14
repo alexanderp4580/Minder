@@ -81,6 +81,40 @@ func TestSetRemindersOnConfirmedChangeConflicts(t *testing.T) {
 	}
 }
 
+func TestReminderChoicesReplaceExplicitReminderAndCanTurnItOff(t *testing.T) {
+	for _, offsets := range [][]int{{60}, nil} {
+		c, s := setup(t)
+		proposal := appointment()
+		start, _ := time.Parse(time.RFC3339, proposal.StartAt)
+		proposal.RemindAt = start.Add(-24 * time.Hour).Format(time.RFC3339)
+		entry, err := c.Preview(proposal)
+		if err != nil {
+			t.Fatal(err)
+		}
+		updated, err := c.SetReminders(entry.Change.ID, offsets)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if f, ok := field(updated, "remind_at"); ok && f.New != "" {
+			t.Fatal("stale explicit reminder remains visible")
+		}
+		if _, err = c.Confirm(entry.Change.ID); err != nil {
+			t.Fatal(err)
+		}
+		items, _ := s.Items()
+		if len(items) != 1 || items[0].RemindAt != "" {
+			t.Fatal("choice retained explicit reminder")
+		}
+		projection := domain.ProjectReminder(items[0], nil)
+		if len(offsets) == 0 && projection.Active {
+			t.Fatal("unselecting reminders left a notification active")
+		}
+		if len(offsets) > 0 && projection.At != start.Add(-time.Hour).Format(time.RFC3339) {
+			t.Fatal("selected reminder does not control schedule", projection)
+		}
+	}
+}
+
 func TestSetRemindersRejectsUnknownOffsets(t *testing.T) {
 	c, _ := setup(t)
 	entry, _ := c.Preview(appointment())

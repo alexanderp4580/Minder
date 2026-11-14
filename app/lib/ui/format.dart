@@ -49,7 +49,7 @@ String fieldLabel(String name) => switch (name) {
   'end_at' => 'Ends',
   'start_date' => 'Start date',
   'end_date' => 'End date / checkout',
-  'due_date' => 'Due date',
+  'due_date' => 'Deadline',
   'kind' => 'Type',
   'start_timezone' => 'Departure / start timezone',
   'end_timezone' => 'Arrival / end timezone',
@@ -66,7 +66,7 @@ String fieldLabel(String name) => switch (name) {
   'recurrence' => 'Repeats',
   'name' => 'Name',
   'remind_before_minutes' => 'Remind before (minutes)',
-  'due_at' => 'Due',
+  'due_at' => 'Deadline',
   'remind_at' => 'Remind at',
   'reminders' => 'Reminders',
   'nag_minutes' => 'Nag interval (minutes)',
@@ -238,7 +238,9 @@ List<PreviewRow> previewRows(Change change) {
     }
     rows.add(
       PreviewRow(
-        fieldLabel(f.name),
+        ['start_at', 'start_date'].contains(f.name) && value('kind') == 'task'
+            ? 'Scheduled'
+            : fieldLabel(f.name),
         oldValue: show(f.oldValue),
         newValue: f.newValue.isEmpty ? 'None' : show(f.newValue),
       ),

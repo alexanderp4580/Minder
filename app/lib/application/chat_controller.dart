@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../domain/chat_repository.dart';
+import '../domain/capture.dart';
+import '../domain/capture_repository.dart';
 import '../domain/entry.dart';
 import '../domain/failure.dart';
 
@@ -19,6 +21,8 @@ class ChatController extends ChangeNotifier {
   /// How long the connection must stay down before the header shows it.
   final Duration offlineGrace;
   final List<Entry> _entries = [];
+  final Set<String> _answeredQuestions = {};
+  ({Capture capture, String? candidateId})? _pendingReview;
   List<Entry> get entries => List.unmodifiable(_entries);
   int cursor = 0;
   // Only history and the ordered event stream establish which events we have read.
@@ -61,8 +65,13 @@ class ChatController extends ChangeNotifier {
     if (removed.isNotEmpty) _entries.removeWhere((v) => removed.contains(v.id));
     if (e.cursor > cursor) cursor = e.cursor;
     if (synced && e.cursor > _syncedCursor) _syncedCursor = e.cursor;
-    if (e.kind != EntryKind.user && e.captureId.isEmpty) {
+    final pending = _pendingReview;
+    if ((e.kind != EntryKind.user && e.captureId.isEmpty) ||
+        (pending != null &&
+            e.capture?.id == pending.capture.id &&
+            e.capture!.revision > pending.capture.revision)) {
       waiting = false;
+      _pendingReview = null;
     }
     connected = true;
     needsSignIn = false;
@@ -124,6 +133,7 @@ class ChatController extends ChangeNotifier {
     }
     connected = false;
     waiting = false;
+    _pendingReview = null;
   }
 
   Future<void> start() async {
@@ -184,7 +194,110 @@ class ChatController extends ChangeNotifier {
     });
   }
 
-  Future<void> send(String text) async {
+  String _questionKey(Capture c, String? candidateId) =>
+      '${c.id}:${c.revision}:${candidateId ?? '*'}';
+
+  Capture _currentCapture(Capture original) {
+    var current = original;
+    var cursor = -1;
+    for (final entry in _entries) {
+      final capture = entry.capture;
+      if (capture != null &&
+          capture.id == original.id &&
+          (capture.revision > current.revision ||
+              (capture.revision == current.revision &&
+                  entry.cursor > cursor))) {
+        current = capture;
+        cursor = entry.cursor;
+      }
+    }
+    return current;
+  }
+
+  /// Suppress the answered suggestions in both copies of a question. The owner
+  /// entry also preserves this state when history reloads before the agent replies.
+  bool questionAnswered(Capture capture, {String? candidateId}) {
+    final current = _currentCapture(capture);
+    if (current.revision > capture.revision ||
+        ['failed', 'reviewed', 'dismissed'].contains(current.status)) {
+      return true;
+    }
+    if (_answeredQuestions.contains(_questionKey(capture, null)) ||
+        _answeredQuestions.contains(_questionKey(capture, candidateId))) {
+      return true;
+    }
+    if (candidateId != null &&
+        current.candidates.any(
+          (c) =>
+              c.id == candidateId &&
+              (c.question.isEmpty ||
+                  !['needs-answer', 'pending'].contains(c.state)),
+        )) {
+      return true;
+    }
+    final open = capture.candidates.where(
+      (c) =>
+          c.question.isNotEmpty &&
+          (c.state == 'needs-answer' || c.state == 'pending'),
+    );
+    if (open.length + capture.questions.length != 1) return false;
+    for (final question in _entries) {
+      if (question.kind == EntryKind.question &&
+          question.capture?.id == capture.id &&
+          question.capture?.revision == capture.revision &&
+          _entries.any(
+            (entry) =>
+                entry.kind == EntryKind.user && entry.cursor > question.cursor,
+          )) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  ({Capture capture, String? candidateId})? get _openQuestion {
+    final questions =
+        _entries
+            .where((e) => e.kind == EntryKind.question && e.capture != null)
+            .toList()
+          ..sort((a, b) => b.cursor.compareTo(a.cursor));
+    for (final entry in questions) {
+      final capture = _currentCapture(entry.capture!);
+      if (['failed', 'reviewed', 'dismissed'].contains(capture.status)) {
+        continue;
+      }
+      final open = capture.candidates
+          .where(
+            (c) =>
+                c.question.isNotEmpty &&
+                (c.state == 'needs-answer' || c.state == 'pending'),
+          )
+          .toList();
+      if (open.isNotEmpty || capture.questions.isNotEmpty) {
+        return (
+          capture: capture,
+          candidateId: open.length == 1 && capture.questions.isEmpty
+              ? open.single.id
+              : null,
+        );
+      }
+    }
+    return null;
+  }
+
+  Future<void> send(String text) => _send(text, restoreOnFailure: true);
+
+  Future<void> answerReview(
+    Capture capture,
+    String text, {
+    String? candidateId,
+  }) => _send(text, review: (capture: capture, candidateId: candidateId));
+
+  Future<void> _send(
+    String text, {
+    ({Capture capture, String? candidateId})? review,
+    bool restoreOnFailure = false,
+  }) async {
     final body = text.trim();
     if (_disposed || waiting || body.isEmpty) return;
     if (utf8.encode(body).length > maxMessageBytes) {
@@ -194,13 +307,29 @@ class ChatController extends ChangeNotifier {
       return;
     }
     error = null;
+    final target = repository is CaptureRepository
+        ? review ?? _openQuestion
+        : null;
+    final questionKey = target == null
+        ? null
+        : _questionKey(target.capture, target.candidateId);
+    if (questionKey != null) _answeredQuestions.add(questionKey);
+    _pendingReview = target;
     waiting = true;
     _notify();
     try {
-      final e = await repository.send(body);
+      final e = target == null
+          ? await repository.send(body)
+          : await (repository as CaptureRepository).answerCapture(
+              target.capture.id,
+              target.capture.revision,
+              body,
+              candidateId: target.candidateId,
+            );
       _merge(e);
     } catch (e) {
-      _unsent = body;
+      if (questionKey != null) _answeredQuestions.remove(questionKey);
+      if (restoreOnFailure) _unsent = body;
       _failed(e);
     }
     _notify();

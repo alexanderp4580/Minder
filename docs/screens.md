@@ -7,9 +7,11 @@ All names, dates, counts and times in the text and in the mockup are illustrativ
 ## Email capture in chat
 
 The [email capture spec](superpowers/specs/2026-11-12-email-capture-design.md) defines source summaries, attachments, coverage warnings and candidate-specific follow-up questions inside Chat.
-A source keeps its own answer field. Each item uses the existing Confirm/Discard preview; clarifying one item leaves independent previews valid.
+The main composer handles custom replies to the current review question. Quick replies disappear as soon as an answer is sent; a refused send restores them and the typed text. Questions offer “Or give a custom response below.” instead of another input field. Each item uses the existing Confirm/Discard preview; clarifying one item leaves independent previews valid.
 Expanded email candidates show the same labelled address, contact, booking reference and notes fields as calendar details. The review heading and extracted descriptions are English; original-source quotes and internal evidence IDs are not displayed. Original attachments remain available. A missing appointment duration offers 30 minutes and alternatives, both in the expanded item and the separate question message.
 Source deletion first creates an irreversible preview. Mockup: [email capture](mockups/email-capture.html).
+
+A task's Scheduled date is when the owner plans to do it. Deadline is the source's cutoff, kept separate from that choice. A questionnaire chosen for three days before the first appointment appears on that scheduled day, with a notification for the work time. Changing notification offsets preserves the task date and deadline and replaces any older explicit reminder.
 
 ## UX rules
 

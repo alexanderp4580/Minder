@@ -15,7 +15,7 @@ Do not embed server secrets in the client. Public Firebase identifiers are runti
 Capture routes use owner authentication. A review answer returns the owner's own entry. Attachment bytes download through the shared authenticated client; web Blob and Android FileProvider adapters save/open them without public URLs.
 
 
-`UrlLinkLauncher` uses url_launcher in external-application mode. It rejects schemes outside HTTPS, tel and mailto, empty targets, hostless URLs and URLs with user information. Platform failures return false. `wire.dart` retains item notes, kind and reminder offsets.
+`UrlLinkLauncher` uses url_launcher in external-application mode. It rejects schemes outside HTTPS, tel and mailto, empty targets, hostless URLs and URLs with user information. Platform failures return false. `wire.dart` retains item notes, kind, reminder offsets and optional remind_at.
 
 
 Item JSON preserves `phone`, `email`, `website` and `booking_reference`; `details` maps label/value pairs into typed values; absent keys keep older responses compatible.

@@ -20,6 +20,7 @@ class Item {
     this.endTimezone = '',
 
     this.dueAt,
+    this.remindAt,
     this.durationMinutes = 0,
     this.priority = 0,
     this.version = 0,
@@ -41,7 +42,7 @@ class Item {
 
   /// Minutes before the start or deadline at which a reminder fires.
   final List<int> reminderOffsets;
-  final DateTime? startAt, dueAt, endAt, startDate, endDate, dueDate;
+  final DateTime? startAt, dueAt, endAt, startDate, endDate, dueDate, remindAt;
   final List<String> sourceIds;
   final String startLocal, endLocal, startTimezone, endTimezone;
   final int durationMinutes, priority, version;

@@ -1,111 +1,43 @@
 import 'package:flutter/material.dart';
 
-import '../application/capture_controller.dart';
 import '../application/chat_controller.dart';
 import '../domain/capture.dart';
 import '../domain/capture_questions.dart';
-import '../domain/capture_repository.dart';
 import 'tokens.dart';
 
-/// The assistant's open questions about an email, each with quick replies.
-/// One typed reply can answer several questions at once.
-class QuestionView extends StatefulWidget {
+/// Review questions share the chat composer; choices are contextual shortcuts.
+class QuestionView extends StatelessWidget {
   const QuestionView({super.key, required this.capture, required this.chat});
   final Capture capture;
   final ChatController chat;
-  @override
-  State<QuestionView> createState() => _QuestionViewState();
-}
 
-class _QuestionViewState extends State<QuestionView> {
-  final _reply = TextEditingController();
-  CaptureController? _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    final repository = widget.chat.repository;
-    if (repository is CaptureRepository) {
-      _controller = CaptureController(
-        repository as CaptureRepository,
-        widget.chat.receiveCaptureEntry,
+  Widget _ask(String text, List<String> options, String? candidateId) =>
+      QuestionPrompt(
+        text: text,
+        options: options,
+        showChoices: !chat.questionAnswered(capture, candidateId: candidateId),
+        onAnswer: chat.waiting || chat.acting
+            ? null
+            : (answer) =>
+                  chat.answerReview(capture, answer, candidateId: candidateId),
       );
-    }
-  }
 
   @override
-  void dispose() {
-    _controller?.dispose();
-    _reply.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = _controller;
-    if (controller == null) return const Text('Questions about the email.');
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) => _content(controller),
-    );
-  }
-
-  Widget _ask(
-    CaptureController controller,
-    String text,
-    List<String> options,
-    String? candidateId,
-  ) => QuestionPrompt(
-    text: text,
-    options: options,
-    onAnswer: controller.busy
-        ? null
-        : (answer) => controller.answer(
-            widget.capture,
-            answer,
-            candidateId: candidateId,
-          ),
-  );
-
-  Widget _content(CaptureController controller) {
-    final capture = widget.capture;
-    return Column(
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: chat,
+    builder: (context, _) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final candidate in capture.candidates)
           if (candidate.question.isNotEmpty &&
               (candidate.state == 'needs-answer' ||
                   candidate.state == 'pending'))
-            _ask(
-              controller,
-              candidate.question,
-              candidate.options,
-              candidate.id,
-            ),
+            _ask(candidate.question, candidate.options, candidate.id),
         for (final question in capture.questions)
-          _ask(controller, question.text, question.options, null),
-        TextField(
-          controller: _reply,
-          minLines: 1,
-          maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Reply'),
-        ),
-        const SizedBox(height: 8),
-        FilledButton(
-          onPressed: controller.busy
-              ? null
-              : () async {
-                  if (_reply.text.trim().isEmpty) return;
-                  await controller.answer(capture, _reply.text);
-                  if (mounted && controller.error == null) _reply.clear();
-                },
-          child: const Text('Send answer'),
-        ),
-        if (controller.error != null)
-          Text(controller.error!, style: const TextStyle(color: Tokens.alert)),
+          _ask(question.text, question.options, null),
       ],
-    );
-  }
+    ),
+  );
 }
 
 /// Shared question and suggested replies in the email details and question message.
@@ -115,10 +47,12 @@ class QuestionPrompt extends StatelessWidget {
     required this.text,
     required this.options,
     this.onAnswer,
+    this.showChoices = true,
   });
   final String text;
   final List<String> options;
   final ValueChanged<String>? onAnswer;
+  final bool showChoices;
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +63,7 @@ class QuestionPrompt extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(questionText(text)),
-          if (choices.isNotEmpty) ...[
+          if (showChoices && choices.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(
               spacing: Tokens.gap,
@@ -143,6 +77,11 @@ class QuestionPrompt extends StatelessWidget {
                     child: Text(choice),
                   ),
               ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Or give a custom response below.',
+              style: TextStyle(color: Tokens.muted),
             ),
           ],
         ],

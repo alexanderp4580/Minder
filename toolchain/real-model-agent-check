@@ -46,6 +46,12 @@ def main():
                 turns = [json.loads(body) for body, in connection.execute('select body from agent_turn')]
                 assert usage and all('cost_usd' in u for u in usage), 'Provider costs were not recorded'
                 assert all(t['state'] == 'done' for t in turns), [t['state'] for t in turns]
+                if args.preparation:
+                    scheduled = connection.execute("select next_at from reminder_schedule where state='active'").fetchall()
+                    assert len(scheduled) == 1, 'Confirmed questionnaire needs one active schedule'
+                    import datetime
+                    actual_day = datetime.datetime.fromtimestamp(scheduled[0][0], datetime.timezone.utc).date().isoformat()
+                    assert actual_day == '2026-11-28', 'The saved notification must follow the final four-day work-date correction'
                 kinds = {}
                 for turn in turns:
                     kinds[turn['kind']] = kinds.get(turn['kind'], 0) + 1

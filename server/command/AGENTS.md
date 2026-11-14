@@ -18,7 +18,7 @@ Event kind, end, zones and date-only attributes participate in previews, Confirm
 
 Capture-bound previews validate candidate revision on Confirm. Confirm/Discard update source state and provenance atomically. Source deletion requires a separate irreversible preview and redacts captured history before file cleanup.
 
-Pending item previews with a start or deadline carry `reminder_choices_minutes` and the chosen `reminder_offsets_minutes`; `SetReminders` edits them while the change is pending and conflicts afterwards.
+Pending item previews with a start or deadline carry `reminder_choices_minutes` and the chosen `reminder_offsets_minutes`; `SetReminders` edits them while the change is pending and conflicts afterwards. Selecting offset reminders clears any explicit remind_at in both the pending item and proposal, including when all offsets are deselected. Dates and source deadlines stay unchanged.
 
 `delete_item` previews what a delete removes and changes nothing. Confirm calls `PurgeItem` and deletes each linked email source that no other item uses (redacted like `delete_capture`), then records an audit row marked `ItemDeleted` and a result with `removed_entry_ids`. The delete's own preview and result stay. Undo of a delete restores the item and its reminder schedule, not its cards or email source. A repeating item adds a `recurrence` row ("All occurrences removed"): a delete takes the whole series. A stale `expected_version` is a conflict.
 

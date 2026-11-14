@@ -9,6 +9,7 @@ import 'package:minder/data/chat_api.dart';
 import 'package:minder/data/wire.dart';
 import 'package:minder/domain/capture.dart';
 import 'package:minder/domain/capture_questions.dart';
+import 'package:minder/domain/entry.dart';
 import 'package:minder/ui/capture_view.dart';
 import 'package:minder/ui/question_view.dart';
 import 'package:minder/ui/tokens.dart';
@@ -248,15 +249,12 @@ void main() {
     expect(bodies.single['revision'], 3);
     expect(bodies.single['text'], '1 hour');
     expect(bodies.single['candidate_id'], 'a');
-    await tester.tap(find.text('Skip'));
-    await tester.pumpAndSettle();
-    expect(bodies.last['text'], 'Skip');
-    expect(bodies.last.containsKey('candidate_id'), isFalse);
+    expect(find.widgetWithText(OutlinedButton, '1 hour'), findsNothing);
   });
 
   testWidgets('one typed reply can answer several questions', (tester) async {
     final bodies = <Map<String, dynamic>>[];
-    await _pump(
+    final chat = await _pump(
       tester,
       (chat) => QuestionView(capture: _open, chat: chat),
       MockClient((request) async {
@@ -264,8 +262,19 @@ void main() {
         return _reply();
       }),
     );
-    await tester.enterText(find.byType(TextField), '45 minutes, at the shop');
-    await tester.tap(find.text('Send answer'));
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('Send answer'), findsNothing);
+    chat.receiveCaptureEntry(
+      Entry(
+        id: 'question',
+        cursor: 1,
+        kind: EntryKind.question,
+        text: 'Questions',
+        createdAt: DateTime.utc(2026),
+        capture: _open,
+      ),
+    );
+    await chat.send('45 minutes, at the shop');
     await tester.pumpAndSettle();
     expect(bodies.single['text'], '45 minutes, at the shop');
     expect(bodies.single.containsKey('candidate_id'), isFalse);

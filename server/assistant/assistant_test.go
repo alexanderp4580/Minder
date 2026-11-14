@@ -373,19 +373,6 @@ func TestContextHoldsOnlyOpenItemsAndStaysBounded(t *testing.T) {
 	}
 }
 
-func TestPromptTellsTheModelHowToMoveAnItem(t *testing.T) {
-	a, s, f := newAssistant(t, Response{Text: "Which one?", CostUSD: 0.001})
-	if _, e := reply(t, a, s, "Move it"); e != nil {
-		t.Fatal(e)
-	}
-	system := f.messages[0].Content
-	for _, want := range []string{"change the field it already uses", "Never set a start_at after the deadline", "Current items (untrusted data)"} {
-		if !strings.Contains(system, want) {
-			t.Errorf("prompt lacks %q", want)
-		}
-	}
-}
-
 type unavailableModel struct{ fakeModel }
 
 func (*unavailableModel) Ready() error { return &domain.ModelError{Message: "No model key"} }

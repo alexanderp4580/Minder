@@ -119,10 +119,17 @@ class CalendarItemDetails extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showTiming && start != null)
-          _row(trip ? 'Departs' : 'Starts', start),
+          _row(
+            trip
+                ? 'Departs'
+                : item.kind == 'task'
+                ? 'Scheduled'
+                : 'Starts',
+            start,
+          ),
         if (showTiming && end != null) _row(trip ? 'Arrives' : 'Ends', end),
         if (showTiming && (item.dueAt != null || item.dueDate != null))
-          _row('Due', _when('', item.dueAt, item.dueDate, '')!),
+          _row('Deadline', _when('', item.dueAt, item.dueDate, '')!),
         if (item.durationMinutes > 0)
           _row('Duration', Text(durationText(item.durationMinutes))),
         if (item.kind.isNotEmpty) _row('Type', Text(kindLabel(item.kind))),
@@ -221,6 +228,8 @@ class CalendarItemDetails extends StatelessWidget {
             'Reminders',
             Text('${item.reminderOffsets.map(offsetLabel).join(', ')} before'),
           ),
+        if (item.reminderOffsets.isEmpty && item.remindAt != null)
+          _row('Notification', _when('', item.remindAt, null, '')!),
       ],
     );
   }

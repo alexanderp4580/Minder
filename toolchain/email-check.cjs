@@ -25,8 +25,10 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   await page.getByRole('group',{name:/PREVIEW.*Hotel booking.*Confirmed/}).waitFor({timeout:10000});
   assert.equal(await page.getByRole('button',{name:'Confirm',exact:true}).count(),0,'the original Confirm is replaced even with the event stream blocked');
   await page.unroute('**/v1/events?*');
-  const answer=page.getByRole('textbox',{name:'Reply'});
-  await answer.waitFor({timeout:30000});await answer.fill('21 November');await page.getByRole('button',{name:'Send answer',exact:true}).click();
+  const answer=page.getByRole('textbox',{name:'Tell Minder…'});
+  await answer.waitFor({timeout:30000});
+  assert.equal(await page.getByRole('textbox').count(),1,'one composer handles the review reply');
+  await answer.fill('21 November');await page.getByRole('button',{name:'Send',exact:true}).click();
   for(let attempt=0;attempt<100;attempt++){const current=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(current.status==='ready-for-review')break;await new Promise(resolve=>setTimeout(resolve,100));}
   const reviewed=await fetch(url+'/v1/captures/'+id).then(r=>r.json());assert.equal(reviewed.status,'ready-for-review');assert.deepEqual(reviewed.candidates.map(c=>c.state),['confirmed','pending']);
   // Reload the completed revision so newly arriving previews cannot move the scroll target.
@@ -80,6 +82,8 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   try {
    await quick.click();
    await page.waitForTimeout(500);
+   assert.equal(await page.getByRole('button',{name:'45 minutes',exact:true}).count(),0,'answer hides both copies of its quick replies while the model is paused');
+   assert.equal(await page.getByRole('button',{name:'30 minutes',exact:true}).count(),0,'other options from the answered question disappear too');
    await page.screenshot({path:'.local/email-held.png'});
    require('node:fs').writeFileSync('.local/email-held-aria.txt',await page.locator('body').ariaSnapshot());
    await page.getByText('Working',{exact:true}).waitFor({state:'visible',timeout:10000});

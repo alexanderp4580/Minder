@@ -8,7 +8,7 @@ import 'package:minder/application/chat_controller.dart';
 import 'package:minder/data/chat_api.dart';
 import 'package:minder/domain/capture.dart';
 import 'package:minder/ui/capture_view.dart';
-import 'package:minder/ui/question_view.dart';
+import 'package:minder/application/capture_controller.dart';
 import 'package:minder/ui/tokens.dart';
 import 'package:minder/ui/item_sources.dart';
 
@@ -43,27 +43,17 @@ void main() {
       }),
     );
     final chat = ChatController(api)..waiting = true;
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: Tokens.theme,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: QuestionView(
-              capture: const Capture(
-                id: 'source',
-                status: 'needs-answer',
-                revision: 2,
-                questions: [CaptureQuestion(text: 'What date?')],
-              ),
-              chat: chat,
-            ),
-          ),
-        ),
+    final controller = CaptureController(api, chat.receiveCaptureEntry);
+    await controller.answer(
+      const Capture(
+        id: 'source',
+        status: 'needs-answer',
+        revision: 2,
+        questions: [CaptureQuestion(text: 'What date?')],
       ),
+      '21 November',
     );
-    await tester.enterText(find.byType(TextField), '21 November');
-    await tester.tap(find.text('Send answer'));
-    await tester.pumpAndSettle();
+    controller.dispose();
     expect(chat.entries.single.capture!.revision, 3);
     expect(chat.waiting, isTrue);
     await tester.pumpWidget(const SizedBox());

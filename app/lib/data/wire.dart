@@ -80,6 +80,7 @@ Item itemFromJson(Map<String, dynamic> j) {
     startTimezone: j['start_timezone'] as String? ?? '',
     endTimezone: j['end_timezone'] as String? ?? '',
     dueAt: time('due_at'),
+    remindAt: time('remind_at'),
     durationMinutes: (j['duration_minutes'] as num?)?.toInt() ?? 0,
     priority: (j['priority'] as num?)?.toInt() ?? 0,
     version: (j['version'] as num?)?.toInt() ?? 0,

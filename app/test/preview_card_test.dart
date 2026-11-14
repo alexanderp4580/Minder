@@ -100,6 +100,23 @@ class PreviewLauncher implements LinkLauncher {
 }
 
 void main() {
+  test('task work date and deadline are distinct preview rows', () {
+    final rows = previewRows(
+      _change([
+        _f('kind', 'task'),
+        _f('start_at', '2026-11-23T13:00:00+01:00'),
+        _f('due_at', '2026-11-26T13:00:00+01:00'),
+      ]),
+    );
+    expect(
+      rows.singleWhere((r) => r.label == 'Scheduled').newValue,
+      contains('23 Nov'),
+    );
+    expect(
+      rows.singleWhere((r) => r.label == 'Deadline').newValue,
+      contains('26 Nov'),
+    );
+  });
   testWidgets("meeting links open from a pending preview", (tester) async {
     final launcher = PreviewLauncher();
     await _show(

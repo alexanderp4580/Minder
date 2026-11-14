@@ -28,7 +28,6 @@ class CaptureView extends StatefulWidget {
 
 class _CaptureViewState extends State<CaptureView> {
   final _expanded = <String>{};
-  final _answer = TextEditingController();
   CaptureController? _controller;
   @override
   void initState() {
@@ -45,7 +44,6 @@ class _CaptureViewState extends State<CaptureView> {
   @override
   void dispose() {
     _controller?.dispose();
-    _answer.dispose();
     super.dispose();
   }
 
@@ -62,7 +60,7 @@ class _CaptureViewState extends State<CaptureView> {
       );
     }
     return AnimatedBuilder(
-      animation: controller,
+      animation: Listenable.merge([controller, widget.chat]),
       builder: (context, _) => _content(controller),
     );
   }
@@ -152,9 +150,13 @@ class _CaptureViewState extends State<CaptureView> {
               child: QuestionPrompt(
                 text: candidate.question,
                 options: candidate.options,
-                onAnswer: controller.busy
+                showChoices: !widget.chat.questionAnswered(
+                  capture,
+                  candidateId: candidate.id,
+                ),
+                onAnswer: controller.busy || widget.chat.waiting
                     ? null
-                    : (answer) => controller.answer(
+                    : (answer) => widget.chat.answerReview(
                         capture,
                         answer,
                         candidateId: candidate.id,
@@ -168,9 +170,10 @@ class _CaptureViewState extends State<CaptureView> {
                 child: QuestionPrompt(
                   text: question.text,
                   options: question.options,
-                  onAnswer: controller.busy
+                  showChoices: !widget.chat.questionAnswered(capture),
+                  onAnswer: controller.busy || widget.chat.waiting
                       ? null
-                      : (answer) => controller.answer(capture, answer),
+                      : (answer) => widget.chat.answerReview(capture, answer),
                 ),
               ),
           const SizedBox(height: 16),
@@ -257,27 +260,9 @@ class _CaptureViewState extends State<CaptureView> {
           if (!capture.processing && capture.status != 'reviewed') ...[
             if (capture.candidates.isEmpty) ...[
               const SizedBox(height: 12),
-              TextField(
-                controller: _answer,
-                minLines: 1,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  labelText:
-                      'Answer or clarify this ${capture.pasted ? 'text' : 'email'}',
-                ),
-              ),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: controller.busy
-                    ? null
-                    : () async {
-                        if (_answer.text.trim().isEmpty) return;
-                        await controller.answer(capture, _answer.text);
-                        if (mounted && controller.error == null) {
-                          _answer.clear();
-                        }
-                      },
-                child: const Text('Send answer'),
+              const Text(
+                'Give a custom response below.',
+                style: TextStyle(color: Tokens.muted),
               ),
             ],
             if (capture.status != 'failed')
