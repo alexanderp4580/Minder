@@ -111,6 +111,7 @@ class _CaptureViewState extends State<CaptureView> {
                           [
                             candidateWhen(candidate),
                             if (!expanded) candidate.location,
+                            if (candidate.state == 'queued') 'Waiting',
                             if (candidate.state == 'confirmed') 'Confirmed',
                             if (candidate.state == 'discarded') 'Discarded',
                           ].where((part) => part.isNotEmpty).join(' · '),
@@ -232,6 +233,16 @@ class _CaptureViewState extends State<CaptureView> {
             ),
           for (final candidate in capture.candidates)
             _candidate(controller, capture, candidate),
+          if (capture.unverified > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'I could not verify ${capture.unverified} '
+                '${capture.unverified == 1 ? 'appointment' : 'appointments'} '
+                'from this email.',
+                style: const TextStyle(color: Tokens.muted),
+              ),
+            ),
           for (final warning in capture.coverage)
             Padding(
               padding: const EdgeInsets.only(top: 8),

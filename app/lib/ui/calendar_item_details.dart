@@ -126,7 +126,9 @@ class CalendarItemDetails extends StatelessWidget {
         if (item.durationMinutes > 0)
           _row('Duration', Text(durationText(item.durationMinutes))),
         if (item.kind.isNotEmpty) _row('Type', Text(kindLabel(item.kind))),
-        if (item.location.isNotEmpty)
+        if (item.location.isNotEmpty && isVirtualVenue(item.location))
+          _row('Where', Text(item.location)),
+        if (item.location.isNotEmpty && !isVirtualVenue(item.location))
           _row(
             'Address',
             ContentAction(

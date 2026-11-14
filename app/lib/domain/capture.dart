@@ -10,6 +10,7 @@ class Capture {
     this.sender = '',
     this.subject = '',
     this.error = '',
+    this.unverified = 0,
     this.deleted = false,
     this.coverageAcknowledged = false,
     this.questions = const [],
@@ -19,6 +20,9 @@ class Capture {
   });
   final String id, status, sender, subject, error;
   final int revision;
+
+  /// Appointments the assistant dropped because the email did not back them up.
+  final int unverified;
   final bool deleted, coverageAcknowledged;
   final List<CaptureQuestion> questions;
   final List<String> coverage;

@@ -127,6 +127,7 @@ Capture captureFromJson(Map<String, dynamic> j) => Capture(
   sender: j['sender'] as String? ?? '',
   subject: j['subject'] as String? ?? '',
   error: j['error'] as String? ?? '',
+  unverified: (j['unverified'] as num?)?.toInt() ?? 0,
   deleted: j['deleted'] == true,
   coverageAcknowledged: j['coverage_acknowledged'] == true,
   questions: [
