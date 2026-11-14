@@ -8,7 +8,7 @@ Routes, auth admission, body/range validation, response/error encoding, SSE and 
 
 # Local Contracts
 
-Depend on query, command, message, reminder and authentication interfaces. Do not import adapters.
+Depend on query, command, message (accept and answer), reminder and authentication interfaces. Do not import adapters.
 Only health and the OAuth logo are public. Same-origin checks protect browser writes.
 Unknown API paths return 404. Stream durable cursors with 20-second pings.
 Expose fixed messages for internal/model failures. Serve only named branding files.
@@ -16,7 +16,7 @@ Expose fixed messages for internal/model failures. Serve only named branding fil
 
 The calendar items route accepts an optional validated IANA timezone for date-only overlap selection.
 
-Email ingress is a separate machine-authenticated POST route with signed envelope/body verification; machine credentials never authorize owner routes. `POST /v1/changes/{id}/reminders` (body `{offsets}`) edits a pending change's reminders. Ingestion acknowledges only durable sources/jobs. Owner capture routes include answers, retry, delete and dismiss (`POST /v1/captures/{id}/dismiss`, body `{revision}`). Ingestion logs `email ingest accepted/rejected/failed` with reason codes and counts, never content.
+Email ingress is a separate machine-authenticated POST route with signed envelope/body verification; machine credentials never authorize owner routes. `POST /v1/changes/{id}/reminders` (body `{offsets}`) edits a pending change's reminders. Ingestion acknowledges only durable sources/jobs. Owner capture routes include answers, retry, delete and dismiss. `POST /v1/chat/messages` and `POST /v1/captures/{id}/answers` queue owner turns and return before the agent runs; the answer route (body `{revision, candidate_id, text}`) returns the owner entry it saved, or 409 for a stale review. Both accept up to 400,000 decoded bytes (the body limit allows full JSON escaping; the service enforces decoded bytes and rejects oversized text with `invalid_field` before saving). (`POST /v1/captures/{id}/dismiss`, body `{revision}`). Ingestion logs `email ingest accepted/rejected/failed` with reason codes and counts, never content.
 
 `POST /v1/items/{id}/delete` (body `{expected_version}`, no other fields) returns a pending `delete_item` preview for the calendar. 404 for an unknown item, 409 for a stale version. The calendar confirms or discards it through the change routes.
 

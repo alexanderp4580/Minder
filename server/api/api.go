@@ -34,7 +34,13 @@ type Commands interface {
 }
 type Messages interface {
 	Accept(string) (conversation.Accepted, error)
+	AnswerReview(sourceID string, revision int, candidateID, text string) (domain.Entry, error)
 }
+
+// messageBodyLimit leaves room for a full 400,000-byte message in which every byte needs a
+// six-character JSON escape. The service checks the decoded size.
+const messageBodyLimit = 6*conversation.MaxMessageBytes + 4096
+
 type ReminderActions interface {
 	Act(string, string, time.Time) (domain.Entry, error)
 	Active() ([]domain.Entry, error)
@@ -261,7 +267,7 @@ func (s *Server) message(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Text string `json:"text"`
 	}
-	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 20000))
+	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, messageBodyLimit))
 	d.DisallowUnknownFields()
 	if e := d.Decode(&input); e != nil {
 		noteError(w, e)

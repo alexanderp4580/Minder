@@ -87,23 +87,13 @@ type CapturePart struct {
 	Data       []byte `json:"-"`
 }
 type CaptureDocument struct {
-	CaptureID          string              `json:"capture_id,omitempty"`
-	PreviousCandidates []CaptureCandidate  `json:"previous_candidates,omitempty"`
-	Subject            string              `json:"subject"`
-	OriginalDate       string              `json:"original_date,omitempty"`
-	Parts              []CapturePart       `json:"parts"`
-	Attachments        []CaptureAttachment `json:"attachments"`
-	Coverage           []CaptureCoverage   `json:"coverage"`
-	Questions          []string            `json:"questions,omitempty"`
-}
-type CaptureExtraction struct {
-	Summary      string             `json:"summary,omitempty"`
-	Notification string             `json:"notification,omitempty"`
-	Candidates   []CaptureCandidate `json:"candidates"`
-	Questions    []CaptureQuestion  `json:"questions,omitempty"`
-	// Dropped counts candidates removed because their evidence did not match the email.
-	// The model never supplies it.
-	Dropped int `json:"-"`
+	CaptureID    string              `json:"capture_id,omitempty"`
+	Subject      string              `json:"subject"`
+	OriginalDate string              `json:"original_date,omitempty"`
+	Parts        []CapturePart       `json:"parts"`
+	Attachments  []CaptureAttachment `json:"attachments"`
+	Coverage     []CaptureCoverage   `json:"coverage"`
+	Questions    []string            `json:"questions,omitempty"`
 }
 
 func (c Capture) Due(now time.Time) bool {

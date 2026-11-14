@@ -14,10 +14,10 @@ Provider fixtures use local HTTP servers. Real-model checks use temporary databa
 
 Tool schemas distinguish event ends, date-only ranges and deadlines; preserve travel zones and never invent missing clock times.
 
-`propose_cancel` and `propose_delete` need `item_id` and `expected_version`, like `propose_complete`. `find_finished_items` takes an optional `query` and `list`. The tool set follows `Message.Purpose` on the first message (`toolsFor`): chat has the base tools; `PurposeOffer` adds `offer_lookup` (required `kind`, an enum built from `assistant.LookupKinds` whose description states each kind's cost and returned fields, and a required `query`); `PurposeEmail` has only `extract_capture`.
+`propose_cancel` and `propose_delete` need `item_id` and `expected_version`, like `propose_complete`. `find_finished_items` takes an optional `query` and `list`. One tool family serves every request (`toolsFor`): the chat tools, the source tools (`find_sources`, `read_source`, `inspect_review`, `propose_review`) and, when `Message.Purpose` on the first message is `PurposeOffer`, `offer_lookup` (required `kind`, an enum built from `assistant.LookupKinds` whose description states each kind's cost and returned fields, and a required `query`). Messages carry tool calls and results with their IDs (`tool_calls` on assistant messages, `role: tool` with `tool_call_id`). `propose_review` takes `source_id`, `expected_revision`, `summary`, `notification` and `candidates` (optional `id` and `revision` to change one, `proposal`, `question`, `options`, `evidence`).
 
 
-Item and capture tool schemas expose phone, email, website and booking_reference as separate strings and support clear flags. Item tools also expose `details` (label/value pairs) and `clear_details`. The email tool exposes `summary` and `notification` strings. Notes hold remaining instructions.
+Item and review tool schemas expose phone, email, website and booking_reference as separate strings and support clear flags. Item tools also expose `details` (label/value pairs) and `clear_details`. Notes hold remaining instructions.
 
 # Work Guidance
 

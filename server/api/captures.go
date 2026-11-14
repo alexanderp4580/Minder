@@ -59,8 +59,6 @@ func (s *Server) ingestEmail(w http.ResponseWriter, r *http.Request) {
 
 type CaptureReviewer interface {
 	Get(string) (domain.Capture, error)
-	Answer(context.Context, string, int, string) (domain.Entry, error)
-	AnswerCandidate(context.Context, string, int, string, string) (domain.Entry, error)
 	Acknowledge(context.Context, string, int) (domain.Entry, error)
 	Dismiss(context.Context, string, int) (domain.Entry, error)
 	Retry(string) (domain.Entry, error)
@@ -90,7 +88,7 @@ func (s *Server) answerCapture(w http.ResponseWriter, r *http.Request) {
 		Text        string `json:"text"`
 		Acknowledge bool   `json:"acknowledge_coverage"`
 	}
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 20000))
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, messageBodyLimit))
 	decoder.DisallowUnknownFields()
 	if e := decoder.Decode(&answer); e != nil {
 		fail(w, &domain.Invalid{Field: "answer", Message: "The answer is unreadable."})
@@ -100,10 +98,9 @@ func (s *Server) answerCapture(w http.ResponseWriter, r *http.Request) {
 	var e error
 	if answer.Acknowledge {
 		entry, e = s.Captures.Acknowledge(r.Context(), r.PathValue("id"), answer.Revision)
-	} else if answer.CandidateID != "" {
-		entry, e = s.Captures.AnswerCandidate(r.Context(), r.PathValue("id"), answer.Revision, answer.CandidateID, answer.Text)
 	} else {
-		entry, e = s.Captures.Answer(r.Context(), r.PathValue("id"), answer.Revision, answer.Text)
+		// A quick reply or typed answer is the owner's words for the agent to interpret.
+		entry, e = s.messages.AnswerReview(r.PathValue("id"), answer.Revision, answer.CandidateID, answer.Text)
 	}
 	if e != nil {
 		fail(w, e)

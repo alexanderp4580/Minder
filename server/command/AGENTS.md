@@ -12,7 +12,7 @@ Use `port.Transaction`; do not import storage implementations.
 One invalid proposal rolls back its batch. Confirm checks versions and records audit/results atomically.
 Pending changes do not expire. Undo refuses a changed current version. Preserve storage errors.
 
-Confirming or discarding an email candidate publishes the next queued one through `review.Advance` and, when the last is resolved, posts the `Done` summary, in the same transaction.
+Confirming or discarding a candidate (email or pasted text) publishes the next queued one through `review.Advance` and, when the last is resolved, posts the `Done` summary, in the same transaction.
 
 Event kind, end, zones and date-only attributes participate in previews, Confirm and Undo like existing item fields.
 
@@ -26,6 +26,10 @@ Pending item previews with a start or deadline carry `reminder_choices_minutes` 
 Detail lists participate in preview, Confirm, replace, clear and Undo. The preview carries `details` as `Label: value` lines.
 
 Booking/contact fields participate in previews, Confirm, clear and Undo. Before editing older items, promote labelled note metadata to separate fields; clearing a field also removes its legacy note lines so it cannot reappear. JSON-row storage needs no schema migration.
+
+`CommitAgentTurn(turn, outcome)` is the only place an agent outcome is stored. In one transaction it posts an offer or the model's text, applies the review patch and previews the proposals, records the cost on the first entry, and ends the turn as `done` with its entry IDs. Committing a finished turn returns its entries and writes nothing; committing a failed turn conflicts. One invalid proposal or patch rolls the whole turn back. It never confirms an item. An arrival turn with no review closes the capture as reviewed and posts the model's text.
+A review patch targets a source: an email's capture, or pasted text (a chat source), whose capture and source record are created on first publication. The patch's expected revision must equal the capture's (0 for pasted text with no review). Candidates without an ID are new and queue; candidates with an ID update that candidate in place (it must exist, not be confirmed or discarded, and quote its current revision), withdraw its preview, keep its old evidence when the patch sends none and return it to the queue at the new revision. Any update bumps the review revision; a first publication or additions do not. Omitted candidates stay as they are. Updating the open question closes its question entry. The first publication stores the model's notification and queues one push; later patches push nothing. Stale revisions, unknown candidates and terminal candidates fail with a conflict and change nothing.
+`FailAgentTurn(turn, cause)` ends a turn as `failed` in one transaction with one visible report: an arrival fails its source through `review.Fail` (unless the source was deleted or moved on); any other turn posts an `error` entry under the turn's ID with the safe `domain.Describe` text. Failing a finished turn does nothing.
 
 # Work Guidance
 

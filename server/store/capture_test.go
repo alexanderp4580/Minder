@@ -117,3 +117,48 @@ func TestReviewedCaptureDoesNotSendStaleNotification(t *testing.T) {
 		t.Fatal("stale review notification", deliveries, e)
 	}
 }
+
+func TestOpenReviewsListsOnlyLiveReviewsWaitingForTheOwner(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	s.Transact(func(tx port.Transaction) error {
+		for id, c := range map[string]domain.Capture{
+			"asking":  {Status: "needs-answer"},
+			"ready":   {Status: "ready-for-review"},
+			"done":    {Status: "reviewed"},
+			"failed":  {Status: "failed"},
+			"reading": {Status: "processing"},
+			"gone":    {Status: "needs-answer", Deleted: true},
+		} {
+			c.ID = id
+			if e := tx.PutCapture(c); e != nil {
+				return e
+			}
+		}
+		return nil
+	})
+	open, e := s.OpenReviews()
+	got := map[string]bool{}
+	for _, c := range open {
+		got[c.ID] = true
+	}
+	if e != nil || len(got) != 2 || !got["asking"] || !got["ready"] {
+		t.Fatalf("%v %v", got, e)
+	}
+}
+
+func TestAnEntryReadsBackByID(t *testing.T) {
+	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
+	defer s.Close()
+	added, _ := s.AddEntry(domain.Entry{Kind: "user", Text: "Hello"})
+	got, e := s.Entry(added.ID)
+	if e != nil || got.Text != "Hello" || got.Cursor != added.Cursor {
+		t.Fatalf("%+v %v", got, e)
+	}
+	if _, e = s.Entry("missing"); !errors.Is(e, domain.ErrNotFound) {
+		t.Fatal(e)
+	}
+}

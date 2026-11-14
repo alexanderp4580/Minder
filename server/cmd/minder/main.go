@@ -67,13 +67,24 @@ func run(logger *slog.Logger) error {
 	defer database.Close()
 	commands := command.New(database)
 	model := &openrouter.Client{Key: settings.ModelKey, Model: settings.Model, URL: settings.ModelEndpoint}
-	assistantService := assistant.New(database, commands, model, settings.MonthlyLimitEUR, settings.USDToEUR)
+	assistantService := assistant.New(database, model, settings.MonthlyLimitEUR, settings.USDToEUR)
 	if settings.SerperKey != "" {
 		assistantService.WithLookups(&serper.Client{Key: settings.SerperKey, URL: settings.SerperEndpoint})
 	}
+	// Sources read for the agent: forwarded email when email is on, and pasted chat text always.
+	var files capture.Files
+	if settings.Email.Enabled {
+		stored, e := mailfiles.New(settings.Email.SourceDir)
+		if e != nil {
+			return errors.New("Email source storage is unavailable")
+		}
+		files = stored
+	}
+	emailService := capture.New(database, files)
+	assistantService.WithSources(emailService)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	messages := conversation.New(ctx, database, assistantService)
+	messages := conversation.New(ctx, database, assistantService, commands)
 	defer messages.Close()
 	reminders := reminder.New(database)
 	handler := api.New(database, commands, messages, reminders, authentication, settings.WebDir)
@@ -87,19 +98,12 @@ func run(logger *slog.Logger) error {
 		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 	worker := &reminder.Worker{Repository: database, Scheduler: reminders}
-	var emailService *capture.Service
 	if settings.Email.Enabled {
 		verifier, e := mailauth.FromEnvironment(os.Getenv)
 		if e != nil {
 			return e
 		}
-		files, e := mailfiles.New(settings.Email.SourceDir)
-		if e != nil {
-			return errors.New("Email source storage is unavailable")
-		}
-		emailService = capture.New(database, files, assistantService)
 		emailService.Parser = &mailparse.Parser{}
-		emailService.Preview = command.PreviewIn
 		handler.EmailVerifier = verifier
 		handler.EmailIngestor = emailService
 		handler.Captures = emailService
@@ -111,9 +115,7 @@ func run(logger *slog.Logger) error {
 			return errors.New("Firebase service account configuration is invalid")
 		}
 		worker.Sender = sender
-		if emailService != nil {
-			emailService.Sender = sender
-		}
+		emailService.Sender = sender
 		slog.Info("firebase push configured", "project_id", sender.ProjectID)
 		pushConfig, err := api.ParsePushConfig(settings.FirebaseAndroidConfig)
 		if err != nil || pushConfig == nil || pushConfig.ProjectID != sender.ProjectID {
@@ -129,7 +131,7 @@ func run(logger *slog.Logger) error {
 	}
 	slog.Info("Minder listening", "addr", listener.Addr().String())
 	workers := []func(context.Context){worker.Run}
-	if emailService != nil {
+	if settings.Email.Enabled {
 		workers = append(workers, emailService.Run)
 	}
 	return serve(ctx, srv, listener, func(ctx context.Context) { runWorkers(ctx, workers...) })

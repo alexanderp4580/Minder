@@ -253,3 +253,10 @@ func (s *Store) itemSourceIDs(item string) ([]string, error) {
 	}
 	return out, rows.Err()
 }
+
+// OpenReviews lists the newest reviews still waiting for the owner, so the agent can reach
+// their sources after the cards leave the recent history.
+func (s *Store) OpenReviews() ([]domain.Capture, error) {
+	return queryAll[domain.Capture](s.db, `SELECT body FROM capture WHERE coalesce(json_extract(body,'$.deleted'),0)=0
+		AND json_extract(body,'$.status') IN ('needs-answer','ready-for-review') ORDER BY rowid DESC LIMIT 10`)
+}

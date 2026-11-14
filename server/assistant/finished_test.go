@@ -1,7 +1,6 @@
 package assistant
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -31,9 +30,9 @@ func finishedFixture(t *testing.T) (*Service, *store.Store, *fakeModel) {
 }
 
 func TestFinishedItemsStayOutOfTheFirstRequest(t *testing.T) {
-	a, _, f := finishedFixture(t)
+	a, s, f := finishedFixture(t)
 	f.r = Response{Text: "Hello.", CostUSD: 0.001}
-	if _, e := a.Reply(context.Background(), "Hi"); e != nil {
+	if _, e := reply(t, a, s, "Hi"); e != nil {
 		t.Fatal(e)
 	}
 	seen, _ := json.Marshal(f.history[0])
@@ -43,12 +42,12 @@ func TestFinishedItemsStayOutOfTheFirstRequest(t *testing.T) {
 }
 
 func TestLookupOfFinishedItemsAnswersFromThem(t *testing.T) {
-	a, _, f := finishedFixture(t)
+	a, s, f := finishedFixture(t)
 	f.seq = []Response{
 		{Calls: []Call{{Name: "find_finished_items", Arguments: `{"query":"dent"}`}}, CostUSD: 0.001},
 		{Text: "The dentist was at Damrak 1.", CostUSD: 0.002},
 	}
-	entries, e := a.Reply(context.Background(), "Where was the dentist I finished?")
+	entries, e := reply(t, a, s, "Where was the dentist I finished?")
 	if e != nil || len(entries) != 1 || entries[0].Text != "The dentist was at Damrak 1." {
 		t.Fatalf("%+v %v", entries, e)
 	}
@@ -65,12 +64,12 @@ func TestLookupOfFinishedItemsAnswersFromThem(t *testing.T) {
 }
 
 func TestAFinishedItemCanBeDeletedFromChat(t *testing.T) {
-	a, _, f := finishedFixture(t)
+	a, s, f := finishedFixture(t)
 	f.seq = []Response{
 		{Calls: []Call{{Name: "find_finished_items", Arguments: `{"query":"dentist"}`}}, CostUSD: 0.001},
 		{Calls: []Call{{Name: "propose_delete", Arguments: `{"item_id":"done1","expected_version":3}`}}, CostUSD: 0.001},
 	}
-	entries, e := a.Reply(context.Background(), "Delete the dentist I finished")
+	entries, e := reply(t, a, s, "Delete the dentist I finished")
 	if e != nil || len(entries) != 1 || entries[0].Change == nil || entries[0].Change.Action != "delete_item" || entries[0].Change.ItemTitle != "Dentist" {
 		t.Fatalf("%+v %v", entries, e)
 	}
@@ -85,7 +84,7 @@ func TestLookupFiltersByListAndCapsTheAnswer(t *testing.T) {
 		{Calls: []Call{{Name: "find_finished_items", Arguments: `{"list":"home"}`}}, CostUSD: 0.001},
 		{Text: "Ok.", CostUSD: 0.001},
 	}
-	if _, e := a.Reply(context.Background(), "What did I finish on Home?"); e != nil {
+	if _, e := reply(t, a, s, "What did I finish on Home?"); e != nil {
 		t.Fatal(e)
 	}
 	second, _ := json.Marshal(f.history[1])
@@ -98,37 +97,39 @@ func TestLookupFiltersByListAndCapsTheAnswer(t *testing.T) {
 }
 
 func TestLookupOfNothingTellsTheModel(t *testing.T) {
-	a, _, f := finishedFixture(t)
+	a, s, f := finishedFixture(t)
 	f.seq = []Response{
 		{Calls: []Call{{Name: "find_finished_items", Arguments: `{"query":"zzz"}`}}, CostUSD: 0.001},
 		{Text: "I found no finished item like that.", CostUSD: 0.001},
 	}
-	entries, e := a.Reply(context.Background(), "Show my finished zzz")
+	entries, e := reply(t, a, s, "Show my finished zzz")
 	second, _ := json.Marshal(f.history[1])
 	if e != nil || len(entries) != 1 || !strings.Contains(string(second), "No finished items match") {
 		t.Fatalf("%+v %v %s", entries, e, second)
 	}
 }
 
-func TestASecondLookupIsRefusedSoRepliesCannotLoop(t *testing.T) {
-	a, _, f := finishedFixture(t)
-	f.r = Response{Calls: []Call{{Name: "find_finished_items", Arguments: `{"query":"dent"}`}}, CostUSD: 0.001}
-	if _, e := a.Reply(context.Background(), "Where was the dentist?"); e == nil {
-		t.Fatal("a second lookup was accepted")
+func TestAModelThatNeverStopsLookingEndsAtTheRequestBudgetAndEveryCallIsBilled(t *testing.T) {
+	a, s, f := finishedFixture(t)
+	f.r = Response{Calls: []Call{{Name: "find_finished_items", Arguments: `{"query":"dent"}`}}, CostUSD: 0.00001}
+	_, e := reply(t, a, s, "Where was the dentist?")
+	var invalid *domain.Invalid
+	if !errors.As(e, &invalid) || f.calls < 3 {
+		t.Fatalf("a repeating model must end in a visible failure after several rounds: %v (calls %d)", e, f.calls)
 	}
-	if f.calls != 2 {
-		t.Fatalf("model called %d times, want exactly 2", f.calls)
+	if cost, _ := s.MonthCost(); cost < float64(f.calls)*0.00001*0.99 {
+		t.Fatalf("%d model calls were billed %v", f.calls, cost)
 	}
 }
 
-func TestAnOversizedLookupIsRefusedBeforeTheSecondCall(t *testing.T) {
+func TestAnOversizedLookupIsRefusedBeforeTheNextCall(t *testing.T) {
 	a, s, f := finishedFixture(t)
-	big := strings.Repeat("n", 4000)
+	big := strings.Repeat("n", 12000)
 	for i := 0; i < 50; i++ {
 		put(t, s, domain.Item{ID: "big" + string(rune('A'+i%26)) + string(rune('a'+i/26)), Title: "Big", Status: "done", Version: 1, Notes: big})
 	}
 	f.seq = []Response{{Calls: []Call{{Name: "find_finished_items", Arguments: `{"query":"big"}`}}, CostUSD: 0.001}}
-	_, e := a.Reply(context.Background(), "Show my finished big ones")
+	_, e := reply(t, a, s, "Show my finished big ones")
 	var invalid *domain.Invalid
 	if !errors.As(e, &invalid) || f.calls != 1 {
 		t.Fatalf("want an Invalid error before a second call, got %v (calls %d)", e, f.calls)

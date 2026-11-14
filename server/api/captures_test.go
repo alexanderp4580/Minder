@@ -6,9 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/port"
+	"github.com/alexanderp4580/Minder/server/store"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -108,12 +112,6 @@ type dismissReviewer struct {
 }
 
 func (d *dismissReviewer) Get(string) (domain.Capture, error) { return domain.Capture{}, nil }
-func (d *dismissReviewer) Answer(context.Context, string, int, string) (domain.Entry, error) {
-	return domain.Entry{}, nil
-}
-func (d *dismissReviewer) AnswerCandidate(context.Context, string, int, string, string) (domain.Entry, error) {
-	return domain.Entry{}, nil
-}
 func (d *dismissReviewer) Acknowledge(context.Context, string, int) (domain.Entry, error) {
 	return domain.Entry{}, nil
 }
@@ -157,3 +155,27 @@ func TestDismissRouteNeedsTheOwnerAndTheCurrentRevision(t *testing.T) {
 type allowOwner struct{}
 
 func (allowOwner) Authenticate(*http.Request) error { return nil }
+
+func TestAQuickReplyBecomesAnOwnerMessageForTheAgent(t *testing.T) {
+	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
+	t.Cleanup(func() { s.Close() })
+	s.Transact(func(tx port.Transaction) error {
+		return tx.PutCapture(domain.Capture{ID: "mail", Revision: 2, Status: "needs-answer", Candidates: []domain.CaptureCandidate{{ID: "a", Revision: 2, State: "needs-answer"}}})
+	})
+	h := testServer(t, s, nil, replier{s}, nil, "")
+	h.Captures = &dismissReviewer{}
+	answer := func(body string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/captures/mail/answers", strings.NewReader(body)))
+		return w
+	}
+	w := answer(`{"revision":2,"candidate_id":"a","text":"1 hour"}`)
+	var entry domain.Entry
+	json.Unmarshal(w.Body.Bytes(), &entry)
+	if w.Code != 200 || entry.Kind != "user" || entry.Text != "1 hour" {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+	if w := answer(`{"revision":1,"candidate_id":"a","text":"1 hour"}`); w.Code != 409 {
+		t.Fatalf("a stale answer must conflict: %d %s", w.Code, w.Body.String())
+	}
+}

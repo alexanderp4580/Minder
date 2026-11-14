@@ -33,6 +33,35 @@ func (f *fakeModel) Complete(_ context.Context, messages []Message) (Response, e
 	}
 	return f.r, nil
 }
+
+// reply runs one owner message the way the worker does: save it, run the agent, commit.
+func reply(t *testing.T, a *Service, s *store.Store, text string) ([]domain.Entry, error) {
+	t.Helper()
+	return replyIn(t, context.Background(), a, s, text)
+}
+
+// replyIn is reply under a given context, for tests that follow the trace ID.
+func replyIn(t *testing.T, ctx context.Context, a *Service, s *store.Store, text string) ([]domain.Entry, error) {
+	t.Helper()
+	if _, _, err := s.EnqueueAgentTurn(domain.AgentTurn{ID: domain.NewID(), Kind: domain.TurnOwner}, &domain.Entry{Kind: "user", Text: text}); err != nil {
+		t.Fatal(err)
+	}
+	turn, err := s.ClaimAgentTurn(time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	outcome, err := a.Run(ctx, turn)
+	if err != nil {
+		s.ReleaseAgentTurn(turn.ID)
+		return nil, err
+	}
+	entries, err := command.New(s).CommitAgentTurn(turn, outcome)
+	if err != nil {
+		s.ReleaseAgentTurn(turn.ID)
+	}
+	return entries, err
+}
+
 func TestAssistantProposesWithoutApplying(t *testing.T) {
 	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
 	if e != nil {
@@ -40,8 +69,8 @@ func TestAssistantProposesWithoutApplying(t *testing.T) {
 	}
 	defer s.Close()
 	f := &fakeModel{r: Response{Calls: []Call{{ID: "c", Name: "propose_create", Arguments: `{"title":"Call plumber","due_at":"2026-11-12T09:00:00Z"}`}}, CostUSD: 0.001}}
-	a := New(s, command.New(s), f, 5, 1)
-	entries, e := a.Reply(context.Background(), "Call the plumber")
+	a := New(s, f, 5, 1)
+	entries, e := reply(t, a, s, "Call the plumber")
 	if e != nil || len(entries) != 1 || entries[0].Kind != "preview" {
 		t.Fatalf("%+v %v", entries, e)
 	}
@@ -59,8 +88,8 @@ func TestBudgetBlocksBeforeModel(t *testing.T) {
 	defer s.Close()
 	s.RecordUsage(5, map[string]any{})
 	f := &fakeModel{}
-	a := New(s, command.New(s), f, 5, 1)
-	_, e := a.Reply(context.Background(), "Hi")
+	a := New(s, f, 5, 1)
+	_, e := reply(t, a, s, "Hi")
 	if e != domain.ErrLimit || f.calls != 0 {
 		t.Fatal("budget allowed request", e)
 	}
@@ -69,8 +98,8 @@ func TestClarificationChangesNothing(t *testing.T) {
 	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
 	defer s.Close()
 	f := &fakeModel{r: Response{Text: "Which item do you mean?", CostUSD: 0.001}}
-	a := New(s, command.New(s), f, 5, 1)
-	entries, e := a.Reply(context.Background(), "Move it")
+	a := New(s, f, 5, 1)
+	entries, e := reply(t, a, s, "Move it")
 	if e != nil || entries[0].Text != "Which item do you mean?" {
 		t.Fatal(entries, e)
 	}
@@ -90,7 +119,7 @@ func TestListToolReturnsRealOpenItems(t *testing.T) {
 	p, _ := c.Preview(domain.Proposal{Action: "create_item", Title: "Dentist"})
 	c.Confirm(p.Change.ID)
 	f := &fakeModel{r: Response{Calls: []Call{{Name: "list_items", Arguments: `{}`}}, CostUSD: 0.001}}
-	entries, e := New(s, c, f, 5, 1).Reply(context.Background(), "What is open?")
+	entries, e := reply(t, New(s, f, 5, 1), s, "What is open?")
 	if e != nil || len(entries) != 1 || entries[0].Text != "Open items:\nDentist" {
 		t.Fatalf("%+v %v", entries, e)
 	}
@@ -102,8 +131,8 @@ func TestMissingKeyDoesNotSpendBudget(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer s.Close()
-	a := New(s, command.New(s), &unavailableModel{}, 5, 1)
-	if _, e = a.Reply(context.Background(), "Hello"); e == nil {
+	a := New(s, &unavailableModel{}, 5, 1)
+	if _, e = reply(t, a, s, "Hello"); e == nil {
 		t.Fatal("missing key accepted")
 	}
 	cost, _ := s.MonthCost()
@@ -121,22 +150,16 @@ func TestModelReceivesConfirmedProposalBeforeNextQuestion(t *testing.T) {
 	defer s.Close()
 	c := command.New(s)
 	f := &fakeModel{r: Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"M0 live check"}`}}, CostUSD: 0.001}}
-	a := New(s, c, f, 5, 1)
-	if _, e = s.AddEntry(domain.Entry{Kind: "user", Text: "Create M0 live check."}); e != nil {
-		t.Fatal(e)
-	}
-	entries, e := a.Reply(context.Background(), "Create M0 live check.")
+	a := New(s, f, 5, 1)
+	entries, e := reply(t, a, s, "Create M0 live check.")
 	if e != nil {
 		t.Fatal(e)
 	}
 	if _, e = c.Confirm(entries[0].Change.ID); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = s.AddEntry(domain.Entry{Kind: "user", Text: "What is open?"}); e != nil {
-		t.Fatal(e)
-	}
 	f.r = Response{Calls: []Call{{Name: "list_items", Arguments: `{}`}}, CostUSD: 0.001}
-	if _, e = a.Reply(context.Background(), "What is open?"); e != nil {
+	if _, e = reply(t, a, s, "What is open?"); e != nil {
 		t.Fatal(e)
 	}
 	if len(f.messages) != 5 {
@@ -161,12 +184,12 @@ func newAssistant(t *testing.T, r Response) (*Service, *store.Store, *fakeModel)
 	}
 	t.Cleanup(func() { s.Close() })
 	f := &fakeModel{r: r}
-	return New(s, command.New(s), f, 5, 1), s, f
+	return New(s, f, 5, 1), s, f
 }
 
 func TestProposalCarriesListProfileAndRecurrence(t *testing.T) {
-	a, _, _ := newAssistant(t, Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"Water plants","due_at":"2026-11-14T09:00:00Z","list":"Home","profile":"chore","recurrence":{"every":"weekly","interval":1}}`}}, CostUSD: 0.001})
-	entries, e := a.Reply(context.Background(), "Water the plants every week")
+	a, s, _ := newAssistant(t, Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"Water plants","due_at":"2026-11-14T09:00:00Z","list":"Home","profile":"chore","recurrence":{"every":"weekly","interval":1}}`}}, CostUSD: 0.001})
+	entries, e := reply(t, a, s, "Water the plants every week")
 	if e != nil || len(entries) != 1 {
 		t.Fatal(e)
 	}
@@ -181,7 +204,7 @@ func TestProposalCarriesListProfileAndRecurrence(t *testing.T) {
 
 func TestProfileToolProposesProfileChange(t *testing.T) {
 	a, s, _ := newAssistant(t, Response{Calls: []Call{{Name: "propose_profile", Arguments: `{"profile_id":"chore","expected_version":1,"profile_nag_minutes":30}`}}, CostUSD: 0.001})
-	entries, e := a.Reply(context.Background(), "Nag me every 30 minutes about chores")
+	entries, e := reply(t, a, s, "Nag me every 30 minutes about chores")
 	if e != nil || entries[0].Change.Action != "update_profile" {
 		t.Fatalf("%+v %v", entries, e)
 	}
@@ -206,7 +229,7 @@ func TestListQuestionAnswersOnlyThatList(t *testing.T) {
 		}
 	}
 	f.r = Response{Calls: []Call{{Name: "list_items", Arguments: `{"list":"groceries"}`}}, CostUSD: 0.001}
-	entries, e := a.Reply(context.Background(), "What is on Groceries?")
+	entries, e := reply(t, a, s, "What is on Groceries?")
 	if e != nil || !strings.Contains(entries[0].Text, "Milk") || strings.Contains(entries[0].Text, "Taxes") || strings.Contains(entries[0].Text, "Eggs") {
 		t.Fatalf("%q %v", entries[0].Text, e)
 	}
@@ -216,8 +239,8 @@ func TestListQuestionAnswersOnlyThatList(t *testing.T) {
 }
 
 func TestPromptGuidesFollowUpQuestions(t *testing.T) {
-	a, _, f := newAssistant(t, Response{Text: "Where is the dentist?", CostUSD: 0.001})
-	entries, e := a.Reply(context.Background(), "Dentist on Friday at 9")
+	a, s, f := newAssistant(t, Response{Text: "Where is the dentist?", CostUSD: 0.001})
+	entries, e := reply(t, a, s, "Dentist on Friday at 9")
 	if e != nil || entries[0].Kind != "minder" || entries[0].Text != "Where is the dentist?" {
 		t.Fatalf("%+v %v", entries, e)
 	}
@@ -241,7 +264,7 @@ func TestSeveralChangesInOneMessageGiveSeveralPreviews(t *testing.T) {
 		{Name: "propose_update", Arguments: `{"item_id":"a","expected_version":1,"due_at":"2026-11-14T09:00:00Z"}`},
 		{Name: "propose_update", Arguments: `{"item_id":"b","expected_version":1,"due_at":"2026-11-15T09:00:00Z"}`},
 	}, CostUSD: 0.001}
-	entries, e := a.Reply(context.Background(), "Move a to Saturday and b to Sunday")
+	entries, e := reply(t, a, s, "Move a to Saturday and b to Sunday")
 	if e != nil || len(entries) != 2 || entries[0].Kind != "preview" || entries[1].Kind != "preview" {
 		t.Fatalf("%+v %v", entries, e)
 	}
@@ -256,7 +279,7 @@ func TestSeveralChangesInOneMessageGiveSeveralPreviews(t *testing.T) {
 		calls[n] = Call{Name: "propose_create", Arguments: `{"title":"x"}`}
 	}
 	f.r = Response{Calls: calls, CostUSD: 0.001}
-	if _, e = a.Reply(context.Background(), "Add six things"); e == nil {
+	if _, e = reply(t, a, s, "Add six things"); e == nil {
 		t.Fatal("six changes accepted")
 	}
 	h, _ := s.History(0, 50)
@@ -275,13 +298,13 @@ func TestReplyEntriesCarryTheRequestCost(t *testing.T) {
 	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
 	defer s.Close()
 	f := &fakeModel{r: Response{Text: "Which item do you mean?", CostUSD: 0.002}}
-	a := New(s, command.New(s), f, 5, 0.9)
-	entries, e := a.Reply(context.Background(), "Move it")
+	a := New(s, f, 5, 0.9)
+	entries, e := reply(t, a, s, "Move it")
 	if e != nil || len(entries) != 1 || entries[0].CostEUR < 0.0017999 || entries[0].CostEUR > 0.0018001 {
 		t.Fatalf("%+v %v", entries, e)
 	}
 	f.r = Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"A"}`}, {Name: "propose_create", Arguments: `{"title":"B"}`}}, CostUSD: 0.002}
-	entries, e = a.Reply(context.Background(), "Add A and B")
+	entries, e = reply(t, a, s, "Add A and B")
 	if e != nil || len(entries) != 2 || entries[0].CostEUR == 0 || entries[1].CostEUR != 0 {
 		t.Fatalf("cost must sit on the first entry only: %+v %v", entries, e)
 	}
@@ -298,8 +321,8 @@ func TestReplyEntriesCarryTheRequestCost(t *testing.T) {
 }
 
 func TestEventsUseStartAndTasksUseDeadline(t *testing.T) {
-	a, _, f := newAssistant(t, Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"Dentist","start_at":"2026-11-13T09:00:00Z","duration_minutes":30,"priority":2}`}}, CostUSD: 0.001})
-	entries, e := a.Reply(context.Background(), "Dentist on Friday at 10 for half an hour, important")
+	a, s, f := newAssistant(t, Response{Calls: []Call{{Name: "propose_create", Arguments: `{"title":"Dentist","start_at":"2026-11-13T09:00:00Z","duration_minutes":30,"priority":2}`}}, CostUSD: 0.001})
+	entries, e := reply(t, a, s, "Dentist on Friday at 10 for half an hour, important")
 	if e != nil || len(entries) != 1 {
 		t.Fatal(e)
 	}
@@ -332,7 +355,7 @@ func TestContextHoldsOnlyOpenItemsAndStaysBounded(t *testing.T) {
 	for n := 0; n < 250; n++ {
 		put(domain.Item{ID: fmt.Sprintf("open%03d", n), Title: fmt.Sprintf("Open task %03d", n), Status: "open", UpdatedAt: fmt.Sprintf("2026-11-12T10:%02d:%02dZ", n/60, n%60)})
 	}
-	if _, e := a.Reply(context.Background(), "Move it"); e != nil {
+	if _, e := reply(t, a, s, "Move it"); e != nil {
 		t.Fatal(e)
 	}
 	system := f.messages[0].Content
@@ -348,8 +371,8 @@ func TestContextHoldsOnlyOpenItemsAndStaysBounded(t *testing.T) {
 }
 
 func TestPromptTellsTheModelHowToMoveAnItem(t *testing.T) {
-	a, _, f := newAssistant(t, Response{Text: "Which one?", CostUSD: 0.001})
-	if _, e := a.Reply(context.Background(), "Move it"); e != nil {
+	a, s, f := newAssistant(t, Response{Text: "Which one?", CostUSD: 0.001})
+	if _, e := reply(t, a, s, "Move it"); e != nil {
 		t.Fatal(e)
 	}
 	system := f.messages[0].Content
@@ -371,14 +394,14 @@ func TestCancelRequestProposesACancellationNotACompletion(t *testing.T) {
 		t.Fatal(e)
 	}
 	f.r = Response{Calls: []Call{{Name: "propose_cancel", Arguments: `{"item_id":"a","expected_version":1}`}}, CostUSD: 0.001}
-	entries, e := a.Reply(context.Background(), "Cancel the dentist")
+	entries, e := reply(t, a, s, "Cancel the dentist")
 	if e != nil || len(entries) != 1 || entries[0].Change == nil || entries[0].Change.Action != "cancel_item" {
 		t.Fatalf("%+v %v", entries, e)
 	}
 }
 
 func TestPromptSeparatesDoneCancelledAndDeleted(t *testing.T) {
-	system := systemPrompt(time.Now(), nil, nil, nil)
+	system := systemPrompt(time.Now(), nil, nil, nil, nil)
 	for _, want := range []string{"propose_complete", "propose_cancel", "propose_delete", "find_finished_items"} {
 		if !strings.Contains(system, want) {
 			t.Fatalf("prompt does not mention %s", want)
@@ -393,7 +416,7 @@ func TestDeleteRequestProposesADeletion(t *testing.T) {
 		t.Fatal(e)
 	}
 	f.r = Response{Calls: []Call{{Name: "propose_delete", Arguments: `{"item_id":"a","expected_version":1}`}}, CostUSD: 0.001}
-	entries, e := a.Reply(context.Background(), "Delete the dentist, I added it by mistake")
+	entries, e := reply(t, a, s, "Delete the dentist, I added it by mistake")
 	if e != nil || len(entries) != 1 || entries[0].Change == nil || entries[0].Change.Action != "delete_item" {
 		t.Fatalf("%+v %v", entries, e)
 	}
@@ -418,7 +441,7 @@ func TestDeletedItemLeavesTheAgentsContext(t *testing.T) {
 		t.Fatal(e)
 	}
 	f.r = Response{Text: "Done.", CostUSD: 0.001}
-	if _, e = a.Reply(context.Background(), "Add a dentist visit tomorrow"); e != nil {
+	if _, e = reply(t, a, s, "Add a dentist visit tomorrow"); e != nil {
 		t.Fatal(e)
 	}
 	seen, _ := json.Marshal(f.messages)

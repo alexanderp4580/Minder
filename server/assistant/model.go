@@ -24,9 +24,15 @@ type ContentPart struct {
 type ImageURL struct {
 	URL string `json:"url"`
 }
+
+// Message is one record of the conversation with the model. An assistant message may carry
+// the tool calls it made; a tool message answers one of them by ID.
 type Message struct {
 	Purpose string        `json:"-"`
 	Parts   []ContentPart `json:"-"`
+	// ToolCalls are the calls an assistant message made. ToolCallID marks a tool result.
+	ToolCalls  []Call `json:"-"`
+	ToolCallID string `json:"-"`
 
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -36,11 +42,19 @@ type Message struct {
 const (
 	PurposeChat  = ""
 	PurposeOffer = "offer" // chat that may offer a lookup
-	PurposeEmail = "email"
 )
 
 type Model interface {
 	Complete(context.Context, []Message) (Response, error)
+}
+
+type wireCall struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
 }
 
 func (m Message) MarshalJSON() ([]byte, error) {
@@ -48,8 +62,16 @@ func (m Message) MarshalJSON() ([]byte, error) {
 	if len(m.Parts) > 0 {
 		content = m.Parts
 	}
-	return json.Marshal(struct {
-		Role    string `json:"role"`
-		Content any    `json:"content"`
-	}{m.Role, content})
+	wire := struct {
+		Role       string     `json:"role"`
+		Content    any        `json:"content"`
+		ToolCalls  []wireCall `json:"tool_calls,omitempty"`
+		ToolCallID string     `json:"tool_call_id,omitempty"`
+	}{Role: m.Role, Content: content, ToolCallID: m.ToolCallID}
+	for _, call := range m.ToolCalls {
+		w := wireCall{ID: call.ID, Type: "function"}
+		w.Function.Name, w.Function.Arguments = call.Name, call.Arguments
+		wire.ToolCalls = append(wire.ToolCalls, w)
+	}
+	return json.Marshal(wire)
 }

@@ -28,6 +28,7 @@ type Repository interface {
 	ClaimAgentTurn(time.Time) (domain.AgentTurn, error)
 	ReleaseAgentTurn(string) error
 	OwnerTurnPending() (bool, error)
+	Capture(string) (domain.Capture, error)
 }
 
 // Agent decides what a turn does. It stores nothing.
@@ -68,18 +69,64 @@ func New(ctx context.Context, repository Repository, agent Agent, finisher Finis
 
 // Accept saves an owner message and queues its turn. It returns before the agent runs.
 func (s *Service) Accept(text string) (Accepted, error) {
-	text = strings.TrimSpace(text)
-	n := len(text)
-	if n < 1 || n > MaxMessageBytes || !utf8.ValidString(text) {
-		slog.Warn("message rejected", "reason", "length", "text_len", utf8.RuneCountInString(text), "text_bytes", n)
-		return Accepted{}, &domain.Invalid{Field: "text", Message: "Use 1 to 400,000 bytes of text."}
+	text, err := checkText(text)
+	if err != nil {
+		return Accepted{}, err
 	}
 	turn, entry, err := s.enqueue(domain.AgentTurn{ID: domain.NewID(), Kind: domain.TurnOwner}, domain.Entry{Kind: "user", Text: text}, true)
 	if err != nil {
 		return Accepted{}, err
 	}
-	slog.Info("message accepted", "entry_id", entry.ID, "cursor", entry.Cursor, "reply_id", turn.ID, "text_len", utf8.RuneCountInString(text), "text_bytes", n)
+	slog.Info("message accepted", "entry_id", entry.ID, "cursor", entry.Cursor, "reply_id", turn.ID, "text_len", utf8.RuneCountInString(text), "text_bytes", len(text))
 	return Accepted{Entry: entry, ReplyID: turn.ID}, nil
+}
+
+// AnswerReview queues the owner's quick reply or typed answer to an open review question. The
+// reply is context for the agent, not a command: nothing changes until the agent decides. The
+// text is validated like any message, and the review, revision and candidate must still be open.
+func (s *Service) AnswerReview(sourceID string, revision int, candidateID, text string) (domain.Entry, error) {
+	text, err := checkText(text)
+	if err != nil {
+		return domain.Entry{}, err
+	}
+	c, err := s.repository.Capture(sourceID)
+	if err != nil {
+		return domain.Entry{}, err
+	}
+	if c.Deleted || c.Revision != revision || !asks(c, candidateID) {
+		slog.Warn("answer rejected", "reason", "stale", "source_id", sourceID, "revision", revision)
+		return domain.Entry{}, domain.ErrConflict
+	}
+	turn := domain.AgentTurn{ID: domain.NewID(), Kind: domain.TurnReviewReply, SourceID: sourceID, CandidateID: candidateID, ExpectedRevision: revision}
+	turn, entry, err := s.enqueue(turn, domain.Entry{Kind: "user", Text: text}, true)
+	if err != nil {
+		return domain.Entry{}, err
+	}
+	slog.Info("answer accepted", "entry_id", entry.ID, "reply_id", turn.ID, "source_id", sourceID, "text_bytes", len(text))
+	return entry, nil
+}
+
+// asks reports whether the review has an open candidate to answer: the named one, or any when
+// the answer names none.
+func asks(c domain.Capture, candidateID string) bool {
+	for _, candidate := range c.Candidates {
+		open := candidate.State == "pending" || candidate.State == "needs-answer"
+		if open && (candidateID == "" || candidate.ID == candidateID) {
+			return true
+		}
+	}
+	return false
+}
+
+// checkText trims a message and enforces the source budget.
+func checkText(text string) (string, error) {
+	text = strings.TrimSpace(text)
+	n := len(text)
+	if n < 1 || n > MaxMessageBytes || !utf8.ValidString(text) {
+		slog.Warn("message rejected", "reason", "length", "text_len", utf8.RuneCountInString(text), "text_bytes", n)
+		return "", &domain.Invalid{Field: "text", Message: "Use 1 to 400,000 bytes of text."}
+	}
+	return text, nil
 }
 
 // enqueue saves an owner entry with its turn. Owner work waits for the previous owner turn to

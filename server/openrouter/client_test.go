@@ -59,14 +59,14 @@ func TestImagePartsPreserveTextCaller(t *testing.T) {
 	}
 }
 
-func TestExtractionSchemaAllowsOptionsAndOffsets(t *testing.T) {
-	raw, err := json.Marshal(captureTools())
+func TestReviewSchemaAllowsOptionsOffsetsAndTargetedUpdates(t *testing.T) {
+	raw, err := json.Marshal(sourceTools())
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"reminder_offsets_minutes", `"options"`, `"maxItems":3`, `"summary"`, `"notification"`} {
+	for _, want := range []string{"reminder_offsets_minutes", `"options"`, `"maxItems":3`, `"summary"`, `"notification"`, `"expected_revision"`, `"revision"`, `"evidence"`} {
 		if !strings.Contains(string(raw), want) {
-			t.Fatal("extract_capture schema lacks", want)
+			t.Fatal("propose_review schema lacks", want)
 		}
 	}
 }
@@ -132,10 +132,13 @@ func TestToolSetFollowsPurpose(t *testing.T) {
 		}
 		return set
 	}
+	// One tool family serves every request; only the lookup offer depends on the purpose.
+	everything := func(offer bool) map[string]bool {
+		return map[string]bool{"propose_create": true, "list_items": true, "find_finished_items": true, "find_sources": true, "read_source": true, "inspect_review": true, "propose_review": true, "offer_lookup": offer, "extract_capture": false}
+	}
 	for purpose, want := range map[string]map[string]bool{
-		assistant.PurposeChat:  {"propose_create": true, "offer_lookup": false},
-		assistant.PurposeOffer: {"propose_create": true, "offer_lookup": true},
-		assistant.PurposeEmail: {"extract_capture": true, "propose_create": false, "offer_lookup": false},
+		assistant.PurposeChat:  everything(false),
+		assistant.PurposeOffer: everything(true),
 	} {
 		got := has(purpose)
 		for name, expected := range want {
@@ -164,25 +167,36 @@ func TestOfferToolRequiresAKindAndAQueryAndListsEveryKind(t *testing.T) {
 	}
 }
 
-func TestItemToolsExposeDetailPairs(t *testing.T) {
-	for _, purpose := range []string{assistant.PurposeChat, assistant.PurposeEmail} {
-		var seen map[string]any
-		m := provider(t, `{"choices":[{"finish_reason":"stop","message":{"content":"Hi"}}],"usage":{"cost":0.001}}`, &seen)
-		if _, err := m.Complete(context.Background(), []assistant.Message{{Role: "system", Purpose: purpose, Content: "Review"}}); err != nil {
-			t.Fatal(err)
-		}
-		fn := seen["tools"].([]any)[0].(map[string]any)["function"].(map[string]any)
-		props := fn["parameters"].(map[string]any)["properties"].(map[string]any)
-		if purpose == assistant.PurposeEmail {
-			props = props["candidates"].(map[string]any)["items"].(map[string]any)["properties"].(map[string]any)["proposal"].(map[string]any)["properties"].(map[string]any)
-		}
+func TestItemToolsExposeDetailPairsInChatAndInReviews(t *testing.T) {
+	chat := tools()[0].(map[string]any)["function"].(map[string]any)["parameters"].(map[string]any)["properties"].(map[string]any)
+	review := sourceTools()[3].(map[string]any)["function"].(map[string]any)["parameters"].(map[string]any)["properties"].(map[string]any)
+	proposal := review["candidates"].(map[string]any)["items"].(map[string]any)["properties"].(map[string]any)["proposal"].(map[string]any)["properties"].(map[string]any)
+	for name, props := range map[string]map[string]any{"chat": chat, "review": proposal} {
 		d, ok := props["details"].(map[string]any)
 		if !ok || d["type"] != "array" {
-			t.Fatalf("%s has no detail list", purpose)
+			t.Fatalf("%s has no detail list", name)
 		}
 		pair := d["items"].(map[string]any)["properties"].(map[string]any)
 		if pair["label"] == nil || pair["value"] == nil || props["clear_details"] == nil {
 			t.Fatal(props)
 		}
+	}
+}
+
+func TestAToolCallExchangeReachesTheProviderWithItsIdentity(t *testing.T) {
+	var seen map[string]any
+	m := provider(t, `{"choices":[{"finish_reason":"stop","message":{"content":"Done"}}],"usage":{"cost":0.001}}`, &seen)
+	_, err := m.Complete(context.Background(), []assistant.Message{
+		{Role: "user", Content: "What should I bring?"},
+		{Role: "assistant", ToolCalls: []assistant.Call{{ID: "call-1", Name: "read_source", Arguments: `{"source_id":"mail"}`}}},
+		{Role: "tool", ToolCallID: "call-1", Content: `{"parts":[]}`},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	messages := seen["messages"].([]any)
+	call := messages[1].(map[string]any)["tool_calls"].([]any)[0].(map[string]any)
+	if call["id"] != "call-1" || messages[2].(map[string]any)["tool_call_id"] != "call-1" || messages[2].(map[string]any)["role"] != "tool" {
+		t.Fatalf("%v", messages)
 	}
 }

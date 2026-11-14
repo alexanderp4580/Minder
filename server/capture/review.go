@@ -45,7 +45,7 @@ func (s *Service) Dismiss(ctx context.Context, id string, revision int) (out dom
 				continue
 			}
 			candidate.State = "discarded"
-			if e = failPending(tx, candidate.ChangeID); e != nil {
+			if e = review.WithdrawPreview(tx, candidate.ChangeID); e != nil {
 				return e
 			}
 		}
@@ -61,28 +61,6 @@ func (s *Service) Dismiss(ctx context.Context, id string, revision int) (out dom
 		return e
 	})
 	return
-}
-
-// failPending withdraws a still-pending preview so it can no longer be confirmed.
-func failPending(tx port.Transaction, changeID string) error {
-	if changeID == "" {
-		return nil
-	}
-	p, e := tx.Pending(changeID)
-	if e != nil || p.State != "pending" {
-		return e
-	}
-	p.State = "failed"
-	if e = tx.PutPending(p); e != nil {
-		return e
-	}
-	entry, e := tx.Entry(p.EntryID)
-	if e != nil {
-		return e
-	}
-	entry.Change.State = "failed"
-	_, e = tx.PutEntry(entry)
-	return e
 }
 
 func (s *Service) Retry(id string) (out domain.Entry, err error) {

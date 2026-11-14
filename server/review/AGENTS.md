@@ -9,6 +9,7 @@ Which candidate is published next and what the chat says about it: the `Appointm
 # Local Contracts
 
 `Advance(tx, capture, preview)` publishes the first `queued` candidate when none is `pending` or `needs-answer`: its question (and the question entry) or its preview through the given `PreviewFunc`. It changes only the capture it is given and the chat entries it writes; the caller stores the capture. Superseded candidates are not counted. `Summary` words the closing count. `PushBody` returns the fixed failure sentence, else `Capture.Notification` unchanged, else `An email needs your review.`. Progress nouns are `appointment` when every live candidate is an event, otherwise `item`. Question helpers (`PostQuestions`, `CloseQuestions`, `HasOpenQuestions`) live here so `capture` and `command` share them.
+`Fail(tx, capture, cause)` ends a source as `failed`: the card shows the fixed sentence (`FailureMessage`: an `Invalid` message, else the `domain.ReasonOf` sentence), `PostFailure` posts one chat report per failed revision and one push is queued. `WithdrawPreview` fails a still-pending preview so it cannot be confirmed.
 Depends on `domain` and `port` only. It never applies a change.
 
 # Work Guidance

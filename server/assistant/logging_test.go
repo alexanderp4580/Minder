@@ -10,7 +10,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/alexanderp4580/Minder/server/command"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/store"
 )
@@ -63,12 +62,12 @@ func TestReplyLogsEachStageAndTheOutcome(t *testing.T) {
 	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
 	defer s.Close()
 	f := &fakeModel{r: Response{Calls: []Call{{ID: "c", Name: "propose_create", Arguments: `{"title":"PRIVATEPLUMBER","due_at":"2026-11-12T09:00:00Z"}`}}, CostUSD: 0.002}}
-	a := New(s, command.New(s), f, 5, 1.1)
-	if _, e := a.Reply(domain.WithTrace(context.Background(), "reply-1"), "Call PRIVATEPLUMBER"); e != nil {
+	a := New(s, f, 5, 1.1)
+	if _, e := replyIn(t, domain.WithTrace(context.Background(), "reply-1"), a, s, "Call PRIVATEPLUMBER"); e != nil {
 		t.Fatal(e)
 	}
 	start := first(logs(), "assistant reply started")
-	if start == nil || start["trace_id"] != "reply-1" || start["text_len"] != float64(len("Call PRIVATEPLUMBER")) || start["items_in_context"] != float64(0) || start["prompt_bytes"] == nil || start["month_cost_eur"] == nil {
+	if start == nil || start["trace_id"] != "reply-1" || start["kind"] != domain.TurnOwner || start["items_total"] != float64(0) || start["prompt_bytes"] == nil || start["month_cost_eur"] == nil {
 		t.Fatalf("start log incomplete: %v", start)
 	}
 	if r := first(logs(), "usage reserved"); r == nil || r["reservation_id"] == "" || r["amount_eur"] == nil {
@@ -78,7 +77,7 @@ func TestReplyLogsEachStageAndTheOutcome(t *testing.T) {
 		t.Fatalf("settlement not logged: %v", r)
 	}
 	done := first(logs(), "assistant reply finished")
-	if done == nil || done["proposals"] != float64(1) || done["kinds"] != "preview" || done["duration_ms"] == nil || done["trace_id"] != "reply-1" {
+	if done == nil || done["proposals"] != float64(1) || done["rounds"] != float64(1) || done["kind"] != domain.TurnOwner || done["duration_ms"] == nil || done["trace_id"] != "reply-1" {
 		t.Fatalf("outcome not logged: %v", done)
 	}
 	for _, l := range logs() {
@@ -94,8 +93,8 @@ func TestBudgetBlockIsLoggedWithNumbers(t *testing.T) {
 	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
 	defer s.Close()
 	s.RecordUsage(5, map[string]any{})
-	a := New(s, command.New(s), &fakeModel{}, 5, 1)
-	a.Reply(context.Background(), "Hi")
+	a := New(s, &fakeModel{}, 5, 1)
+	reply(t, a, s, "Hi")
 	r := first(logs(), "assistant reply blocked")
 	if r == nil || r["reason"] != "monthly_limit" || r["month_cost_eur"] != float64(5) || r["limit_eur"] != float64(5) {
 		t.Fatalf("block not logged: %v", r)
@@ -107,8 +106,8 @@ func TestModelFailureAndBadProposalAreLogged(t *testing.T) {
 	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
 	defer s.Close()
 	f := &fakeModel{r: Response{Calls: []Call{{ID: "c", Name: "mystery_tool", Arguments: `{}`}}, CostUSD: 0.001}}
-	a := New(s, command.New(s), f, 5, 1)
-	if _, e := a.Reply(context.Background(), "x"); e == nil {
+	a := New(s, f, 5, 1)
+	if _, e := reply(t, a, s, "x"); e == nil {
 		t.Fatal("unknown tool accepted")
 	}
 	r := first(logs(), "assistant reply failed")

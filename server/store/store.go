@@ -250,6 +250,9 @@ func (t *Tx) PutAudit(a domain.Audit) error {
 func (t *Tx) Entry(id string) (domain.Entry, error) {
 	return decode[domain.Entry](t.tx.QueryRow("SELECT body FROM chat_entry WHERE id=?", id))
 }
+func (s *Store) Entry(id string) (domain.Entry, error) {
+	return decode[domain.Entry](s.db.QueryRow("SELECT body FROM chat_entry WHERE id=?", id))
+}
 func (t *Tx) PutEntry(e domain.Entry) (domain.Entry, error) {
 	if e.ID == "" {
 		e.ID = domain.NewID()

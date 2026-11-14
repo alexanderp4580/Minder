@@ -31,12 +31,12 @@ Formatting must print no paths.
 
 - `domain/AGENTS.md`: Pure Go values and business rules.
 - `port/AGENTS.md`: Persistence interfaces owned by the application.
-- `command/AGENTS.md`: Item and profile changes through transaction interfaces.
-- `assistant/AGENTS.md`: Model orchestration through model, proposal and persistence interfaces.
-- `conversation/AGENTS.md`: Message acceptance and asynchronous reply lifecycle.
+- `command/AGENTS.md`: Item and profile changes and agent turn commits through transaction interfaces.
+- `assistant/AGENTS.md`: The one agent: context, tool loop and outcome for chat, email and pasted text.
+- `conversation/AGENTS.md`: Owner message acceptance and the serial agent queue worker.
 - `reminder/AGENTS.md`: Reminder scheduling, actions and delivery orchestration.
-- `capture/AGENTS.md`: Email capture orchestration.
-- `review/AGENTS.md`: One-at-a-time email review and its messages.
+- `capture/AGENTS.md`: Email ingestion, source preparation and source reading.
+- `review/AGENTS.md`: One-at-a-time source review, its messages and failure reports.
 - `mailauth/AGENTS.md`: Machine email authentication.
 - `mailparse/AGENTS.md`: MIME and document conversion.
 - `mailfiles/AGENTS.md`: Private persistent capture files.

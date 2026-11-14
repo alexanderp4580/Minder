@@ -24,9 +24,8 @@ import (
 
 type replier struct{ s *store.Store }
 
-func (r replier) Reply(ctx context.Context, text string) ([]domain.Entry, error) {
-	e, err := r.s.AddEntry(domain.Entry{Kind: "minder", Text: "Which item do you mean?"})
-	return []domain.Entry{e}, err
+func (r replier) Run(context.Context, domain.AgentTurn) (domain.AgentOutcome, error) {
+	return domain.AgentOutcome{Text: "Which item do you mean?"}, nil
 }
 func TestChatHistoryAndStreamReconnect(t *testing.T) {
 	s, e := store.Open(filepath.Join(t.TempDir(), "db"))
@@ -111,7 +110,7 @@ func (rejectingAuthenticator) Authenticate(*http.Request) error {
 type blockedReplier struct{}
 
 func (blockedReplier) Preflight() error { return domain.ErrLimit }
-func (blockedReplier) Reply(context.Context, string) ([]domain.Entry, error) {
+func (blockedReplier) Run(context.Context, domain.AgentTurn) (domain.AgentOutcome, error) {
 	panic("budget block called model")
 }
 func TestBudgetErrorIsReturnedBeforeAcceptingMessage(t *testing.T) {
@@ -295,7 +294,9 @@ func TestBrandingServesOnlyTheGuideFilesAfterSignIn(t *testing.T) {
 
 type panicReplier struct{}
 
-func (panicReplier) Reply(context.Context, string) ([]domain.Entry, error) { panic("boom") }
+func (panicReplier) Run(context.Context, domain.AgentTurn) (domain.AgentOutcome, error) {
+	panic("boom")
+}
 
 func TestAssistantPanicBecomesAnErrorEntryAndFreesTheServer(t *testing.T) {
 	s, e := store.Open(filepath.Join(t.TempDir(), "panic"))
@@ -331,9 +332,9 @@ func TestAssistantPanicBecomesAnErrorEntryAndFreesTheServer(t *testing.T) {
 	}
 }
 
-func testServer(t *testing.T, database *store.Store, commands Commands, replier conversation.Replier, auth Authenticator, web string) *Server {
+func testServer(t *testing.T, database *store.Store, commands Commands, replier conversation.Agent, auth Authenticator, web string) *Server {
 	t.Helper()
-	messages := conversation.New(context.Background(), database, replier)
+	messages := conversation.New(context.Background(), database, replier, command.New(database))
 	t.Cleanup(messages.Close)
 	return New(database, commands, messages, reminder.New(database), auth, web)
 }
@@ -460,4 +461,36 @@ func toStrings(v any) []string {
 		out = append(out, x.(string))
 	}
 	return out
+}
+
+func TestAMessageUpToTheSourceBudgetIsAcceptedEvenWhenEveryByteNeedsAJSONEscape(t *testing.T) {
+	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
+	t.Cleanup(func() { s.Close() })
+	h := testServer(t, s, command.New(s), replier{s}, nil, "")
+	text := strings.Repeat("<", conversation.MaxMessageBytes) // each byte encodes as six characters
+	body, _ := json.Marshal(map[string]string{"text": text})
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/chat/messages", strings.NewReader(string(body))))
+	if w.Code != 202 {
+		t.Fatalf("%d %.200s", w.Code, w.Body.String())
+	}
+	history, _ := s.History(0, 5)
+	if len(history) == 0 || history[0].Text != text {
+		t.Fatal("the stored message differs from the pasted one")
+	}
+}
+
+func TestAnOversizedMessageIsRejectedVisiblyBeforeAnythingIsSaved(t *testing.T) {
+	s, _ := store.Open(filepath.Join(t.TempDir(), "db"))
+	t.Cleanup(func() { s.Close() })
+	h := testServer(t, s, command.New(s), replier{s}, nil, "")
+	body, _ := json.Marshal(map[string]string{"text": strings.Repeat("a", conversation.MaxMessageBytes+1)})
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/chat/messages", strings.NewReader(string(body))))
+	if w.Code != 400 || !strings.Contains(w.Body.String(), `"field":"text"`) || !strings.Contains(w.Body.String(), "400,000") {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+	if history, _ := s.History(0, 5); len(history) != 0 {
+		t.Fatalf("an oversized message was saved: %d entries", len(history))
+	}
 }
