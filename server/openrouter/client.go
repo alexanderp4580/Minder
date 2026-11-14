@@ -89,15 +89,15 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 	}
 	if e = json.NewDecoder(io.LimitReader(res.Body, 2<<20)).Decode(&wire); e != nil {
 		slog.Error("model reply rejected", "reason", "unreadable", "error", e, "status", res.StatusCode, "duration_ms", time.Since(started).Milliseconds())
-		return assistant.Response{}, &domain.ModelError{Message: "The model reply was unreadable. Try again."}
+		return assistant.Response{}, &domain.ModelError{Message: "The model reply was unreadable. Try again.", Reason: domain.ReasonUnreadable}
 	}
 	if len(wire.Choices) != 1 {
 		slog.Error("model reply rejected", "reason", "no_choice", "choices", len(wire.Choices))
-		return assistant.Response{}, &domain.ModelError{Message: "The model sent no reply. Try again."}
+		return assistant.Response{}, &domain.ModelError{Message: "The model sent no reply. Try again.", Reason: domain.ReasonNoReview}
 	}
 	if wire.Choices[0].FinishReason == "length" {
 		slog.Error("model reply rejected", "reason", "truncated", "finish_reason", "length", "max_tokens", maxOutputTokens, "usage", wire.Usage)
-		return assistant.Response{}, &domain.ModelError{Message: "The model reply was cut short. Try again."}
+		return assistant.Response{}, &domain.ModelError{Message: "The model reply was cut short. Try again.", Reason: domain.ReasonCutOff}
 	}
 	cost, ok := wire.Usage["cost"].(float64)
 	if !ok || cost < 0 {

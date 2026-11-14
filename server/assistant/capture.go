@@ -1,6 +1,7 @@
 package assistant
 
 import (
+	"log/slog"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -183,6 +184,9 @@ func (a *Service) extractCaptureBatch(ctx context.Context, document domain.Captu
 			return result, err
 		}
 		result, err = decodeCaptureExtraction(response, document)
+		if err != nil {
+			slog.Warn("email extraction rejected", "reason", string(domain.ReasonOf(err)), "attempt", attempt+1, "trace_id", domain.TraceID(ctx))
+		}
 		if err == nil || attempt == 1 {
 			return result, err
 		}
@@ -198,16 +202,16 @@ func (a *Service) extractCaptureBatch(ctx context.Context, document domain.Captu
 func decodeCaptureExtraction(response Response, document domain.CaptureDocument) (domain.CaptureExtraction, error) {
 	var extracted domain.CaptureExtraction
 	if len(response.Calls) != 1 || response.Calls[0].Name != "extract_capture" {
-		return extracted, &domain.ModelError{Message: "Email extraction did not return a review."}
+		return extracted, &domain.ModelError{Message: "Email extraction did not return a review.", Reason: domain.ReasonNoReview}
 	}
 	decoder := json.NewDecoder(strings.NewReader(response.Calls[0].Arguments))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&extracted); err != nil {
-		return extracted, &domain.ModelError{Message: "Email extraction returned unreadable details."}
+		return extracted, &domain.ModelError{Message: "Email extraction returned unreadable details.", Reason: domain.ReasonUnreadable}
 	}
 	for _, candidate := range extracted.Candidates {
 		if len(candidate.Evidence) == 0 {
-			return extracted, &domain.ModelError{Message: "Email extraction omitted source evidence."}
+			return extracted, &domain.ModelError{Message: "Email extraction omitted source evidence.", Reason: domain.ReasonEvidence}
 		}
 		for _, evidence := range candidate.Evidence {
 			found := false
@@ -217,13 +221,13 @@ func decodeCaptureExtraction(response Response, document domain.CaptureDocument)
 				}
 			}
 			if !found {
-				return extracted, &domain.ModelError{Message: "Email extraction cited missing source evidence."}
+				return extracted, &domain.ModelError{Message: "Email extraction cited missing source evidence.", Reason: domain.ReasonEvidence}
 			}
 		}
 		switch candidate.Proposal.Action {
 		case "create_item", "update_item", "cancel_item", "complete_item":
 		default:
-			return extracted, &domain.ModelError{Message: "Email extraction proposed an unsupported action."}
+			return extracted, &domain.ModelError{Message: "Email extraction proposed an unsupported action.", Reason: domain.ReasonUnreadable}
 		}
 	}
 	normaliseExtraction(&extracted)

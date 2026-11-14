@@ -1,6 +1,9 @@
 package assistant_test
 
 import (
+	"bytes"
+	"encoding/json"
+	"log/slog"
 	"context"
 	"errors"
 	"fmt"
@@ -232,5 +235,40 @@ func TestPromptAsksLikeAnAssistantNotFromAChecklist(t *testing.T) {
 	}
 	if strings.Contains(prompt, "needs a location") {
 		t.Fatal("prompt hard-codes a required field")
+	}
+}
+
+func TestRejectedExtractionsLogReasonsNotContent(t *testing.T) {
+	var buf bytes.Buffer
+	previous := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(previous) })
+	db, err := store.Open(filepath.Join(t.TempDir(), "db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	svc := assistant.New(db, command.New(db), &repairEvidenceModel{keepInvalid: true}, 5, 1)
+	_, err = svc.Extract(context.Background(), domain.CaptureDocument{Parts: []domain.CapturePart{{ID: "1_2", Text: "SUMMARY:Setup appointment\nEND:VEVENT"}}}, nil)
+	if err == nil {
+		t.Fatal("invalid evidence accepted")
+	}
+	attempts := map[float64]bool{}
+	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+		var record map[string]any
+		if json.Unmarshal([]byte(line), &record) == nil && record["msg"] == "email extraction rejected" {
+			if record["reason"] != "evidence" {
+				t.Fatalf("reason %v", record["reason"])
+			}
+			attempts[record["attempt"].(float64)] = true
+		}
+	}
+	if !attempts[1] || !attempts[2] {
+		t.Fatalf("attempts logged %v", attempts)
+	}
+	for _, private := range []string{"Setup appointment", "SUMMARY", "VEVENT"} {
+		if strings.Contains(buf.String(), private) {
+			t.Fatalf("email content %q in logs: %s", private, buf.String())
+		}
 	}
 }

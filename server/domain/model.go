@@ -12,7 +12,10 @@ var ErrNotFound = errors.New("The item was not found.")
 var ErrLimit = errors.New("The monthly limit is reached.")
 
 // ModelError is a failure of the language model or its provider.
-type ModelError struct{ Message string }
+type ModelError struct {
+	Message string
+	Reason  FailureReason // set when the failure belongs to an email extraction
+}
 
 func (e *ModelError) Error() string { return e.Message }
 

@@ -60,26 +60,26 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 	}
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
-	failed := func(cause error, permanent bool) error {
+	failed := func(cause error) error {
 		if parent.Err() != nil {
 			if err := s.releaseClaim(c); err != nil {
 				return err
 			}
 			return parent.Err()
 		}
-		return s.fail(c, now, cause, permanent)
+		return s.fail(c, cause)
 	}
 	if s.Parser == nil || s.extractor == nil || s.Preview == nil {
-		return failed(ErrDocument, true)
+		return failed(ErrDocument)
 	}
 	f, e := s.files.Open(c.ID, "original")
 	if e != nil {
-		return failed(e, false)
+		return failed(e)
 	}
 	document, e := s.Parser.Parse(ctx, f)
 	f.Close()
 	if e != nil {
-		return failed(ErrDocument, true)
+		return failed(ErrDocument)
 	}
 	e = s.repository.Transact(func(tx port.Transaction) error {
 		current, err := tx.Capture(c.ID)
@@ -100,14 +100,14 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		return nil
 	})
 	if e != nil {
-		return failed(e, false)
+		return failed(e)
 	}
 
 	document.CaptureID = c.ID
 	document.PreviousCandidates = c.Candidates
 	extraction, e := s.extractor.Extract(ctx, document, c.Answers)
 	if e != nil {
-		return failed(e, errors.Is(e, domain.ErrLimit))
+		return failed(e)
 	}
 	slog.Info("email extraction completed", "source_id", c.ID, "revision", c.Revision, "candidates", len(extraction.Candidates))
 	e = s.repository.Transact(func(tx port.Transaction) error {
@@ -212,12 +212,12 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		return nil
 	})
 	if e != nil {
-		return failed(e, false)
+		return failed(e)
 	}
 	return nil
 }
-func (s *Service) fail(c domain.Capture, now time.Time, cause error, permanent bool) error {
-	delays := []time.Duration{5 * time.Second, 30 * time.Second, 2 * time.Minute, 10 * time.Minute}
+// fail ends an attempt and never schedules another: the owner retries from the app.
+func (s *Service) fail(c domain.Capture, cause error) error {
 	err := s.repository.Transact(func(tx port.Transaction) error {
 		current, e := tx.Capture(c.ID)
 		if e != nil {
@@ -227,21 +227,9 @@ func (s *Service) fail(c domain.Capture, now time.Time, cause error, permanent b
 			return domain.ErrConflict
 		}
 		current.Attempts++
-		current.LeaseUntil = 0
-		current.Error = "Email processing failed. The original is available."
-		if errors.Is(cause, domain.ErrLimit) {
-			current.Error = "The monthly model limit is reached. Retry when budget is available."
-		}
-		var invalid *domain.Invalid
-		if errors.As(cause, &invalid) {
-			current.Error = invalid.Message
-			permanent = true
-		}
+		current.LeaseUntil, current.NextAt = 0, 0
 		current.Status = "failed"
-		if !permanent && current.Attempts <= len(delays) {
-			current.Status = "received"
-			current.NextAt = now.Add(delays[current.Attempts-1]).Unix()
-		}
+		current.Error = failureMessage(cause)
 		if e = tx.PutCapture(current); e != nil {
 			return e
 		}
@@ -252,6 +240,18 @@ func (s *Service) fail(c domain.Capture, now time.Time, cause error, permanent b
 		return err
 	}
 	return cause
+}
+
+// failureMessage is the fixed sentence the owner sees for a failed attempt.
+func failureMessage(cause error) string {
+	var invalid *domain.Invalid
+	switch {
+	case errors.As(cause, &invalid):
+		return invalid.Message
+	case errors.Is(cause, ErrDocument):
+		return domain.ReasonUnparsed.Sentence()
+	}
+	return domain.ReasonOf(cause).Sentence()
 }
 
 func (s *Service) cleanupDeleted() error {
