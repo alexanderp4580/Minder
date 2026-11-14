@@ -2,6 +2,10 @@
 
 State on 2026-11-14. Production runs `50b9682` from `guided-email-review` (Coolify deployment `fy2qz1rqsyklwp5uvutdbfaw`, finished, running:healthy). The owner requested deployment for phone testing. Startup logs report schema 5, zero migrations, model/Firebase/Serper configuration present, and no warnings or errors in the first 80 lines. The runtime log still reports revision=unknown; Coolify's completed deployment identifies the commit. The app is pinned to this branch and commit. Rollback: branch `main`, commit `679441b3bcf730e80e880167b25ba5787c27d70b` (the prior healthy runtime).
 
+## Fresh test data
+
+The owner requested a fresh start on 2026-11-14. Stopped the running container, verified and backed up SQLite and email sources to `/var/backups/minder/fresh-start-20261114T155318Z` on the server (private directory), then cleared items, chat/events, pending changes, audit, reminders/deliveries, captures/receipts/provenance and email files. Restored the five default profiles on startup. Preserved one push registration and 79 usage rows so notification registration and cost accounting remain intact. Post-restart counts are zero for the cleared tables; SQLite integrity and foreign-key checks passed. The runtime health endpoint returned `{"status":"ok"}`. Close and reopen the phone app to clear its in-memory history before testing.
+
 ## Guided email review (branch `guided-email-review`)
 
 Revision 2 is complete at source commit `fbbe18d`. All five browser scenarios passed. APK 0.10.1 reached Telegram once (message 2029). Base `main` remains `679441b`. The branch is pushed and deployed for phone testing, and remains unmerged. Work stays inline in `Minder-m0-chat`; phone review and owner approval gate merging.

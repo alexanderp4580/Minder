@@ -49,6 +49,10 @@ The owner requested deployment on 2026-11-14 after receiving the APK. Pushed `gu
 
 Rollback target: branch `main`, commit `679441b3bcf730e80e880167b25ba5787c27d70b`, captured from the healthy application before deployment. `main` remains unchanged. No production email was injected or replayed; the owner can test with a fresh multi-appointment email using APK 0.10.1.
 
+## Fresh-start reset
+
+At the owner's request, stopped the production container and backed up SQLite and email files to the private server directory `/var/backups/minder/fresh-start-20261114T155318Z`. Verified the backup database before clearing data. After restart, item, chat/event, pending/audit, reminder and capture/provenance tables contain zero rows, the email source directory is empty, and the five built-in profiles exist. Preserved one push registration and 79 cost-accounting rows. SQLite integrity and foreign-key checks passed; the container's `/v1/health` returned `{"status":"ok"}`. No source or deployment change accompanied this reset.
+
 ## DOX
 
 Updated the owning domain, command, assistant, provider, capture, review, client and toolchain contracts. Parent ownership and child indexes remain unchanged because this revision adds no package or layer. Review ran inline, as the owner requested; no independent reviewer.
