@@ -16,7 +16,7 @@
 - Never log query text, titles or the key; log lengths, counts, status and `duration_ms`.
 - Package order: `serper` imports `assistant` and `domain` only; `assistant` holds the `PlaceFinder` interface; `cmd/minder` wires.
 - Offer text: `Look up "<query>" on Google for its address and website?`; buttons `Skip`, `Look it up`; query at most 100 runes.
-- At most three places go to the model. Production `SERPER_URL` is `https://google.serper.dev/places` only.
+- At most three places go to the model. Production `SERPER_URL` is `https://google.serper.dev/maps` only (the first build used `/places`; see the evidence).
 - English prose, short sentences. Write failing tests first. Run checks with `toolchain/run`.
 
 ## Review Focus

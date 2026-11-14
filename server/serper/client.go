@@ -1,4 +1,4 @@
-// Package serper is the Serper places adapter. The key stays in memory and out of logs and errors.
+// Package serper is the Serper maps adapter. The maps search returns the full address with postal code and town; the places search does not. The key stays in memory and out of logs and errors.
 package serper
 
 import (
@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	defaultURL = "https://google.serper.dev/places"
+	defaultURL = "https://google.serper.dev/maps"
 	maxPlaces  = 3
 	maxBody    = 64 << 10
 	timeout    = 10 * time.Second
@@ -28,7 +28,7 @@ type Client struct {
 	Client   *http.Client
 }
 
-// FindPlaces runs one Serper places query and keeps at most three places.
+// FindPlaces runs one Serper maps query and keeps at most three places.
 func (c *Client) FindPlaces(ctx context.Context, query string) ([]assistant.Place, error) {
 	started := time.Now()
 	places, status, err := c.find(ctx, query)
@@ -76,11 +76,11 @@ func (c *Client) find(ctx context.Context, query string) ([]assistant.Place, int
 	}
 	var decoded struct {
 		Places []struct {
-			Title    string  `json:"title"`
-			Address  string  `json:"address"`
-			Category string  `json:"category"`
-			Website  string  `json:"website"`
-			Rating   float64 `json:"rating"`
+			Title   string  `json:"title"`
+			Address string  `json:"address"`
+			Type    string  `json:"type"`
+			Website string  `json:"website"`
+			Rating  float64 `json:"rating"`
 		} `json:"places"`
 	}
 	if err := json.Unmarshal(raw, &decoded); err != nil {
@@ -91,7 +91,7 @@ func (c *Client) find(ctx context.Context, query string) ([]assistant.Place, int
 		if len(places) == maxPlaces {
 			break
 		}
-		places = append(places, assistant.Place{Title: p.Title, Address: p.Address, Category: p.Category, Website: p.Website, Rating: p.Rating})
+		places = append(places, assistant.Place{Title: p.Title, Address: p.Address, Category: p.Type, Website: p.Website, Rating: p.Rating})
 	}
 	return places, resp.StatusCode, nil
 }

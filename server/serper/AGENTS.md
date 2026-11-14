@@ -1,10 +1,10 @@
 # Purpose
 
-Serper places HTTP adapter.
+Serper maps HTTP adapter.
 
 # Ownership
 
-The places request, response decoding and its log line. Implements `assistant.PlaceFinder`.
+The maps request (`https://google.serper.dev/maps`, which returns the postal code and town that `/places` omits), response decoding and its log line. Implements `assistant.PlaceFinder`.
 
 # Local Contracts
 

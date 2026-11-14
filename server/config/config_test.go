@@ -95,8 +95,8 @@ func TestSerperSettings(t *testing.T) {
 	if err != nil || off.SerperKey != "" || off.SerperEndpoint != "" {
 		t.Fatalf("default %+v %v", off, err)
 	}
-	on, err := Load(env(map[string]string{"SERPER_API_KEY": "k", "SERPER_URL": "https://google.serper.dev/places"}))
-	if err != nil || on.SerperKey != "k" || on.SerperEndpoint != "https://google.serper.dev/places" {
+	on, err := Load(env(map[string]string{"SERPER_API_KEY": "k", "SERPER_URL": "https://google.serper.dev/maps"}))
+	if err != nil || on.SerperKey != "k" || on.SerperEndpoint != "https://google.serper.dev/maps" {
 		t.Fatalf("set %+v %v", on, err)
 	}
 	_, err = Load(env(map[string]string{"SERPER_API_KEY": "secret-value", "SERPER_URL": "http://example.test"}))

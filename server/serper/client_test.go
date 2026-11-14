@@ -12,7 +12,7 @@ import (
 )
 
 const fixture = `{"searchParameters":{"q":"x"},"places":[
-{"title":"SnowWorld Landgraaf","address":"Witte Wereld 1","category":"Indoor snowcenter","website":"https://www.snowworld.com/landgraaf","rating":4.2,"latitude":50.8},
+{"title":"SnowWorld Landgraaf","address":"Witte Wereld 1, 6372 VG Landgraaf, Netherlands","type":"Indoor snowcenter","types":["Indoor snowcenter","Bar"],"website":"https://www.snowworld.com/landgraaf","rating":4.2,"latitude":50.8},
 {"title":"B","address":"Street 2"},{"title":"C"},{"title":"D"}],"credits":1}`
 
 func server(t *testing.T, status int, body string, seen *http.Request, payload *map[string]string) *Client {
@@ -49,7 +49,7 @@ func TestFindPlacesSendsTheQueryAndKeepsThreePlaces(t *testing.T) {
 		t.Fatalf("places %d", len(places))
 	}
 	first := places[0]
-	if first.Title != "SnowWorld Landgraaf" || first.Address != "Witte Wereld 1" || first.Category != "Indoor snowcenter" || first.Website != "https://www.snowworld.com/landgraaf" || first.Rating != 4.2 {
+	if first.Title != "SnowWorld Landgraaf" || first.Address != "Witte Wereld 1, 6372 VG Landgraaf, Netherlands" || first.Category != "Indoor snowcenter" || first.Website != "https://www.snowworld.com/landgraaf" || first.Rating != 4.2 {
 		t.Fatalf("first %+v", first)
 	}
 }
@@ -99,5 +99,11 @@ func TestFindPlacesStopsWhenTheContextEnds(t *testing.T) {
 	started := time.Now()
 	if _, err := (&Client{Key: "k", URL: srv.URL}).FindPlaces(ctx, "x"); err == nil || time.Since(started) > 2*time.Second {
 		t.Fatalf("error %v after %v", err, time.Since(started))
+	}
+}
+
+func TestDefaultEndpointIsTheMapsSearch(t *testing.T) {
+	if defaultURL != "https://google.serper.dev/maps" {
+		t.Fatalf("default %s", defaultURL)
 	}
 }

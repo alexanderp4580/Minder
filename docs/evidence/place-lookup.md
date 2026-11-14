@@ -33,6 +33,11 @@ Spec: [place lookup design](../superpowers/specs/2026-11-13-place-lookup-design.
 
 Artifact: `.local/artifacts/Minder-0.9.2-arm64.apk` (ignored by Git), 19,289,894 bytes, SHA-256 `de359f7f3254a74dfbe2d536ed760181ef8f95f7bbb9c49daa07cf7fdb0328d8`. aapt2 reports `io.liveleds.minder`, version 0.9.2, code 27 (above 0.9.1's 26). The signer SHA-256 `7bbc3aba5e417ffe87efa00c53c183c6490dc61905ce7231aaf99f87666d2572` matches 0.7.0, 0.8.0, 0.9.0 and 0.9.1. `libapp.so` contains the offer card strings; 0.9.1's does not. Telegram confirmed one upload (message 2009).
 
+## Postal code fix
+
+The owner tried SnowWorld Landgraaf on a phone: the address was only `Witte Wereld 1`, with no postal code or town, however often they asked. A live comparison on 2026-11-14 showed the cause. Serper `/places` returns `Witte Wereld 1`; `/maps` returns `Witte Wereld 1, 6372 VG Landgraaf, Netherlands` and the same website. `/maps` also returns `phoneNumber`, `description`, `openingHours`, `placeId` and `types`; the adapter does not read them yet. The adapter now posts to `/maps` and reads `type` where `/places` had `category`. The first live check above used `/places`, so it could not show this gap.
+Tests: the fixture uses the `/maps` shape and the full address; `TestDefaultEndpointIsTheMapsSearch` and the changed adapter and config tests failed before the change. Not deployed: production must run the new commit, and a `SERPER_URL` runtime variable set to the `/places` URL would stop startup (not verifiable; Coolify access was not granted).
+
 ## Limits
 
 - Serper credits are counted in logs only; there is no euro meter for them.
