@@ -113,7 +113,7 @@ func (c *Capture) UpdateReviewState() {
 		case "needs-answer":
 			needs = true
 			active = true
-		case "pending":
+		case "pending", "queued":
 			active = true
 		}
 	}

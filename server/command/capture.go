@@ -3,6 +3,7 @@ package command
 import (
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
+	"github.com/alexanderp4580/Minder/server/review"
 )
 
 // PreviewIn allows capture publication to share the command transaction.
@@ -47,6 +48,14 @@ func updateCaptureCandidate(tx port.Transaction, p domain.Pending, state string)
 					return e
 				}
 			}
+		}
+	}
+	if e = review.Advance(tx, &c, PreviewIn); e != nil {
+		return e
+	}
+	if text, done := review.Summary(c); done {
+		if _, e = tx.PutEntry(domain.Entry{Kind: "minder", Text: text}); e != nil {
+			return e
 		}
 	}
 	c.UpdateReviewState()

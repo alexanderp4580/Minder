@@ -1,11 +1,13 @@
 package capture
 
 import (
+	"fmt"
 	"bytes"
 	"context"
 	"errors"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
+	"github.com/alexanderp4580/Minder/server/review"
 	"log/slog"
 	"time"
 )
@@ -138,6 +140,7 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		for _, candidate := range current.Candidates {
 			previousByID[candidate.ID] = candidate
 		}
+		first := len(current.Candidates) == 0
 		returned := map[string]bool{}
 		for n, candidate := range extraction.Candidates {
 			id := candidate.ID
@@ -179,21 +182,27 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 				}
 			}
 			candidate.Revision = current.Revision
-			candidate.State = "pending"
-			if candidate.Question != "" {
-				candidate.State = "needs-answer"
-			}
+			candidate.State = "queued"
 			candidate.Proposal.CaptureID = current.ID
 			candidate.Proposal.CandidateID = candidate.ID
 			candidate.Proposal.CaptureRevision = candidate.Revision
-			if candidate.Question == "" {
-				entry, e := s.Preview(tx, candidate.Proposal)
-				if e != nil {
-					return e
-				}
-				candidate.ChangeID = entry.Change.ID
+			if slot := supersededSlot(current.Candidates, candidate.ID); slot >= 0 {
+				current.Candidates[slot] = candidate // a regenerated candidate keeps its place in the review order
+			} else {
+				current.Candidates = append(current.Candidates, candidate)
 			}
-			current.Candidates = append(current.Candidates, candidate)
+		}
+		if first && len(current.Candidates) > 0 {
+			opening := review.Opening(document.Subject, current.Candidates)
+			if current.Unverified > 0 {
+				opening += fmt.Sprintf(" I could not verify %d more from this email.", current.Unverified)
+			}
+			if _, e = tx.PutEntry(domain.Entry{Kind: "minder", Text: opening}); e != nil {
+				return e
+			}
+		}
+		if e = review.Advance(tx, &current, s.Preview); e != nil {
+			return e
 		}
 		current.UpdateReviewState()
 		if current.Status == "needs-answer" || current.Status == "ready-for-review" {
@@ -207,8 +216,8 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		if _, e = tx.PutEntry(domain.Entry{ID: current.EntryID, Kind: "capture", Text: "Review the email details.", Capture: &current}); e != nil {
 			return e
 		}
-		if hasOpenQuestions(current) {
-			return postQuestions(tx, current)
+		if review.HasOpenQuestions(current) {
+			return review.PostQuestions(tx, current)
 		}
 		return nil
 	})
@@ -327,4 +336,14 @@ func (s *Service) releaseClaim(claim domain.Capture) error {
 		current.NextAt = 0
 		return tx.PutCapture(current)
 	})
+}
+
+// supersededSlot returns the position of a superseded candidate with this id, or -1.
+func supersededSlot(candidates []domain.CaptureCandidate, id string) int {
+	for index, candidate := range candidates {
+		if candidate.ID == id && candidate.State == "superseded" {
+			return index
+		}
+	}
+	return -1
 }

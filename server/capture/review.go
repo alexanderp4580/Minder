@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
+	"github.com/alexanderp4580/Minder/server/review"
 	"io"
 	"strings"
 	"unicode/utf8"
@@ -60,7 +61,7 @@ func (s *Service) answer(ctx context.Context, id string, revision int, text stri
 		c.LeaseUntil = 0
 		c.Attempts = 0
 		c.Error = ""
-		if e = closeQuestions(tx, c, "Questions answered."); e != nil {
+		if e = review.CloseQuestions(tx, c, "Questions answered."); e != nil {
 			return e
 		}
 		if e = tx.PutCapture(c); e != nil {
@@ -94,7 +95,7 @@ func (s *Service) Dismiss(ctx context.Context, id string, revision int) (out dom
 		}
 		c.Status = "reviewed"
 		c.Questions = nil
-		if e = closeQuestions(tx, c, "Questions dismissed."); e != nil {
+		if e = review.CloseQuestions(tx, c, "Questions dismissed."); e != nil {
 			return e
 		}
 		if e = tx.PutCapture(c); e != nil {

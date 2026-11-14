@@ -63,7 +63,7 @@ func processed(t *testing.T, extractor capture.Extractor) (*capture.Service, *st
 }
 
 func TestQuestionsPostAsSeparateEntryAfterReceived(t *testing.T) {
-	_, db, id := processed(t, questionsExtractor{})
+	_, db, id := processed(t, manyQuestions{})
 	questions, all := questionEntries(t, db, "question")
 	if len(questions) != 1 || questions[0].CaptureID != id || questions[0].Capture == nil {
 		t.Fatal("expected one question entry", questions)
@@ -89,15 +89,18 @@ func TestNoQuestionEntryWhenNothingMissing(t *testing.T) {
 	}
 }
 
-func TestSeveralQuestionsShareOneEntry(t *testing.T) {
+func TestTheQuestionEntryHoldsTheCurrentQuestionAndTheGeneralOnes(t *testing.T) {
 	_, db, _ := processed(t, manyQuestions{})
 	questions, _ := questionEntries(t, db, "question")
 	if len(questions) != 1 {
-		t.Fatal("expected one entry for all questions", len(questions))
+		t.Fatal("expected one question entry", len(questions))
 	}
 	c := questions[0].Capture
 	if len(c.Questions) != 1 || c.Questions[0].Options[0] != "Skip" || c.Candidates[0].Options[1] != "1 hour" {
 		t.Fatal("options lost", c)
+	}
+	if c.Candidates[0].State != "needs-answer" || c.Candidates[1].State != "queued" {
+		t.Fatalf("only the current candidate may ask: %s %s", c.Candidates[0].State, c.Candidates[1].State)
 	}
 }
 
@@ -111,8 +114,14 @@ func TestAnswerClosesThePreviousQuestionEntry(t *testing.T) {
 		t.Fatal("the answered question stayed open", open)
 	}
 	closed, _ := questionEntries(t, db, "minder")
-	if len(closed) != 1 || closed[0].Text != "Questions answered." {
-		t.Fatal(closed)
+	found := 0
+	for _, entry := range closed {
+		if entry.Text == "Questions answered." {
+			found++
+		}
+	}
+	if found != 1 {
+		t.Fatalf("expected one closed question note, got %d in %v", found, closed)
 	}
 }
 

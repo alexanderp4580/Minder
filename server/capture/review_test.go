@@ -125,9 +125,9 @@ func (questionsExtractor) Extract(_ context.Context, d domain.CaptureDocument, a
 		missing.Question = ""
 		missing.Proposal.StartDate = "2026-11-21"
 	}
-	return domain.CaptureExtraction{Candidates: []domain.CaptureCandidate{ready, missing}}, nil
+	return domain.CaptureExtraction{Candidates: []domain.CaptureCandidate{missing, ready}}, nil
 }
-func TestAnswerPreservesIndependentCandidate(t *testing.T) {
+func TestAnAnswerKeepsTheQueuedCandidateWithoutLossOrDuplicates(t *testing.T) {
 	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
 	if e != nil {
 		t.Fatal(e)
@@ -142,26 +142,30 @@ func TestAnswerPreservesIndependentCandidate(t *testing.T) {
 		t.Fatal(e)
 	}
 	c, _ := svc.Get(id)
-	readyID := c.Candidates[0].ChangeID
 	if _, e = svc.Answer(context.Background(), id, c.Revision, "21 November"); e != nil {
 		t.Fatal(e)
 	}
 	if e = svc.ProcessNext(context.Background(), time.Now()); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = command.New(db).Confirm(readyID); e != nil {
-		t.Fatal("independent preview invalidated", e)
-	}
 	c, _ = svc.Get(id)
-	pending := 0
+	counts := map[string]int{}
 	for _, candidate := range c.Candidates {
-		if candidate.State == "pending" {
-			pending++
-		}
+		counts[candidate.State]++
 	}
-	if pending != 1 {
-		t.Fatal("answer lost or duplicated candidates", c.Candidates)
+	if len(c.Candidates) != 2 || counts["pending"] != 1 || counts["queued"] != 1 {
+		t.Fatalf("the answer lost or duplicated candidates: %v", c.Candidates)
 	}
+	if c.Candidates[0].ID != "question" || c.Candidates[1].ID != "ready" {
+		t.Fatalf("the review order changed: %s, %s", c.Candidates[0].ID, c.Candidates[1].ID)
+	}
+}
+
+// singleReady extracts one complete item and keeps returning it.
+type singleReady struct{}
+
+func (singleReady) Extract(context.Context, domain.CaptureDocument, []domain.CaptureAnswer) (domain.CaptureExtraction, error) {
+	return domain.CaptureExtraction{Candidates: []domain.CaptureCandidate{{ID: "ready", Proposal: domain.Proposal{Action: "create_item", Title: "Pay invoice", DueDate: "2026-11-20"}, Evidence: []domain.CaptureEvidence{{Part: "1", Excerpt: "Hotel"}}}}}, nil
 }
 
 func TestTargetedAnswerSupersedesChosenPreview(t *testing.T) {
@@ -171,7 +175,7 @@ func TestTargetedAnswerSupersedesChosenPreview(t *testing.T) {
 	}
 	defer db.Close()
 	files, _ := mailfiles.New(t.TempDir())
-	svc := capture.New(db, files, questionsExtractor{})
+	svc := capture.New(db, files, singleReady{})
 	svc.Parser = &mailparse.Parser{}
 	svc.Preview = command.PreviewIn
 	id, _, _ := svc.Ingest(context.Background(), domain.CaptureEnvelope{RequestID: "edit"}, []byte("From: owner@example.com\r\n\r\nHotel"))

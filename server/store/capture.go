@@ -194,7 +194,7 @@ func (s *Store) PendingEmailCandidates(exclude string) ([]domain.CaptureCandidat
 	out := []domain.CaptureCandidate{}
 	for _, source := range sources {
 		for _, candidate := range source.Candidates {
-			if candidate.State == "pending" || candidate.State == "needs-answer" {
+			if candidate.State == "pending" || candidate.State == "needs-answer" || candidate.State == "queued" {
 				out = append(out, candidate)
 				if len(out) >= 50 {
 					return out, nil

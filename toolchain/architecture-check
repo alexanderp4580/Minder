@@ -10,15 +10,15 @@ ROOT = Path(__file__).resolve().parent.parent
 MODULE = 'github.com/alexanderp4580/Minder/server/'
 GO = {
     'domain': set(), 'port': {'domain'},
-    'command': {'domain', 'port'}, 'assistant': {'domain', 'port'},
+    'command': {'domain', 'port', 'review'}, 'assistant': {'domain', 'port'},
     'reminder': {'domain', 'port'}, 'conversation': {'domain'},
-    'capture': {'domain','port'}, 'mailauth': {'domain','config'}, 'mailparse': {'domain'}, 'mailfiles': set(), 'store': {'domain', 'port'}, 'openrouter': {'domain', 'assistant'}, 'serper': {'domain', 'assistant'},
-    'push': set(), 'access': set(), 'config': set(),
+    'capture': {'domain','port','review'}, 'mailauth': {'domain','config'}, 'mailparse': {'domain'}, 'mailfiles': set(), 'store': {'domain', 'port'}, 'openrouter': {'domain', 'assistant'}, 'serper': {'domain', 'assistant'},
+    'push': set(), 'access': set(), 'config': set(), 'review': {'domain', 'port'},
     'api': {'domain', 'conversation'},
     'cmd/minder': {'domain', 'access', 'api', 'assistant', 'command', 'config',
                    'conversation', 'openrouter', 'serper', 'push', 'reminder', 'store', 'capture', 'mailauth', 'mailfiles', 'mailparse'},
 }
-INNER = {'domain', 'port', 'command', 'assistant', 'reminder', 'conversation', 'capture'}
+INNER = {'domain', 'port', 'review', 'command', 'assistant', 'reminder', 'conversation', 'capture'}
 INFRASTRUCTURE = {'net', 'database/sql', 'os', 'syscall'}
 LAYERS = {
     'domain': {'domain'},
