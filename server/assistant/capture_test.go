@@ -272,3 +272,59 @@ func TestRejectedExtractionsLogReasonsNotContent(t *testing.T) {
 		}
 	}
 }
+
+// partialModel returns two candidates, one of which quotes text that is not in the email.
+// When fixOnSecond is set, its second answer quotes real text for both.
+type partialModel struct {
+	calls       int
+	fixOnSecond bool
+}
+
+func (m *partialModel) Complete(context.Context, []assistant.Message) (assistant.Response, error) {
+	m.calls++
+	second := "this quote is not in the email"
+	if m.fixOnSecond && m.calls == 2 {
+		second = "Checkup"
+	}
+	arguments := `{"candidates":[
+{"id":"a","proposal":{"action":"create_item","title":"Dentist","kind":"event","start_at":"2026-11-20T10:00:00+01:00"},"evidence":[{"part":"1","excerpt":"Dentist"}]},
+{"id":"b","proposal":{"action":"create_item","title":"Checkup","kind":"event","start_at":"2026-11-21T10:00:00+01:00"},"evidence":[{"part":"1","excerpt":"` + second + `"}]}],"questions":[]}`
+	return assistant.Response{Calls: []assistant.Call{{Name: "extract_capture", Arguments: arguments}}, CostUSD: 0.001}, nil
+}
+
+func extractFrom(t *testing.T, m assistant.Model) (domain.CaptureExtraction, error) {
+	t.Helper()
+	db, err := store.Open(filepath.Join(t.TempDir(), "db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { db.Close() })
+	svc := assistant.New(db, command.New(db), m, 5, 1)
+	return svc.Extract(context.Background(), domain.CaptureDocument{Parts: []domain.CapturePart{{ID: "1", Text: "Dentist on Friday. Checkup on Saturday."}}}, nil)
+}
+
+func TestOneBadQuoteKeepsTheValidCandidates(t *testing.T) {
+	m := &partialModel{}
+	result, err := extractFrom(t, m)
+	if err != nil || len(result.Candidates) != 1 || result.Candidates[0].ID != "a" || result.Dropped != 1 {
+		t.Fatalf("%+v %v", result, err)
+	}
+	if m.calls != 2 {
+		t.Fatalf("a partial answer gets one correction, got %d calls", m.calls)
+	}
+}
+
+func TestACorrectionThatFixesEverythingDropsNothing(t *testing.T) {
+	m := &partialModel{fixOnSecond: true}
+	result, err := extractFrom(t, m)
+	if err != nil || len(result.Candidates) != 2 || result.Dropped != 0 || m.calls != 2 {
+		t.Fatalf("%+v %v calls %d", result, err, m.calls)
+	}
+}
+
+func TestNoValidCandidateFailsWithTheEvidenceReason(t *testing.T) {
+	_, err := extractFrom(t, &repairEvidenceModel{keepInvalid: true})
+	if got := domain.ReasonOf(err); got != domain.ReasonEvidence {
+		t.Fatalf("reason %s: %v", got, err)
+	}
+}

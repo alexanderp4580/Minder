@@ -163,42 +163,85 @@ func sameBooking(a, b domain.Proposal) bool {
 }
 
 // extractCaptureBatch permits one correction while charging both calls to the shared budgets.
+// A correction is asked for when the first answer failed or lost candidates; the better of the
+// two answers is kept.
 func (a *Service) extractCaptureBatch(ctx context.Context, document domain.CaptureDocument, messages []Message) (domain.CaptureExtraction, error) {
-	var result domain.CaptureExtraction
+	var first domain.CaptureExtraction
+	haveFirst := false
 	for attempt := 0; attempt < 2; attempt++ {
-		if err := a.Preflight(); err != nil {
-			return result, err
-		}
-		if err := a.reserveCaptureCall(document.CaptureID); err != nil {
-			return result, err
-		}
-		reservation, err := a.repository.ReserveUsage(a.limit, 0.02*a.rate)
+		response, err := a.captureCall(ctx, document, messages)
 		if err != nil {
-			return result, err
+			return domain.CaptureExtraction{}, err
 		}
-		response, err := a.model.Complete(ctx, messages)
-		if err != nil {
-			return result, err
-		}
-		if err := a.repository.SettleUsage(reservation, response.CostUSD*a.rate, map[string]any{"capture_id": document.CaptureID, "usage": response.RawUsage}); err != nil {
-			return result, err
-		}
-		result, err = decodeCaptureExtraction(response, document)
+		extraction, err := decodeCaptureExtraction(response, document)
 		if err != nil {
 			slog.Warn("email extraction rejected", "reason", string(domain.ReasonOf(err)), "attempt", attempt+1, "trace_id", domain.TraceID(ctx))
+		} else if extraction.Dropped > 0 {
+			slog.Warn("email extraction dropped candidates", "dropped", extraction.Dropped, "attempt", attempt+1, "trace_id", domain.TraceID(ctx))
 		}
-		if err == nil || attempt == 1 {
-			return result, err
+		if err == nil && (extraction.Dropped == 0 || attempt == 1) {
+			return betterOf(first, haveFirst, extraction), nil
 		}
-		previous := "No usable extract_capture result."
-		if len(response.Calls) == 1 {
-			previous = response.Calls[0].Arguments
+		if attempt == 1 {
+			if haveFirst {
+				return first, nil
+			}
+			return extraction, err
 		}
-		messages = append(messages, Message{Role: "assistant", Content: previous}, Message{Role: "user", Content: "Correct the previous extraction: " + err.Error() + " Use the exact part ID without a filename. Each excerpt must be a contiguous literal quote; use separate evidence entries for separate lines. Return the complete corrected extract_capture result."})
+		if err == nil {
+			first, haveFirst = extraction, true
+		}
+		messages = append(messages, correctionMessages(response, err)...)
 	}
 	panic("unreachable extraction attempt")
 }
 
+// captureCall makes one extraction call, charging it to the capture and the monthly budget.
+func (a *Service) captureCall(ctx context.Context, document domain.CaptureDocument, messages []Message) (Response, error) {
+	if err := a.Preflight(); err != nil {
+		return Response{}, err
+	}
+	if err := a.reserveCaptureCall(document.CaptureID); err != nil {
+		return Response{}, err
+	}
+	reservation, err := a.repository.ReserveUsage(a.limit, 0.02*a.rate)
+	if err != nil {
+		return Response{}, err
+	}
+	response, err := a.model.Complete(ctx, messages)
+	if err != nil {
+		return Response{}, err
+	}
+	err = a.repository.SettleUsage(reservation, response.CostUSD*a.rate, map[string]any{"capture_id": document.CaptureID, "usage": response.RawUsage})
+	return response, err
+}
+
+// betterOf returns the answer with more candidates.
+func betterOf(first domain.CaptureExtraction, haveFirst bool, second domain.CaptureExtraction) domain.CaptureExtraction {
+	if haveFirst && len(first.Candidates) > len(second.Candidates) {
+		return first
+	}
+	return second
+}
+
+// correctionMessages asks the model to fix its previous answer.
+func correctionMessages(response Response, problem error) []Message {
+	previous := "No usable extract_capture result."
+	if len(response.Calls) == 1 {
+		previous = response.Calls[0].Arguments
+	}
+	what := "Some candidates cited evidence that is not in the source."
+	if problem != nil {
+		what = problem.Error()
+	}
+	return []Message{
+		{Role: "assistant", Content: previous},
+		{Role: "user", Content: "Correct the previous extraction: " + what + " Use the exact part ID without a filename. Each excerpt must be a contiguous literal quote; use separate evidence entries for separate lines. Return the complete corrected extract_capture result."},
+	}
+}
+
+// decodeCaptureExtraction reads the model's answer and keeps the candidates whose evidence and
+// action check out. It fails only when none do, or the answer itself is unusable.
 func decodeCaptureExtraction(response Response, document domain.CaptureDocument) (domain.CaptureExtraction, error) {
 	var extracted domain.CaptureExtraction
 	if len(response.Calls) != 1 || response.Calls[0].Name != "extract_capture" {
@@ -209,29 +252,47 @@ func decodeCaptureExtraction(response Response, document domain.CaptureDocument)
 	if err := decoder.Decode(&extracted); err != nil {
 		return extracted, &domain.ModelError{Message: "Email extraction returned unreadable details.", Reason: domain.ReasonUnreadable}
 	}
+	kept := make([]domain.CaptureCandidate, 0, len(extracted.Candidates))
+	var firstProblem error
 	for _, candidate := range extracted.Candidates {
-		if len(candidate.Evidence) == 0 {
-			return extracted, &domain.ModelError{Message: "Email extraction omitted source evidence.", Reason: domain.ReasonEvidence}
-		}
-		for _, evidence := range candidate.Evidence {
-			found := false
-			for _, part := range document.Parts {
-				if evidence.Part == part.ID && evidence.Excerpt != "" && (strings.HasPrefix(part.MediaType, "image/") || strings.Contains(part.Text, evidence.Excerpt)) {
-					found = true
-				}
+		if err := checkCandidate(candidate, document); err != nil {
+			if firstProblem == nil {
+				firstProblem = err
 			}
-			if !found {
-				return extracted, &domain.ModelError{Message: "Email extraction cited missing source evidence.", Reason: domain.ReasonEvidence}
-			}
+			continue
 		}
-		switch candidate.Proposal.Action {
-		case "create_item", "update_item", "cancel_item", "complete_item":
-		default:
-			return extracted, &domain.ModelError{Message: "Email extraction proposed an unsupported action.", Reason: domain.ReasonUnreadable}
-		}
+		kept = append(kept, candidate)
 	}
+	if len(kept) == 0 && firstProblem != nil {
+		return domain.CaptureExtraction{}, firstProblem
+	}
+	extracted.Dropped = len(extracted.Candidates) - len(kept)
+	extracted.Candidates = kept
 	normaliseExtraction(&extracted)
 	return extracted, nil
+}
+
+// checkCandidate verifies a candidate's action and that every evidence excerpt appears in the source.
+func checkCandidate(candidate domain.CaptureCandidate, document domain.CaptureDocument) error {
+	if len(candidate.Evidence) == 0 {
+		return &domain.ModelError{Message: "Email extraction omitted source evidence.", Reason: domain.ReasonEvidence}
+	}
+	for _, evidence := range candidate.Evidence {
+		found := false
+		for _, part := range document.Parts {
+			if evidence.Part == part.ID && evidence.Excerpt != "" && (strings.HasPrefix(part.MediaType, "image/") || strings.Contains(part.Text, evidence.Excerpt)) {
+				found = true
+			}
+		}
+		if !found {
+			return &domain.ModelError{Message: "Email extraction cited missing source evidence.", Reason: domain.ReasonEvidence}
+		}
+	}
+	switch candidate.Proposal.Action {
+	case "create_item", "update_item", "cancel_item", "complete_item":
+		return nil
+	}
+	return &domain.ModelError{Message: "Email extraction proposed an unsupported action.", Reason: domain.ReasonUnreadable}
 }
 
 // normaliseExtraction caps quick replies at three, keeps only allowed reminder offsets and numbers the questions.

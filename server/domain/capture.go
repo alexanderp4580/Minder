@@ -31,6 +31,7 @@ type Capture struct {
 	Answers              []CaptureAnswer     `json:"answers,omitempty"`
 	Questions            []CaptureQuestion   `json:"questions,omitempty"`
 	Error                string              `json:"error,omitempty"`
+	Unverified           int                 `json:"unverified,omitempty"`
 	Attempts             int                 `json:"attempts"`
 	Calls                int                 `json:"calls"`
 	NextAt               int64               `json:"next_at,omitempty"`
@@ -93,6 +94,9 @@ type CaptureDocument struct {
 type CaptureExtraction struct {
 	Candidates []CaptureCandidate `json:"candidates"`
 	Questions  []CaptureQuestion  `json:"questions,omitempty"`
+	// Dropped counts candidates removed because their evidence did not match the email.
+	// The model never supplies it.
+	Dropped int `json:"-"`
 }
 
 func (c Capture) Due(now time.Time) bool {

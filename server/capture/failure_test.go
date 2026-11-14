@@ -116,3 +116,21 @@ func TestRetryRunsTheExtractionOnceMore(t *testing.T) {
 		t.Fatalf("calls %d status %s candidates %d", x.calls, c.Status, len(c.Candidates))
 	}
 }
+
+type droppingExtractor struct{}
+
+func (droppingExtractor) Extract(ctx context.Context, d domain.CaptureDocument, a []domain.CaptureAnswer) (domain.CaptureExtraction, error) {
+	result, _ := extracted{}.Extract(ctx, d, a)
+	result.Dropped = 2
+	return result, nil
+}
+
+func TestTheDroppedCountReachesTheCapture(t *testing.T) {
+	svc, _, id := failingService(t, droppingExtractor{})
+	if e := svc.ProcessNext(context.Background(), time.Now()); e != nil {
+		t.Fatal(e)
+	}
+	if c, _ := svc.Get(id); c.Unverified != 2 {
+		t.Fatalf("unverified %d", c.Unverified)
+	}
+}

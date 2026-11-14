@@ -123,6 +123,7 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		current.Attachments = append(current.Attachments[:1], document.Attachments...)
 		current.Coverage = document.Coverage
 		current.Questions = extraction.Questions
+		current.Unverified = extraction.Dropped
 		current.LeaseUntil = 0
 		current.NextAt = 0
 		current.Error = ""
