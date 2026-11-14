@@ -41,13 +41,6 @@ func (s *Service) answer(ctx context.Context, id string, revision int, text stri
 				return domain.ErrConflict
 			}
 		}
-		if target != "" && !ack {
-			entry, applied, e := s.applyDuration(tx, &c, target, text)
-			if applied || e != nil {
-				out = entry
-				return e
-			}
-		}
 		c.Answers = append(c.Answers, domain.CaptureAnswer{Revision: revision, CandidateID: target, Text: text})
 		c.Revision++
 		if ack {
