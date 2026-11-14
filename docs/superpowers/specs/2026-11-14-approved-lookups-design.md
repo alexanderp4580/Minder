@@ -1,6 +1,6 @@
 # Approved lookups design
 
-Date: 2026-11-14. Replaces the lookup-loop design. The owner chose per-call approval: every search is shown first and runs only after a tap. The owner called a search budget useless and annoying, so there is none.
+Date: 2026-11-14. The owner chose per-call approval: every search is shown first and runs only after a tap. The owner called a search budget useless and annoying, so there is none.
 
 ## Behaviour
 

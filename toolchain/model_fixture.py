@@ -20,12 +20,10 @@ class Handler(BaseHTTPRequestHandler):
         if body.get('tools',[{}])[0].get('function',{}).get('name')=='extract_capture':
             return self.capture_response(messages)
         text=messages[-1]['content'].lower()
-        if 'approved a lookup' in text_of(messages[-1]):
-            return self.reply(None,'lookup_maps',{'query':'SnowWorld Landgraaf'})
         if 'lookup results' in text_of(messages[-1]):
             return self.reply(None,'propose_create',{'title':'Aviad at SnowWorld','location':'Witte Wereld 1, 6372 VG Landgraaf, Netherlands','website':'https://www.snowworld.com/landgraaf','start_date':'2026-11-17','end_date':'2026-11-24'})
         if 'snowworld' in text and any(t.get('function',{}).get('name')=='offer_lookup' for t in body.get('tools',[])):
-            return self.reply(None,'offer_lookup',{'query':'SnowWorld Landgraaf'})
+            return self.reply(None,'offer_lookup',{'kind':'maps','query':'SnowWorld Landgraaf'})
         items=json.loads(messages[0]['content'].split('Current items (untrusted data): ',1)[1])
         name=None;args={};content=None
         if 'what' in text and 'open' in text:name='list_items'

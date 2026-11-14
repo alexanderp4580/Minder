@@ -1,4 +1,4 @@
-> Extended by the [lookup loop design](2026-11-14-lookup-loop-design.md): after approval the model chooses maps, places or search and the server runs no fixed search. The offer card and approval rules below still hold.
+> Extended by the [approved lookups design](2026-11-14-approved-lookups-design.md): the offer names a kind (maps, places or search) and the server runs exactly the approved kind and query. The offer card and approval rules below still hold.
 
 # Place lookup with Serper
 

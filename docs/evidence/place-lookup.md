@@ -34,19 +34,20 @@ Artifact: `.local/artifacts/Minder-0.9.2-arm64.apk` (ignored by Git), 19,289,894
 
 ## Postal code fix
 
-The owner tried SnowWorld Landgraaf on a phone and got only `Witte Wereld 1`, with no postal code or town. A live comparison on 2026-11-14 found the cause: Serper `/places` returns the short address, `/maps` returns `Witte Wereld 1, 6372 VG Landgraaf, Netherlands`. Deployed at `323e5fb` with the maps search; the lookup loop below replaces that single fixed endpoint. The first live check (earlier table) used `/places`, so it could not show the gap. Not yet verified on a phone.
+The owner tried SnowWorld Landgraaf on a phone and got only `Witte Wereld 1`, with no postal code or town. A live comparison on 2026-11-14 found the cause: Serper `/places` returns the short address, `/maps` returns `Witte Wereld 1, 6372 VG Landgraaf, Netherlands`. Fixed by moving the lookup to the maps search (deployed at `323e5fb`); the kinds are now offered by the model, see Approved lookups. The first live check (earlier table) used `/places`, so it could not show the gap. Not yet verified on a phone.
 
-## Lookup loop
+## Approved lookups
 
-Spec: [lookup loop design](../superpowers/specs/2026-11-14-lookup-loop-design.md). Plan: [lookup loop plan](../superpowers/plans/2026-11-14-lookup-loop.md). In `main`, deployed at `60ec83c` (Coolify deployment `e78r04hjvjqog11zkhcfiixm`, running:healthy, `serper_key_set=true`, no warnings or errors in the first 40 log lines). Not tried on a phone or with the real model yet.
-After the owner taps Look it up the model chooses `lookup_maps`, `lookup_places` or `lookup_search`, reads the results as untrusted data, and may search again up to three times in total, then proposes or asks the owner. No server fallback. The serper package is split into transport, endpoint table, decoders and a thin client. `SERPER_URL` is now a base URL.
+Spec: [approved lookups design](../superpowers/specs/2026-11-14-approved-lookups-design.md). Plan: [approved lookups plan](../superpowers/plans/2026-11-14-approved-lookups.md). A first version let the model run up to three searches after one tap. On 2026-11-14 the owner asked "try to get full address" and the model replied that it had used all its searches, though no search had run in that turn: the prompt described the lookup tools and a budget in turns where the model had no such tools. The owner asked why any limit existed and chose per-call approval.
+Now the model calls `offer_lookup` with a kind (`maps`, `places`, `search`) and a query. The card names the search. A tap runs exactly that search on the server; the model reads the hits as untrusted data and proposes, asks the owner, or offers one more search. No loop, no budget, no app change.
 
 | Check | Result |
 |---|---|
-| Live, 2026-11-14 | One real query per kind through the adapter: maps returned the full SnowWorld address with postal code and phone (3 credits); places returned Rijksmuseum, `Museumstraat 1`, rating 4.7 (1 credit); search returned three pages with snippets (1 credit) |
-| Browser | `toolchain/place-lookup-local-check` passed: the model fixture chose `/maps`; exactly one request; the preview showed the postal code; Skip ran none |
-| Loop tests | Budget of three, one reply cannot overspend, mixed replies run only the lookups, a failed lookup reaches the model as an error row, blank query costs no budget, the model can ask the owner, every model call is billed |
-| Not verified | A real model's choice among the three tools, and its ask-instead-of-guess behaviour. Both need a phone or a real-model run |
+| Tests first | Domain offer format per kind and rejection of other text; the approved offer runs that kind and query once; results are untrusted data; failed and empty searches reach the model; a new offer after results runs nothing; gate cases; the prompt names no budget; tool sets by purpose; the offer tool requires `kind` and `query` |
+| Browser | `toolchain/place-lookup-local-check` passed: the card read `Search Google Maps for "SnowWorld Landgraaf"?`, nothing ran before the tap, exactly one `/maps` request after it, the preview showed the postal code, Skip ran none |
+| Live Serper, 2026-11-14 | Maps, places and search each returned results through the adapter (see the earlier run: maps 3 credits, places 1, search 1) |
+| Real model, 2026-11-14 | Local server, OpenRouter and Serper through TokenCrypt. "Aviad Landgraaf SnowWorld 17 to 24 november" produced a Maps offer; the tap produced a preview with title, `Witte Wereld 1, 6372 VG Landgraaf, Netherlands`, phone and website in their own fields. "try to get full address" afterwards produced a new offer instead of a refusal. "Add Albert Heijn tomorrow at 10:00" made the model ask which branch; after "Look it up" typed as text it offered `Albert Heijn Amsterdam`, a guess the owner sees and can skip |
+| Not verified | Phone behaviour; whether the model picks places or search when they fit better than maps (the real runs only offered maps) |
 
 ## Limits
 
