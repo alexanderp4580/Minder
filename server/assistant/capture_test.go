@@ -129,8 +129,8 @@ func TestCaptureRepairsEvidenceWithoutRelaxingValidation(t *testing.T) {
 	}
 }
 
-func TestCaptureEvidenceRepairStopsAtBudgets(t *testing.T) {
-	for _, initialCalls := range []int{0, 9} {
+func TestCaptureEvidenceRepairIsOneCorrectionWithoutACallCap(t *testing.T) {
+	for _, initialCalls := range []int{0, 9, 50} {
 		t.Run(fmt.Sprint(initialCalls), func(t *testing.T) {
 			db, err := store.Open(filepath.Join(t.TempDir(), "db"))
 			if err != nil {
@@ -148,20 +148,35 @@ func TestCaptureEvidenceRepairStopsAtBudgets(t *testing.T) {
 			if err == nil {
 				t.Fatal("invalid evidence accepted")
 			}
-			wantCalls := 2
-			if initialCalls == 9 {
-				wantCalls = 1
-				var invalid *domain.Invalid
-				if !errors.As(err, &invalid) {
-					t.Fatal(err)
-				}
+			var invalid *domain.Invalid
+			if errors.As(err, &invalid) {
+				t.Fatalf("the extraction was refused by a call cap: %v", err)
 			}
 			capture, _ := db.Capture("bounded-repair")
 			cost, _ := db.MonthCost()
-			if model.calls != wantCalls || capture.Calls != initialCalls+wantCalls || cost != float64(wantCalls)*0.001 {
-				t.Fatal("repair exceeded its budget", model.calls, capture.Calls, cost)
+			if model.calls != 2 || capture.Calls != initialCalls+2 || cost != 0.002 {
+				t.Fatal("expected the original call and one correction", model.calls, capture.Calls, cost)
 			}
 		})
+	}
+}
+
+func TestAnEmailOfOneHundredKilobytesIsAcceptedAndOverFourHundredIsRefused(t *testing.T) {
+	db, err := store.Open(filepath.Join(t.TempDir(), "db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	svc := assistant.New(db, command.New(db), &captureModel{}, 5, 1)
+	big := func(n int) domain.CaptureDocument {
+		return domain.CaptureDocument{Parts: []domain.CapturePart{{ID: "1", Text: "appointment " + strings.Repeat("x", n)}}}
+	}
+	if _, err := svc.Extract(context.Background(), big(100000), nil); err != nil {
+		t.Fatalf("a 100 KB email was refused: %v", err)
+	}
+	var invalid *domain.Invalid
+	if _, err := svc.Extract(context.Background(), big(450000), nil); !errors.As(err, &invalid) {
+		t.Fatalf("a 450 KB email was accepted: %v", err)
 	}
 }
 

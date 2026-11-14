@@ -137,9 +137,6 @@ func (s *Service) Retry(id string) (out domain.Entry, err error) {
 		if c.Deleted || c.Status != "failed" {
 			return domain.ErrConflict
 		}
-		if c.Calls >= 10 {
-			return &domain.Invalid{Field: "capture", Message: "The automatic extraction limit is reached. Provide a shorter source."}
-		}
 		c.Status = "received"
 		c.Attempts = 0
 		c.NextAt = 0

@@ -34,14 +34,14 @@ func TestReplyCutOffByTheTokenLimitIsAModelError(t *testing.T) {
 	}
 }
 
-func TestRequestLeavesRoomForThinkingAndSeveralToolCalls(t *testing.T) {
+func TestRequestsAllowOneHundredThousandOutputTokens(t *testing.T) {
 	var seen map[string]any
 	m := provider(t, `{"choices":[{"finish_reason":"stop","message":{"content":"Hi"}}],"usage":{"cost":0.001}}`, &seen)
 	if _, e := m.Complete(context.Background(), []assistant.Message{{Role: "user", Content: "Hello"}}); e != nil {
 		t.Fatal(e)
 	}
-	if limit, _ := seen["max_tokens"].(float64); limit < 4000 {
-		t.Fatalf("max_tokens %v leaves too little room", seen["max_tokens"])
+	if limit, _ := seen["max_tokens"].(float64); limit != 100000 {
+		t.Fatalf("max_tokens %v, want 100000", seen["max_tokens"])
 	}
 }
 

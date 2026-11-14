@@ -25,6 +25,9 @@ If an unchanged booking already exists, ask whether there is new information ins
 Keep prior candidate IDs stable. Do not regenerate confirmed or discarded candidates. Retain every actionable candidate from earlier image groups.
 Source material may span pages. If you cannot establish complete details, return a question rather than guessing. All displayed natural-language text must be English, even when the source is Dutch or another language: translate item titles, notes, questions and option labels. Preserve addresses, proper names, contact values and booking identifiers exactly. Evidence excerpts remain literal original-source quotes for validation; they are not the item description. Use short direct sentences without filler.`
 
+// maxCaptureBytes bounds one email's extraction request; the model context is far larger.
+const maxCaptureBytes = 400000
+
 // Extract shares the chat model budget while keeping capture context separate from ordinary chat.
 func (a *Service) Extract(ctx context.Context, document domain.CaptureDocument, answers []domain.CaptureAnswer) (domain.CaptureExtraction, error) {
 	a.mu.Lock()
@@ -66,7 +69,7 @@ func (a *Service) Extract(ctx context.Context, document domain.CaptureDocument, 
 	if e != nil {
 		return domain.CaptureExtraction{}, e
 	}
-	if len(raw) > 60000 {
+	if len(raw) > maxCaptureBytes {
 		return domain.CaptureExtraction{}, &domain.Invalid{Field: "email", Message: "The email text exceeds the extraction context limit. Provide a shorter source."}
 	}
 	result := domain.CaptureExtraction{Candidates: []domain.CaptureCandidate{}, Questions: []domain.CaptureQuestion{}}
@@ -140,9 +143,6 @@ func (a *Service) reserveCaptureCall(id string) error {
 		}
 		if c.Deleted {
 			return domain.ErrNotFound
-		}
-		if c.Calls >= 10 {
-			return &domain.Invalid{Field: "capture", Message: "The automatic extraction limit is reached. Provide a shorter source."}
 		}
 		c.Calls++
 		return tx.PutCapture(c)

@@ -16,9 +16,9 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 )
 
-// maxOutputTokens leaves room for the model's thinking and for up to five tool calls.
-// A reply cut off by this limit is an error, never a half-read proposal.
-const maxOutputTokens = 4000
+// maxOutputTokens is a ceiling no normal reply reaches; the model allows 128,000. A reply cut
+// off by it is an error, never a half-read proposal.
+const maxOutputTokens = 100000
 
 type Client struct {
 	Key, Model, URL string

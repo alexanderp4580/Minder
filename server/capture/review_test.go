@@ -7,6 +7,7 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/mailfiles"
 	"github.com/alexanderp4580/Minder/server/mailparse"
+	"github.com/alexanderp4580/Minder/server/port"
 	"github.com/alexanderp4580/Minder/server/store"
 	"io"
 	"path/filepath"
@@ -386,5 +387,26 @@ func TestDismissClosesAnOpenCaptureWithoutChangingItems(t *testing.T) {
 				t.Fatal("answer reopened a dismissed capture")
 			}
 		})
+	}
+}
+
+func TestRetryWorksAfterManyCalls(t *testing.T) {
+	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer db.Close()
+	files, _ := mailfiles.New(t.TempDir())
+	svc := capture.New(db, files, extracted{})
+	if e = db.Transact(func(tx port.Transaction) error {
+		return tx.PutCapture(domain.Capture{ID: "many-calls", Status: "failed", Revision: 1, Calls: 50, EntryID: "entry-many-calls"})
+	}); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = svc.Retry("many-calls"); e != nil {
+		t.Fatalf("retry was refused after many calls: %v", e)
+	}
+	if c, _ := svc.Get("many-calls"); c.Status != "received" {
+		t.Fatalf("status %s", c.Status)
 	}
 }
