@@ -16,7 +16,7 @@ Done and Snooze send a broadcast to `ReminderActionReceiver`. `BackgroundAction`
 Debug builds allow plain HTTP to localhost, 127.0.0.1 and 10.0.2.2 for emulator checks (`src/debug`).
 Generate launcher icons from brand/app-icon.svg; do not hand-edit generated icon files. The adaptive icon uses two bitmap layers (`drawable-nodpi/ic_minder_background.png`, `ic_minder_foreground.png`); its background layer shrinks the orbit art so the lines stay inside the launcher mask. The Android 13 themed icon uses a plain vector M.
 
-The minder/attachments channel opens authenticated downloads from a narrowly scoped cache FileProvider and reports the device timezone. Capture review notifications use generic copy and open chat; reminder body/button behaviour stays unchanged.
+The minder/attachments channel opens authenticated downloads from a narrowly scoped cache FileProvider and reports the device timezone. Capture review notifications display the supplied title/body unchanged, with Minder and the generic review sentence as legacy fallbacks, and open chat; reminder body/button behaviour stays unchanged.
 
 
 The manifest declares VIEW queries for HTTPS, tel and mailto. External link opening uses url_launcher; phone links open the dialer without calling automatically.

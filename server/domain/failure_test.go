@@ -32,3 +32,10 @@ func TestReasonOfReadsTheReasonOfAModelError(t *testing.T) {
 		}
 	}
 }
+
+func TestMissingReviewItemHasASpecificFailureSentence(t *testing.T) {
+	reason := domain.FailureReason("review_item_missing")
+	if !strings.Contains(reason.Sentence(), "the model did not return the item being reviewed") {
+		t.Fatalf("missing-item reason became generic: %q", reason.Sentence())
+	}
+}

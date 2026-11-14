@@ -61,6 +61,16 @@ Source `ee99d879c3c4b03d9e84ec4772ba884745173c0e`. APK `.local/artifacts/Minder-
 
 Coolify deployment `jtptw3myyrdsxktwodwgeias` finished at this commit and the application reports running:healthy. Startup logs show schema 5, zero migrations, configured model/Firebase/Serper credentials and no warnings or errors in the first 80 lines. Runtime revision still reports unknown; the completed deployment identifies the commit. Rollback target: branch guided-email-review at `50b968228b470261dce76da1b47a205d2a256f45`. Server source and schema did not change. The branch remains unmerged; phone approval of 0.10.2 is pending. This patch changes only the client and local verification fixtures.
 
+## Failure reporting, 0.10.3
+
+Read-only inspection of the owner's latest review found four candidates, the first confirmed and the second superseded after its targeted one-hour answer. The capture then failed. The model's follow-up returned two candidates, and the worker rejected it because the answered item was absent under its original ID. The provider reply is not stored, so omission and renamed identity remain indistinguishable. The first item's proposed end time was one hour after its start; neither text alternative supplies that end clock or a one-hour duration, and the source has no calendar attachment. No confirmed item was edited during diagnosis.
+
+Firebase accepted both the initial review push and the later failure push (HTTP 200). Android's notification builder used fixed generic copy instead of the supplied body. The worker also updated only the old source card, so the newest message remained Questions answered.
+
+Tests reproduced the four-item failure, missing newest chat report, absent per-revision reports, missing startup recovery and generic missing-item reason. The patch posts the failure in chat in the same transaction as the failed source/outbox update. A stable source/revision ID prevents duplicates; startup restores an earlier missing report without another model call or push. Android forwards the supplied title/body with legacy fallbacks. The missing-item check now records review_item_missing and a specific fixed failure sentence.
+
+`toolchain/check` exited 0 with 169 Flutter tests, Go race/vet, analysis/format and repository checks. Release web/APK builds passed. The email browser scenario passed and verified a visible last failure message after the four-item answer was rejected. Final browser sweep and release delivery/deployment are in progress. Android rendering has not been checked on an emulator or phone; no disposable emulator is available. The unsupported duration inference and lost candidate identity remain open extraction defects.
+
 ## Fresh-start reset
 
 At the owner's request, stopped the production container and backed up SQLite and email files to the private server directory `/var/backups/minder/fresh-start-20261114T155318Z`. Verified the backup database before clearing data. After restart, item, chat/event, pending/audit, reminder and capture/provenance tables contain zero rows, the email source directory is empty, and the five built-in profiles exist. Preserved one push registration and 79 cost-accounting rows. SQLite integrity and foreign-key checks passed; the container's `/v1/health` returned `{"status":"ok"}`. No source or deployment change accompanied this reset.

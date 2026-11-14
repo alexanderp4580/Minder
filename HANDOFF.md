@@ -2,6 +2,14 @@
 
 State on 2026-11-14. Production runs `ee99d87` from `guided-email-review` (Coolify deployment `jtptw3myyrdsxktwodwgeias`, finished, running:healthy). It includes the 0.10.2 web client. Startup logs report schema 5, zero migrations, model/Firebase/Serper configuration present and no warnings or errors in the first 80 lines. Runtime revision still logs unknown; Coolify's completed deployment identifies the commit. The app is pinned to this branch and commit. Rollback: branch `guided-email-review`, commit `50b968228b470261dce76da1b47a205d2a256f45` (the prior healthy runtime). `main` remains at `679441b`.
 
+## Failure reporting (0.10.3+32, finishing verification)
+
+The latest phone review has four items: three appointments and a questionnaire task. The first was confirmed. The model added a one-hour end time that the supplied email text does not contain; no calendar attachment exists. That unsupported inference remains an extraction defect. The owner's targeted one-hour answer for item 2 reached the model. Its follow-up returned two candidates but failed the check requiring the answered item's original ID. The server stored status failed; it did not create the second preview. Omission versus renaming cannot be distinguished because the model reply is not stored.
+
+The failure was only on the earlier email card, leaving Questions answered as the newest chat message. Firebase accepted the failure push (HTTP 200), but Android always displayed generic review copy and ignored the supplied title/body. The patch appends one source-linked failure report per revision, restores a missing report for a stored failed review on startup without re-extracting or re-pushing, records a specific review_item_missing reason, and uses the supplied Android notification text. Retry remains on the email card. The existing confirmed item is unchanged.
+
+Four new server regressions failed before the fix and passed after it. `toolchain/check` exited 0 (169 Flutter tests, Go race/vet, analysis/format and repository checks), release web/APK builds passed, and the email browser scenario passed with a deliberately rejected four-item follow-up and a visible final failure report. Final browser sweep, APK signature/version verification, LAN delivery and deployment are in progress. No emulator is available on this machine; Android rendering still needs phone verification. The underlying duration inference and candidate-ID failure are not repaired by the reporting patch.
+
 ## Phone feedback patch (0.10.2+31)
 
 The first reported Confirm saved its item. Read-only structured state showed three confirmed appointments and one confirmed questionnaire task, which explains four items. A client regression reproduced the stale Confirm button: the HTTP response skipped the earlier preview update by advancing the polling cursor. The patch separates the ordered-feed watermark from the latest visible cursor and covers response-first answers and in-flight polls too.

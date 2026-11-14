@@ -25,7 +25,7 @@ Items carry `details`, an ordered label/value list. Proposals replace it with `d
 
 Items and proposals carry optional `phone`, `email`, `website` and `booking_reference` strings, with clear flags on proposals. Phone/email/reference accept at most 200 characters; website accepts 2048. References retain leading zeros. `NormalizeBookingDetails` promotes clearly labelled legacy note lines, preserves conflicts and instructions, and leaves calendar UID/sequence Ref lines alone.
 
-`FailureReason` (`ReasonCutOff`, `ReasonEvidence`, `ReasonNoReview`, `ReasonUnreadable`, `ReasonUnparsed`, `ReasonTimeout`, `ReasonLimit`, `ReasonOther`) gives each email failure one fixed sentence; `ReasonOf` classifies an error and `ModelError.Reason` carries it. `Capture.Unverified` counts dropped candidates; candidate state `queued` means extracted but not yet published. `AsksDuration` recognises duration questions. `CaptureExtraction.Summary` and `.Notification` carry the model's opening and push text; `Capture.Notification` stores the latter.
+`FailureReason` (`ReasonCutOff`, `ReasonEvidence`, `ReasonNoReview`, `ReasonUnreadable`, `ReasonUnparsed`, `ReasonTimeout`, `ReasonLimit`, `ReasonOther`, `ReasonReviewItemMissing`) gives each email failure one fixed sentence; `ReasonOf` classifies an error and `ModelError.Reason` carries it. `Capture.Unverified` counts dropped candidates; candidate state `queued` means extracted but not yet published. `AsksDuration` recognises duration questions. `CaptureExtraction.Summary` and `.Notification` carry the model's opening and push text; `Capture.Notification` stores the latter.
 
 # Work Guidance
 

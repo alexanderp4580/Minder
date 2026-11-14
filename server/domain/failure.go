@@ -10,25 +10,27 @@ import (
 type FailureReason string
 
 const (
-	ReasonCutOff     FailureReason = "cut-off"
-	ReasonEvidence   FailureReason = "evidence"
-	ReasonNoReview   FailureReason = "no-review"
-	ReasonUnreadable FailureReason = "unreadable"
-	ReasonUnparsed   FailureReason = "unparsed"
-	ReasonTimeout    FailureReason = "timeout"
-	ReasonLimit      FailureReason = "limit"
-	ReasonOther      FailureReason = "other"
+	ReasonCutOff            FailureReason = "cut-off"
+	ReasonEvidence          FailureReason = "evidence"
+	ReasonNoReview          FailureReason = "no-review"
+	ReasonUnreadable        FailureReason = "unreadable"
+	ReasonUnparsed          FailureReason = "unparsed"
+	ReasonTimeout           FailureReason = "timeout"
+	ReasonLimit             FailureReason = "limit"
+	ReasonOther             FailureReason = "other"
+	ReasonReviewItemMissing FailureReason = "review_item_missing"
 )
 
 var failureText = map[FailureReason]string{
-	ReasonCutOff:     "the model's answer was cut off.",
-	ReasonEvidence:   "the details did not match the email text.",
-	ReasonNoReview:   "the model returned no review.",
-	ReasonUnreadable: "the model's answer was unreadable.",
-	ReasonUnparsed:   "the email could not be parsed.",
-	ReasonTimeout:    "the model took too long.",
-	ReasonLimit:      "the monthly model limit is reached.",
-	ReasonOther:      "something went wrong.",
+	ReasonCutOff:            "the model's answer was cut off.",
+	ReasonEvidence:          "the details did not match the email text.",
+	ReasonNoReview:          "the model returned no review.",
+	ReasonUnreadable:        "the model's answer was unreadable.",
+	ReasonUnparsed:          "the email could not be parsed.",
+	ReasonTimeout:           "the model took too long.",
+	ReasonLimit:             "the monthly model limit is reached.",
+	ReasonOther:             "something went wrong.",
+	ReasonReviewItemMissing: "the model did not return the item being reviewed.",
 }
 
 // Sentence is the message the owner sees in the email entry.

@@ -61,6 +61,12 @@ class Handler(BaseHTTPRequestHandler):
             if items:
                 item=next((item for item in items if item['title']=='Hotel booking'),items[0])
                 candidates=[{'id':'cancel','proposal':{'action':'cancel_item','item_id':item['id'],'expected_version':item['version'],'title':item['title']},'evidence':evidence}]
+        elif 'failure-report-check' in text.lower():
+            summary='Four items need review.'
+            notification='An email needs review.'
+            candidates=[{'id':identity,'proposal':{'action':'create_item','kind':'event' if identity!='questionnaire' else 'task','title':identity},'evidence':evidence} for identity in ['current','later','third','questionnaire']]
+            candidates[0].update({'question':'How long will it take?','options':['30 minutes','1 hour']})
+            if answers: candidates=candidates[2:]  # Reproduce a response that loses the answered item.
         elif 'dentist, checkup and follow-up' in text.lower():
             start=lambda day:(datetime.now(timezone.utc)+timedelta(days=day)).replace(hour=9,minute=0,second=0,microsecond=0).strftime('%Y-%m-%dT%H:%M:%SZ')
             def ask(candidate, identity):

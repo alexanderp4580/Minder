@@ -112,7 +112,21 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   checkupsCapture=await capture(c=>c.candidates[2].state==='pending');assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[2].change_id+'/confirm',{method:'POST'})).status,200);
   texts=await chatTexts();assert.equal(texts[texts.length-1],'Done: 2 added, 1 skipped.','the review ends with a summary');
   const checkupItems=(await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json())).filter(i=>['Dentist','Checkup','Follow-up'].includes(i.title));assert.deepEqual(checkupItems.map(i=>i.title).sort(),['Dentist','Follow-up']);assert.deepEqual(checkupItems.find(i=>i.title==='Dentist').details,[{label:'Meeting link',value:'https://teams.example/join/dentist'}]);
+  // A rejected answer must append a report after Questions answered, rather than only updating the old card.
+  const failureRaw=Buffer.from('From: Owner <owner@example.com>\r\nSubject: Failure report check\r\n\r\nfailure-report-check: three appointments and a questionnaire.');
+  const failureReceipt=await fetch(url+'/v1/email/ingest',{method:'POST',body:failureRaw,headers:await sign(failureRaw,'failure-report')});assert.equal(failureReceipt.status,201);const failureId=(await failureReceipt.json()).capture_id;
+  let failed;
+  for(let n=0;n<100;n++){failed=await fetch(url+'/v1/captures/'+failureId).then(r=>r.json());if(failed.status==='needs-answer')break;await new Promise(r=>setTimeout(r,100));}
+  assert.equal(failed.candidates.length,4);
+  await page.reload();await page.waitForSelector('flutter-view',{timeout:60000});await page.locator('flt-semantics-placeholder').evaluate(e=>e.click()).catch(()=>{});
+  await page.getByRole('button',{name:'1 hour',exact:true}).last().click();
+  for(let n=0;n<100;n++){failed=await fetch(url+'/v1/captures/'+failureId).then(r=>r.json());if(failed.status==='failed')break;await new Promise(r=>setTimeout(r,100));}
+  assert.equal(failed.status,'failed');assert.match(failed.error,/model did not return the item being reviewed/);
+  const failedHistory=entriesOf(await fetch(url+'/v1/chat?after=0&limit=200').then(r=>r.json()));
+  assert.equal(failedHistory[failedHistory.length-1].kind,'minder');assert.equal(failedHistory[failedHistory.length-1].text,failed.error);
+  await page.getByText(failed.error,{exact:false}).last().waitFor({timeout:10000});
+  assert.equal(await page.getByText('Working',{exact:true}).count(),0);
   assert.deepEqual(errors,[]);
-  console.log('PASS: compiled web email review, targeted answer, owner download, confirmation, travel calendar, reviewed cancellation and a three-appointment email reviewed one at a time.');
+  console.log('PASS: compiled web email review, targeted answer, owner download, confirmation, travel calendar, reviewed cancellation a three-appointment email reviewed one at a time, and a visible failure report after a rejected four-item follow-up.');
  }catch(error){if(page){require('node:fs').writeFileSync('.local/email-accessibility.txt',await page.locator('body').ariaSnapshot().catch(()=>''));require('node:fs').writeFileSync('.local/email-dom.html',await page.content().catch(()=>''));}if(page)await page.screenshot({path:'.local/email-failure.png'}).catch(()=>{});throw error;}finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -29,6 +29,10 @@ func (s *Service) Run(ctx context.Context) {
 		}
 	}
 
+	if err := s.restoreFailureReports(); err != nil {
+		slog.Warn("email failure report recovery failed", "error_code", domain.ErrorCode(err))
+	}
+
 	timer := time.NewTicker(time.Second)
 	defer timer.Stop()
 	for {
@@ -151,7 +155,7 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		}
 		for id, candidate := range previousByID {
 			if candidate.State == "superseded" && !returned[id] {
-				return &domain.ModelError{Message: "The model omitted an item awaiting clarification."}
+				return &domain.ModelError{Message: "The model omitted an item awaiting clarification.", Reason: domain.ReasonReviewItemMissing}
 			}
 		}
 		for n, candidate := range extraction.Candidates {
@@ -252,12 +256,16 @@ func (s *Service) fail(c domain.Capture, cause error) error {
 		if e = tx.QueueCaptureNotifications(current.ID, current.Revision); e != nil {
 			return e
 		}
-		_, e = tx.PutEntry(domain.Entry{ID: current.EntryID, Kind: "capture", Text: current.Error, Capture: &current})
+		if _, e = tx.PutEntry(domain.Entry{ID: current.EntryID, Kind: "capture", Text: current.Error, Capture: &current}); e != nil {
+			return e
+		}
+		_, e = postFailureReport(tx, current)
 		return e
 	})
 	if err != nil {
 		return err
 	}
+	slog.Warn("email attempt failed", "source_id", c.ID, "revision", c.Revision, "reason", string(domain.ReasonOf(cause)), "error_code", domain.ErrorCode(cause))
 	return cause
 }
 
