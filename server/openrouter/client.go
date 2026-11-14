@@ -189,26 +189,22 @@ func toolsFor(purpose string) []any {
 		return captureTools()
 	case assistant.PurposeOffer:
 		return append(tools(), offerTool())
-	case assistant.PurposeLookup:
-		return append(tools(), lookupToolDefinitions()...)
 	}
 	return tools()
 }
 
-var queryProperty = map[string]any{"query": map[string]string{"type": "string", "description": "What to search for, at most 100 characters. Include the town for a place."}}
-
-// offerTool asks the owner to approve a lookup. Nothing is searched until they tap.
+// offerTool asks the owner to approve one search. Nothing is searched until they tap.
 func offerTool() any {
-	return tool("offer_lookup", "Ask the owner to approve a web lookup. Call it alone when the request names a venue or place without an address. Nothing is searched until the owner approves.", queryProperty, []string{"query"})
-}
-
-// lookupToolDefinitions builds the lookup tools from the assistant's catalogue.
-func lookupToolDefinitions() []any {
-	definitions := make([]any, 0, len(assistant.LookupTools))
-	for _, lookup := range assistant.LookupTools {
-		definitions = append(definitions, tool(lookup.Name, lookup.Description, queryProperty, []string{"query"}))
+	kinds, descriptions := make([]string, 0, len(assistant.LookupKinds)), make([]string, 0, len(assistant.LookupKinds))
+	for _, info := range assistant.LookupKinds {
+		kinds = append(kinds, string(info.Kind))
+		descriptions = append(descriptions, string(info.Kind)+": "+info.Description)
 	}
-	return definitions
+	props := map[string]any{
+		"kind":  map[string]any{"type": "string", "enum": kinds, "description": "Which search to offer. " + strings.Join(descriptions, " ")},
+		"query": map[string]string{"type": "string", "description": "What to search for, at most 100 characters. Include the town for a place."},
+	}
+	return tool("offer_lookup", "Ask the owner to approve one web search. Call it alone when the owner wants an address, phone number, website or opening hours, or names a venue without an address. Nothing is searched until the owner approves.", props, []string{"kind", "query"})
 }
 
 func tool(name, description string, props map[string]any, required []string) any {

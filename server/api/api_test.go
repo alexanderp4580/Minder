@@ -425,7 +425,7 @@ func TestChatServesOptionsOnlyForAPlaceLookupOffer(t *testing.T) {
 		t.Fatal(e)
 	}
 	t.Cleanup(func() { s.Close() })
-	offer, _ := domain.OfferText("SnowWorld Landgraaf")
+	offer, _ := domain.OfferText(domain.Offer{Kind: domain.LookupMaps, Query: "SnowWorld Landgraaf"})
 	for _, entry := range []domain.Entry{{Kind: "minder", Text: "Hello."}, {Kind: "minder", Text: offer}, {Kind: "user", Text: offer}} {
 		if _, e = s.AddEntry(entry); e != nil {
 			t.Fatal(e)

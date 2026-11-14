@@ -133,10 +133,9 @@ func TestToolSetFollowsPurpose(t *testing.T) {
 		return set
 	}
 	for purpose, want := range map[string]map[string]bool{
-		assistant.PurposeChat:   {"propose_create": true, "offer_lookup": false, "lookup_maps": false, "lookup_places": false, "lookup_search": false},
-		assistant.PurposeOffer:  {"propose_create": true, "offer_lookup": true, "lookup_maps": false, "lookup_places": false, "lookup_search": false},
-		assistant.PurposeLookup: {"propose_create": true, "offer_lookup": false, "lookup_maps": true, "lookup_places": true, "lookup_search": true},
-		assistant.PurposeEmail:  {"extract_capture": true, "propose_create": false, "offer_lookup": false, "lookup_maps": false},
+		assistant.PurposeChat:  {"propose_create": true, "offer_lookup": false},
+		assistant.PurposeOffer: {"propose_create": true, "offer_lookup": true},
+		assistant.PurposeEmail: {"extract_capture": true, "propose_create": false, "offer_lookup": false},
 	} {
 		got := has(purpose)
 		for name, expected := range want {
@@ -147,19 +146,20 @@ func TestToolSetFollowsPurpose(t *testing.T) {
 	}
 }
 
-func TestLookupToolsTakeAQueryAndCarryTheCatalogueDescription(t *testing.T) {
-	for _, def := range lookupToolDefinitions() {
-		function := def.(map[string]any)["function"].(map[string]any)
-		parameters := function["parameters"].(map[string]any)
-		if required := parameters["required"].([]string); len(required) != 1 || required[0] != "query" {
-			t.Fatalf("%v requires %v", function["name"], required)
+func TestOfferToolRequiresAKindAndAQueryAndListsEveryKind(t *testing.T) {
+	function := offerTool().(map[string]any)["function"].(map[string]any)
+	parameters := function["parameters"].(map[string]any)
+	if required := parameters["required"].([]string); len(required) != 2 || required[0] != "kind" || required[1] != "query" {
+		t.Fatalf("required %v", required)
+	}
+	kind := parameters["properties"].(map[string]any)["kind"].(map[string]any)
+	enum := kind["enum"].([]string)
+	if len(enum) != len(assistant.LookupKinds) {
+		t.Fatalf("enum %v", enum)
+	}
+	for i, info := range assistant.LookupKinds {
+		if enum[i] != string(info.Kind) || !strings.Contains(kind["description"].(string), info.Description) {
+			t.Fatalf("kind %s is missing from the tool", info.Kind)
 		}
-	}
-	if len(lookupToolDefinitions()) != len(assistant.LookupTools) {
-		t.Fatal("a catalogue tool has no definition")
-	}
-	first := lookupToolDefinitions()[0].(map[string]any)["function"].(map[string]any)
-	if first["name"] != assistant.LookupTools[0].Name || first["description"] != assistant.LookupTools[0].Description {
-		t.Fatalf("%v", first)
 	}
 }

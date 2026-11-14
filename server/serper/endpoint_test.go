@@ -6,10 +6,10 @@ import (
 	"github.com/alexanderp4580/Minder/server/assistant"
 )
 
-func TestEveryLookupToolKindHasAnEndpoint(t *testing.T) {
-	for _, tool := range assistant.LookupTools {
-		if _, ok := endpoints[tool.Kind]; !ok {
-			t.Fatalf("%s has no endpoint", tool.Kind)
+func TestEveryLookupKindHasAnEndpoint(t *testing.T) {
+	for _, info := range assistant.LookupKinds {
+		if _, ok := endpoints[info.Kind]; !ok {
+			t.Fatalf("%s has no endpoint", info.Kind)
 		}
 	}
 }
