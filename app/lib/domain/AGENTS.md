@@ -19,7 +19,7 @@ Capture/source values and repository methods are typed; dates without times stay
 
 `Item` carries phone, email, website and bookingReference as typed values. `BookingDetails` separates clearly labelled older contact/reference lines for display, keeps conflicts and calendar UID/sequence Ref lines in Notes, and never writes to the server.
 
-`CaptureCandidate.details` is a read-only Item projection of a proposal for shared detail rendering. Its synthetic ID never authorizes item changes. `capture_questions.dart` supplies duration choices for older captures and English duration labels.
+`Capture.unverified` counts appointments the server dropped; candidate state `queued` means not yet published. `isVirtualVenue` (links.dart) mirrors the server rule for online and phone venues; both sides test the same case table. `CaptureCandidate.details` is a read-only Item projection of a proposal for shared detail rendering. Its synthetic ID never authorizes item changes. `capture_questions.dart` supplies duration choices for older captures and English duration labels.
 
 `Entry.options` holds quick replies the server computed; only a place-lookup offer has them (`Skip`, `Look it up`).
 

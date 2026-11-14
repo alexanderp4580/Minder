@@ -9,7 +9,7 @@ HTTP payloads, tool schema, token cap, response decoding and provider usage.
 # Local Contracts
 
 Implement the assistant model contract. Keep provider keys in memory.
-Use request deadlines, bounded replies and safe provider errors. Reject truncated replies and missing or negative costs.
+Use request deadlines, bounded replies and safe provider errors. Send `max_tokens` 100,000 (the model allows 128,000), a ceiling no normal reply reaches; reject truncated replies (`ReasonCutOff`) and missing or negative costs.
 Provider fixtures use local HTTP servers. Real-model checks use temporary databases.
 
 Tool schemas distinguish event ends, date-only ranges and deadlines; preserve travel zones and never invent missing clock times.

@@ -22,7 +22,7 @@ Coolify runs the container with a persistent database volume.
 | `domain` | Values, validation, recurrence, reminders, identifiers and profile defaults | None |
 | `port` | Atomic transaction and persistence contracts | `domain` |
 | `store` | SQLite adapter, migrations, transactions and projections | `domain`, `port` |
-| `command` | Preview, Confirm, Discard, Undo and conflict refresh | `domain`, `port` |
+| `command` | Preview, Confirm, Discard, Undo and conflict refresh | `domain`, `port`, `review` |
 | `assistant` | Context, proposals, cost reservations and model contract | `domain` |
 | `conversation` | Message acceptance, concurrency, replies and cancellation | `domain` |
 | `reminder` | Scheduling, actions, device validation and delivery worker | `domain`, `port` |
@@ -32,7 +32,8 @@ Coolify runs the container with a persistent database volume.
 | `access` | Owner authentication and Cloudflare JWT adapter | None |
 | `config` | Process settings and startup validation | None |
 | `api` | HTTP routes, responses, event stream and static files | `domain`, `conversation` |
-| `capture` | Durable source ingestion, extraction jobs, isolated questions and review publication | `domain`, `port` |
+| `capture` | Durable source ingestion, extraction jobs, isolated questions and review publication | `domain`, `port`, `review` |
+| `review` | One-at-a-time email review: next candidate, messages and question entries | `domain`, `port` |
 | `mailparse` | Bounded MIME, calendar, PDF and image conversion | `domain` |
 | `mailfiles` | Private atomic original/attachment files | None |
 | `mailauth` | Signed Worker envelope/body admission and environment allowlists | `domain`, `config` |

@@ -12,6 +12,8 @@ Use `port.Transaction`; do not import storage implementations.
 One invalid proposal rolls back its batch. Confirm checks versions and records audit/results atomically.
 Pending changes do not expire. Undo refuses a changed current version. Preserve storage errors.
 
+Confirming or discarding an email candidate publishes the next queued one through `review.Advance` and, when the last is resolved, posts the `Done` summary, in the same transaction.
+
 Event kind, end, zones and date-only attributes participate in previews, Confirm and Undo like existing item fields.
 
 Capture-bound previews validate candidate revision on Confirm. Confirm/Discard update source state and provenance atomically. Source deletion requires a separate irreversible preview and redacts captured history before file cleanup.

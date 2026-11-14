@@ -55,7 +55,7 @@ Delivery contract:
 - Go verifies and saves the raw email to its persistent volume, then commits the source, fingerprint, ingestion status entry and extraction job before returning success with the capture ID. Attachment decoding runs from the saved raw email; malformed parts can fail extraction without losing the source.
 - Persist a unique raw-message fingerprint and source ID atomically. Duplicate delivery returns the existing capture ID without another job. A timeout after commit followed by re-forwarding must not silently duplicate previews or confirmed items.
 - Worker treats only a successful durable-ingestion response as successful handoff. Surface non-success/timeouts as handler failures; do not return success after a failed POST. Verify actual SMTP bounce/retry behaviour in a deployed fault test. Do not assume Cloudflare retries Worker delivery.
-- No persistent pre-ingestion retries or offline spool. Once Minder accepts the email, its own durable jobs handle extraction retries and restart recovery. A Received/Processing entry distinguishes accepted mail from an email that has not reached Minder.
+- No persistent pre-ingestion retries or offline spool. Once Minder accepts the email, its own durable job handles extraction and restart recovery; a failed extraction is shown in the app and retried only by the owner (see the [guided email review design](2026-11-14-guided-email-review-design.md)). A Received/Processing entry distinguishes accepted mail from an email that has not reached Minder.
 - Back up originals and SQLite together on Minder's persistent volume. Record safe delivery/extraction error codes without including message content.
 
 Use a 15-second handoff timeout; ingestion only stores and enqueues the email, never waits for model parsing.
@@ -220,7 +220,7 @@ Stage blob writes before committing references; clean up orphaned temporary file
 
 Use the existing monthly model budget and cost reservations. Account for every text/image/document call.
 Budget exhaustion keeps the email and a resumable job; no retry loop can bypass the budget.
-Retry transient storage/provider failures with bounded exponential backoff. Use retry delays of 5 seconds, 30 seconds, 2 minutes and 10 minutes; after five total attempts, show Failed and Retry. Authentication, unsupported-format and validation errors do not enter a transient retry loop.
+A failed extraction is not retried automatically: it shows Failed with the reason and a Retry button. Authentication, unsupported-format and validation errors do not enter a transient retry loop.
 Unknown provider costs retain the existing reservation. A lease retry may repeat a provider charge after a crash;
 idempotent result publication prevents duplicate previews, not all duplicate billing.
 

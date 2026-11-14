@@ -23,6 +23,8 @@ The lookup offer (`Offer{Kind, Query}`, kinds maps, places, search) is a minder 
 
 Items and proposals carry optional `phone`, `email`, `website` and `booking_reference` strings, with clear flags on proposals. Phone/email/reference accept at most 200 characters; website accepts 2048. References retain leading zeros. `NormalizeBookingDetails` promotes clearly labelled legacy note lines, preserves conflicts and instructions, and leaves calendar UID/sequence Ref lines alone.
 
+`FailureReason` (`ReasonCutOff`, `ReasonEvidence`, `ReasonNoReview`, `ReasonUnreadable`, `ReasonUnparsed`, `ReasonTimeout`, `ReasonLimit`, `ReasonOther`) gives each email failure one fixed sentence; `ReasonOf` classifies an error and `ModelError.Reason` carries it. `Capture.Unverified` counts dropped candidates; candidate state `queued` means extracted but not yet published. `ParseDuration` reads quick replies such as `1 hour 30 minutes` as minutes; `AsksDuration` recognises duration questions; `IsVirtualVenue` recognises online or phone venues (the Dart mirror is `isVirtualVenue`).
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.
