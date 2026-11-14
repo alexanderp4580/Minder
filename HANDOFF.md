@@ -1,10 +1,10 @@
 # Handoff
 
-State on 2026-11-14. Production runs `679441b` from `main` (Coolify deployment `snqnkuzggologzjscsjppeqv`, running:healthy, schema 5, no migration, startup log `serper_key_set=true`, no warnings or errors in the first 40 log lines). The Coolify app is pinned to branch `main` at that commit. The previous runtime was `60ec83c` (three-search loop); roll back with branch `main` and that commit.
+State on 2026-11-14. Production runs `50b9682` from `guided-email-review` (Coolify deployment `fy2qz1rqsyklwp5uvutdbfaw`, finished, running:healthy). The owner requested deployment for phone testing. Startup logs report schema 5, zero migrations, model/Firebase/Serper configuration present, and no warnings or errors in the first 80 lines. The runtime log still reports revision=unknown; Coolify's completed deployment identifies the commit. The app is pinned to this branch and commit. Rollback: branch `main`, commit `679441b3bcf730e80e880167b25ba5787c27d70b` (the prior healthy runtime).
 
 ## Guided email review (branch `guided-email-review`)
 
-Revision 2 is complete at source commit `fbbe18d`. All five browser scenarios passed. APK 0.10.1 reached Telegram once (message 2029). Base `main` is `679441b`, which production runs. This branch is not pushed, merged or deployed. Work stays inline in `Minder-m0-chat`; phone review and owner approval gate integration and deployment.
+Revision 2 is complete at source commit `fbbe18d`. All five browser scenarios passed. APK 0.10.1 reached Telegram once (message 2029). Base `main` remains `679441b`. The branch is pushed and deployed for phone testing, and remains unmerged. Work stays inline in `Minder-m0-chat`; phone review and owner approval gate merging.
 
 Spec: [guided email review design](docs/superpowers/specs/2026-11-14-guided-email-review-design.md). Plan: [guided email review plan](docs/superpowers/plans/2026-11-14-guided-email-review.md). Verification: [guided email review evidence](docs/evidence/guided-email-review.md).
 
@@ -15,7 +15,7 @@ Spec: [guided email review design](docs/superpowers/specs/2026-11-14-guided-emai
 - Fresh `toolchain/check` exited 0: 163 Flutter tests, Go race/vet, analysis/formatting and repository checks. A real-model synthetic three-appointment email returned a Teams meeting with its join link in Details, no address and no Website value, plus an opening and notification. All five final browser scenarios exited 0: chat, reminder, calendar, place lookup and email.
 - App version is 0.10.1+30. APK `.local/artifacts/Minder-0.10.1-arm64.apk` is 19,031,438 bytes, SHA-256 `e7225a914cc245a8c3db1016ddf515402c762f0bb4295dd57fb23c4f3bb55eeb`; its signer matches 0.10.0. The split arm64 APK carries Android version code **2030** (pubspec 30 plus the ABI offset); future APK updates must exceed 2030. Use the same split build command with the next pubspec version. Telegram confirmed one upload (message 2029). The previous APK 0.10.0 (message 2028) lacks Revision 2; do not ship it.
 
-Owner preferences: very short replies; no sub-agents; the model decides behavior and wording; no unrequested rules, word lists, answer parsers or caps. Merge and deploy require approval. APK build and one Telegram upload are authorized. Production remains on `679441b`; do not deploy this branch without approval.
+Owner preferences: very short replies; no sub-agents; the model decides behavior and wording; no unrequested rules, word lists, answer parsers or caps. Merge requires approval. The owner authorized this deployment for phone testing after APK delivery. APK 0.10.1 and its matching server are now available; no further upload is needed.
 
 Unknown: the precise rejection reason for the owner's earlier multi-appointment email, and how the phone renders push title/body. No physical phone review of this revision yet.
 

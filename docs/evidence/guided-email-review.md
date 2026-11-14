@@ -1,6 +1,6 @@
 # Guided email review
 
-Date: 2026-11-14. App 0.10.1+30. Spec: [guided email review design](../superpowers/specs/2026-11-14-guided-email-review-design.md). Plan: [guided email review plan](../superpowers/plans/2026-11-14-guided-email-review.md). Branch `guided-email-review`, not merged or deployed.
+Date: 2026-11-14. App 0.10.1+30. Spec: [guided email review design](../superpowers/specs/2026-11-14-guided-email-review-design.md). Plan: [guided email review plan](../superpowers/plans/2026-11-14-guided-email-review.md). Branch `guided-email-review`, deployed for phone testing and not merged.
 
 ## Why
 
@@ -41,7 +41,13 @@ Source `fbbe18d`. All five final browser scenarios exited 0: chat, reminder, cal
 
 Release arm64 APK: `.local/artifacts/Minder-0.10.1-arm64.apk` (ignored), 19,031,438 bytes. SHA-256 `e7225a914cc245a8c3db1016ddf515402c762f0bb4295dd57fb23c4f3bb55eeb`. `apksigner verify --print-certs` exited 0 for this APK and 0.10.0; both report signer `7bbc3aba5e417ffe87efa00c53c183c6490dc61905ce7231aaf99f87666d2572`. `aapt2 dump badging` reports `io.liveleds.minder`, version 0.10.1, Android version code 2030 (pubspec 30 plus the arm64 split offset); the earlier APK reports 29.
 
-Telegram confirmed one upload: message 2029, file size 19,031,438. The APK needs the matching server changes to exercise the new email flow. Production remains on `679441b`; merge and deployment await owner approval.
+Telegram confirmed one upload: message 2029, file size 19,031,438. The APK needs the matching server changes to exercise the new email flow. The owner requested the matching server deployment for phone testing. Merge still awaits approval.
+
+## Deployment for phone testing
+
+The owner requested deployment on 2026-11-14 after receiving the APK. Pushed `guided-email-review` and pinned Coolify to `50b968228b470261dce76da1b47a205d2a256f45`. Deployment `fy2qz1rqsyklwp5uvutdbfaw` finished; the application reports `running:healthy`. Startup logs show schema 5, zero migrations, configured model/Firebase/Serper credentials and no warnings or errors in the first 80 lines. The server still logs revision=unknown; the completed Coolify deployment identifies the commit.
+
+Rollback target: branch `main`, commit `679441b3bcf730e80e880167b25ba5787c27d70b`, captured from the healthy application before deployment. `main` remains unchanged. No production email was injected or replayed; the owner can test with a fresh multi-appointment email using APK 0.10.1.
 
 ## DOX
 
