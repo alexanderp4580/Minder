@@ -1,10 +1,10 @@
 package capture
 
 import (
-	"fmt"
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
 	"github.com/alexanderp4580/Minder/server/review"
@@ -227,6 +227,7 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 	}
 	return nil
 }
+
 // fail ends an attempt and never schedules another: the owner retries from the app.
 func (s *Service) fail(c domain.Capture, cause error) error {
 	err := s.repository.Transact(func(tx port.Transaction) error {

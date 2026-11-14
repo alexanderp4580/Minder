@@ -1,13 +1,13 @@
 package assistant
 
 import (
-	"log/slog"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
+	"log/slog"
 	"strings"
 	"time"
 )

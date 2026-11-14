@@ -22,10 +22,10 @@ func TestReasonOfReadsTheReasonOfAModelError(t *testing.T) {
 	wrapped := fmt.Errorf("extract: %w", &domain.ModelError{Message: "cut", Reason: domain.ReasonCutOff})
 	for err, want := range map[error]domain.FailureReason{
 		&domain.ModelError{Message: "x", Reason: domain.ReasonEvidence}: domain.ReasonEvidence,
-		wrapped:                         domain.ReasonCutOff,
-		domain.ErrLimit:                 domain.ReasonLimit,
+		wrapped:                          domain.ReasonCutOff,
+		domain.ErrLimit:                  domain.ReasonLimit,
 		&domain.ModelError{Message: "x"}: domain.ReasonOther,
-		errors.New("disk"):              domain.ReasonOther,
+		errors.New("disk"):               domain.ReasonOther,
 	} {
 		if got := domain.ReasonOf(err); got != want {
 			t.Fatalf("%v: %s, want %s", err, got, want)

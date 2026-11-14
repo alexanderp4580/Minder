@@ -7,7 +7,7 @@ import (
 
 // Words that name an online or phone venue, and filler words that may accompany them.
 var (
-	virtualVenueWords = map[string]bool{"teams": true, "zoom": true, "meet": true, "webex": true, "skype": true, "online": true, "video": true, "phone": true, "telephone": true, "virtual": true}
+	virtualVenueWords  = map[string]bool{"teams": true, "zoom": true, "meet": true, "webex": true, "skype": true, "online": true, "video": true, "phone": true, "telephone": true, "virtual": true}
 	virtualFillerWords = map[string]bool{"microsoft": true, "google": true, "via": true, "meeting": true, "call": true, "link": true, "conference": true, "remote": true}
 )
 

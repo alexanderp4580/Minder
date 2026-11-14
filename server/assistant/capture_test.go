@@ -2,9 +2,8 @@ package assistant_test
 
 import (
 	"bytes"
-	"encoding/json"
-	"log/slog"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/alexanderp4580/Minder/server/assistant"
@@ -12,6 +11,7 @@ import (
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
 	"github.com/alexanderp4580/Minder/server/store"
+	"log/slog"
 	"path/filepath"
 	"strings"
 	"testing"
