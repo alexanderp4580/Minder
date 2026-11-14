@@ -51,6 +51,13 @@ class Handler(BaseHTTPRequestHandler):
             if items:
                 item=next((item for item in items if item['title']=='Hotel booking'),items[0])
                 candidates=[{'id':'cancel','proposal':{'action':'cancel_item','item_id':item['id'],'expected_version':item['version'],'title':item['title']},'evidence':evidence}]
+        elif 'dentist, checkup and follow-up' in text.lower():
+            start=lambda day:(datetime.now(timezone.utc)+timedelta(days=day)).replace(hour=9,minute=0,second=0,microsecond=0).strftime('%Y-%m-%dT%H:%M:%SZ')
+            ask=lambda c,i:c.update({'question':'How long will it take?','options':['30 minutes','45 minutes','1 hour']}) if not any(a.get('candidate_id')==i for a in answers) else None
+            dentist={'id':'dentist','proposal':{'action':'create_item','kind':'event','title':'Dentist','start_at':start(6),'location':'Microsoft Teams'},'evidence':evidence}
+            checkup={'id':'checkup','proposal':{'action':'create_item','kind':'event','title':'Checkup','start_at':start(7)},'evidence':evidence}
+            ask(dentist,'dentist');ask(checkup,'checkup')
+            candidates=[dentist,checkup,{'id':'follow-up','proposal':{'action':'create_item','kind':'event','title':'Follow-up','start_at':start(8),'duration_minutes':30},'evidence':evidence}]
         elif 'contact lens fitting' in text.lower():
             start=(datetime.now(timezone.utc)+timedelta(days=5)).replace(hour=13,minute=30,second=0,microsecond=0)
             fitting={'id':'fitting','proposal':{'action':'create_item','kind':'event','title':'Contact lens fitting','start_at':start.strftime('%Y-%m-%dT%H:%M:%SZ'),'start_timezone':'Europe/Amsterdam','location':'Kinkerstraat 123, Amsterdam','phone':'020-1234567','email':'desk@example.com','website':'https://example.com','booking_reference':'AB12CD','notes':'- Bring your current glasses','reminder_offsets_minutes':[1440,60,7]},'question':'How long will it take?','options':['30 minutes','45 minutes','1 hour'],'evidence':evidence}

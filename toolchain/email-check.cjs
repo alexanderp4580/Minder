@@ -10,8 +10,8 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
  let response=await fetch(url+'/v1/email/ingest',{method:'POST',body:raw,headers});assert.equal(response.status,201);const id=(await response.json()).capture_id;
  response=await fetch(url+'/v1/email/ingest',{method:'POST',body:raw,headers:await sign(raw,'retry')});assert.equal(response.status,200);assert.equal((await response.json()).capture_id,id);
  let source;
- for(let n=0;n<100;n++){source=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(source.status==='needs-answer')break;await new Promise(resolve=>setTimeout(resolve,100));}
- assert.equal(source.status,'needs-answer');assert.equal(source.candidates.filter(c=>c.state==='pending').length,1);
+ for(let n=0;n<100;n++){source=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(source.candidates.length===2)break;await new Promise(resolve=>setTimeout(resolve,100));}
+ assert.deepEqual(source.candidates.map(c=>c.state),['pending','queued'],'only the first appointment is published');
  assert.deepEqual(await fetch(url+'/v1/captures/'+id+'/attachments/original').then(r=>r.arrayBuffer()).then(b=>Buffer.from(b)),raw);
  assert.equal((await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json())).length,0);
  const browser=await chromium.launch({executablePath:process.env.MINDER_CHROMIUM||'/home/deck/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',args:['--no-sandbox']});
@@ -19,10 +19,12 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
  try{
   page=await browser.newPage({viewport:{width:412,height:892}});const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(url);await page.waitForSelector('flutter-view',{timeout:60000});await page.locator('flt-semantics-placeholder').evaluate(element=>element.click()).catch(()=>{});
+  // The hotel comes first: confirm it in chat, then the return flight asks its question.
+  await page.getByRole('button',{name:'Confirm',exact:true}).last().waitFor({timeout:30000});await page.getByRole('button',{name:'Confirm',exact:true}).last().click();
   const answer=page.getByRole('textbox',{name:'Reply'});
   await answer.waitFor({timeout:30000});await answer.fill('21 November');await page.getByRole('button',{name:'Send answer',exact:true}).click();
   for(let attempt=0;attempt<100;attempt++){const current=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(current.status==='ready-for-review')break;await new Promise(resolve=>setTimeout(resolve,100));}
-  const reviewed=await fetch(url+'/v1/captures/'+id).then(r=>r.json());assert.equal(reviewed.status,'ready-for-review');assert.equal(reviewed.candidates.filter(c=>c.state==='pending').length,2);
+  const reviewed=await fetch(url+'/v1/captures/'+id).then(r=>r.json());assert.equal(reviewed.status,'ready-for-review');assert.deepEqual(reviewed.candidates.map(c=>c.state),['confirmed','pending']);
   // Reload the completed revision so newly arriving previews cannot move the scroll target.
   await page.reload();await page.waitForSelector('flutter-view',{timeout:60000});await page.locator('flt-semantics-placeholder').evaluate(element=>element.click()).catch(()=>{});
   await page.getByRole('button',{name:'Confirm',exact:true}).last().waitFor({timeout:30000});
@@ -32,10 +34,12 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   const onScreen=async()=>{const box=await original.first().boundingBox({timeout:1000}).catch(()=>null);return !!box&&box.y>=60&&box.y+box.height<=840;};
   for(let n=0;n<40&&!(await onScreen());n++){await page.mouse.wheel(0,-400);await page.waitForTimeout(500);}
   await original.waitFor();const downloadPromise=page.waitForEvent('download');downloadPromise.catch(()=>{});await original.click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'original.eml');await page.mouse.wheel(0,20000);await page.waitForTimeout(300);
-  await page.getByRole('button',{name:'Confirm',exact:true}).first().click();
-  for(let attempt=0;attempt<100;attempt++){const current=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(current.candidates.some(c=>c.state==='confirmed'))break;await new Promise(resolve=>setTimeout(resolve,100));}
-  // Confirm the second candidate through the same server endpoint after verifying the rendered controls exist.
-  const remaining=await fetch(url+'/v1/captures/'+id).then(r=>r.json());const candidate=remaining.candidates.find(c=>c.state==='pending');assert.ok(candidate);assert.equal((await fetch(url+'/v1/changes/'+candidate.change_id+'/confirm',{method:'POST'})).status,200);
+  await page.getByRole('button',{name:'Confirm',exact:true}).last().click();
+  for(let attempt=0;attempt<100;attempt++){const current=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(current.candidates.every(c=>c.state==='confirmed'))break;await new Promise(resolve=>setTimeout(resolve,100));}
+  const tripDone=await fetch(url+'/v1/captures/'+id).then(r=>r.json());assert.ok(tripDone.candidates.every(c=>c.state==='confirmed'),'both trip items are confirmed');
+  const tripChat=entriesOf(await fetch(url+'/v1/chat?after=0&limit=200').then(r=>r.json())).filter(e=>e.kind==='minder').map(e=>e.text);
+  assert.ok(tripChat.includes('I found 2 appointments in "Trip confirmation". We will go through them one at a time.'),'the opening message counts the appointments: '+JSON.stringify(tripChat));
+  assert.ok(tripChat.includes('Appointment 2 of 2: Return flight'),'progress is announced');assert.ok(tripChat.includes('Done: 2 added, 0 skipped.'),'the review ends with a summary');
   await page.getByText('Calendar',{exact:true}).click();await page.waitForTimeout(500);
   await page.screenshot({path:'.local/email-calendar.png'});
   const items=await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z&timezone=Europe%2FAmsterdam').then(r=>r.json());assert.equal(items.length,2);assert.equal(items.find(i=>i.title==='Return flight').end_local,'2026-11-21T14:00');
@@ -77,7 +81,24 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   for(let n=0;n<100;n++){const all=await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json());saved=all.find(i=>i.title==='Contact lens fitting');if(saved)break;await new Promise(resolve=>setTimeout(resolve,100));}
   assert.ok(saved,'the appointment must be saved');assert.equal(saved.location,'Kinkerstraat 123, Amsterdam');assert.equal(saved.duration_minutes,45);assert.equal(saved.notes,'- Bring your current glasses');assert.equal(saved.phone,'020-1234567');assert.equal(saved.email,'desk@example.com');assert.equal(saved.website,'https://example.com');assert.equal(saved.booking_reference,'AB12CD');assert.deepEqual(saved.reminder_offsets_minutes,[1440,120,60]);
   await page.screenshot({path:'.local/email-appointment.png'});
+  // Three appointments, one a Teams meeting: reviewed one at a time, durations answered without the model.
+  const checkups=Buffer.from('From: Owner <owner@example.com>\r\nSubject: Checkups\r\n\r\nDentist, checkup and follow-up appointments at the clinic. The dentist visit is a Microsoft Teams meeting.');
+  const checkupsReceipt=await fetch(url+'/v1/email/ingest',{method:'POST',body:checkups,headers:await sign(checkups,'checkups')});assert.equal(checkupsReceipt.status,201);const checkupsId=(await checkupsReceipt.json()).capture_id;
+  const capture=async(predicate)=>{let c;for(let n=0;n<100;n++){c=await fetch(url+'/v1/captures/'+checkupsId).then(r=>r.json());if(predicate(c))return c;await new Promise(resolve=>setTimeout(resolve,100));}throw new Error('capture never reached the expected state: '+JSON.stringify(c.candidates.map(x=>x.state)));};
+  const states=c=>c.candidates.map(x=>x.state).join(' ');
+  let checkupsCapture=await capture(c=>c.candidates.length===3);assert.equal(states(checkupsCapture),'needs-answer queued queued');
+  assert.equal(checkupsCapture.candidates[0].proposal.location||'','','a Teams meeting has no address');
+  const chatTexts=async()=>entriesOf(await fetch(url+'/v1/chat?after=0&limit=300').then(r=>r.json())).filter(e=>e.kind==='minder').map(e=>e.text);
+  let texts=await chatTexts();assert.ok(texts.includes('I found 3 appointments in "Checkups". We will go through them one at a time.'),JSON.stringify(texts));assert.ok(texts.includes('Appointment 1 of 3: Dentist'));
+  const answerTo=async(candidateId,text)=>{const c=await fetch(url+'/v1/captures/'+checkupsId).then(r=>r.json());const r=await fetch(url+'/v1/captures/'+checkupsId+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:c.revision,candidate_id:candidateId,text})});assert.equal(r.status,200,'answer '+candidateId);};
+  await answerTo('dentist','1 hour');checkupsCapture=await capture(c=>c.candidates[0].state==='pending');assert.equal(checkupsCapture.candidates[0].proposal.duration_minutes,60,'the chip set the duration directly');assert.equal(states(checkupsCapture),'pending queued queued');
+  assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[0].change_id+'/confirm',{method:'POST'})).status,200);
+  checkupsCapture=await capture(c=>c.candidates[1].state==='needs-answer');await answerTo('checkup','30 minutes');checkupsCapture=await capture(c=>c.candidates[1].state==='pending');
+  assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[1].change_id+'/discard',{method:'POST'})).status,200);
+  checkupsCapture=await capture(c=>c.candidates[2].state==='pending');assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[2].change_id+'/confirm',{method:'POST'})).status,200);
+  texts=await chatTexts();assert.equal(texts[texts.length-1],'Done: 2 added, 1 skipped.','the review ends with a summary');
+  const checkupItems=(await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json())).filter(i=>['Dentist','Checkup','Follow-up'].includes(i.title));assert.deepEqual(checkupItems.map(i=>i.title).sort(),['Dentist','Follow-up']);
   assert.deepEqual(errors,[]);
-  console.log('PASS: compiled web email review, targeted answer, owner download, confirmation, travel calendar and reviewed cancellation.');
+  console.log('PASS: compiled web email review, targeted answer, owner download, confirmation, travel calendar, reviewed cancellation and a three-appointment email reviewed one at a time.');
  }catch(error){if(page){require('node:fs').writeFileSync('.local/email-accessibility.txt',await page.locator('body').ariaSnapshot().catch(()=>''));require('node:fs').writeFileSync('.local/email-dom.html',await page.content().catch(()=>''));}if(page)await page.screenshot({path:'.local/email-failure.png'}).catch(()=>{});throw error;}finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
