@@ -38,7 +38,7 @@ The owner tried SnowWorld Landgraaf on a phone and got only `Witte Wereld 1`, wi
 
 ## Lookup loop
 
-Spec: [lookup loop design](../superpowers/specs/2026-11-14-lookup-loop-design.md). Plan: [lookup loop plan](../superpowers/plans/2026-11-14-lookup-loop.md). Branch `brighter-logo`.
+Spec: [lookup loop design](../superpowers/specs/2026-11-14-lookup-loop-design.md). Plan: [lookup loop plan](../superpowers/plans/2026-11-14-lookup-loop.md). In `main`, deployed at `60ec83c` (Coolify deployment `e78r04hjvjqog11zkhcfiixm`, running:healthy, `serper_key_set=true`, no warnings or errors in the first 40 log lines). Not tried on a phone or with the real model yet.
 After the owner taps Look it up the model chooses `lookup_maps`, `lookup_places` or `lookup_search`, reads the results as untrusted data, and may search again up to three times in total, then proposes or asks the owner. No server fallback. The serper package is split into transport, endpoint table, decoders and a thin client. `SERPER_URL` is now a base URL.
 
 | Check | Result |
