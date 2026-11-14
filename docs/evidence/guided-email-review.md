@@ -49,6 +49,14 @@ The owner requested deployment on 2026-11-14 after receiving the APK. Pushed `gu
 
 Rollback target: branch `main`, commit `679441b3bcf730e80e880167b25ba5787c27d70b`, captured from the healthy application before deployment. `main` remains unchanged. No production email was injected or replayed; the owner can test with a fresh multi-appointment email using APK 0.10.1.
 
+## Phone feedback: Confirm and working indicator
+
+The owner reported that the first Confirm appeared to do nothing, although the review advanced to item 2 of 4, and asked for an agent activity indicator. Read-only inspection of structured production state found three confirmed event candidates plus one confirmed questionnaire task. All four have saved items, confirmed pending changes and confirmed stored preview cards. Four is the item count, including the questionnaire; it is not a fourth appointment.
+
+A synthetic client regression reproduced the stale button with the event stream silent: the Confirm HTTP response advanced the poll cursor past the earlier confirmed-preview event. The same race could skip the closed-question entry when an answer response arrived first. ChatController now keeps its history/event-stream watermark separate from the latest visible cursor. Only history and ordered stream events advance that watermark.
+
+The Working spinner now stays above the composer, outside the scrolling message list, as an accessible live status. It covers email received/processing states as well as normal chat waiting. It clears when extraction finishes or fails; email completion does not clear unrelated chat waiting. Six focused tests passed after reproducing the missing preview/question updates, missing email indicator and off-screen indicator in long reviews. `toolchain/check` exited 0 with 169 Flutter tests, Go race/vet, analysis/format and repository checks. Release web built. The email browser scenario passed with the stream blocked for first Confirm and a held model answer; the Working screenshot is `.local/email-working.png`. Remaining browser checks, final APK verification and delivery are in progress. This patch changes only the client and local verification fixtures.
+
 ## Fresh-start reset
 
 At the owner's request, stopped the production container and backed up SQLite and email files to the private server directory `/var/backups/minder/fresh-start-20261114T155318Z`. Verified the backup database before clearing data. After restart, item, chat/event, pending/audit, reminder and capture/provenance tables contain zero rows, the email source directory is empty, and the five built-in profiles exist. Preserved one push registration and 79 cost-accounting rows. SQLite integrity and foreign-key checks passed; the container's `/v1/health` returned `{"status":"ok"}`. No source or deployment change accompanied this reset.

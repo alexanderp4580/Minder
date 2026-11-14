@@ -2,6 +2,7 @@
 """Controlled OpenRouter boundary for local integration tests. Never deploy it."""
 import json
 import os
+import threading
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -9,12 +10,18 @@ def text_of(message):
     content=message['content']
     return (content if isinstance(content,str) else json.dumps(content)).lower()
 
+answer_gate=threading.Event()
+answer_gate.set()
+
 class Handler(BaseHTTPRequestHandler):
     def reply(self,content,name,args):
         message={'role':'assistant','content':content,'tool_calls':[{'id':'fixture-call','type':'function','function':{'name':name,'arguments':json.dumps(args)}}]}
         response=json.dumps({'choices':[{'finish_reason':'stop','message':message}],'usage':{'prompt_tokens':100,'completion_tokens':50,'cost':0.000035}}).encode()
         self.send_response(200);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(response)));self.end_headers();self.wfile.write(response)
     def do_POST(self):
+        if self.path in ('/pause-capture-answers','/resume-capture-answers'):
+            answer_gate.clear() if self.path=='/pause-capture-answers' else answer_gate.set()
+            self.send_response(200);self.end_headers();return
         body=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         messages=body['messages']
         if body.get('tools',[{}])[0].get('function',{}).get('name')=='extract_capture':
@@ -45,6 +52,7 @@ class Handler(BaseHTTPRequestHandler):
         document=source['source']; parts=document['parts']
         part=next((p for p in parts if p.get('text','').strip()),{'id':'1','text':'Booking'})
         text=part['text']; candidates=[]; answers=source.get('answers') or []
+        if answers: answer_gate.wait(timeout=30)  # Controlled by the local browser check.
         summary='Your trip includes a hotel stay and a return flight.'
         notification='Please review your trip bookings.'
         evidence=[{'part':part['id'],'excerpt':text[:120]}]

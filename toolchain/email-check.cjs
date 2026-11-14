@@ -18,9 +18,13 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
  let page;
  try{
   page=await browser.newPage({viewport:{width:412,height:892}});const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.route('**/v1/events?*',route=>route.abort());
   await page.goto(url);await page.waitForSelector('flutter-view',{timeout:60000});await page.locator('flt-semantics-placeholder').evaluate(element=>element.click()).catch(()=>{});
   // The hotel comes first: confirm it in chat, then the return flight asks its question.
   await page.getByRole('button',{name:'Confirm',exact:true}).last().waitFor({timeout:30000});await page.getByRole('button',{name:'Confirm',exact:true}).last().click();
+  await page.getByRole('group',{name:/PREVIEW.*Hotel booking.*Confirmed/}).waitFor({timeout:10000});
+  assert.equal(await page.getByRole('button',{name:'Confirm',exact:true}).count(),0,'the original Confirm is replaced even with the event stream blocked');
+  await page.unroute('**/v1/events?*');
   const answer=page.getByRole('textbox',{name:'Reply'});
   await answer.waitFor({timeout:30000});await answer.fill('21 November');await page.getByRole('button',{name:'Send answer',exact:true}).click();
   for(let attempt=0;attempt<100;attempt++){const current=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(current.status==='ready-for-review')break;await new Promise(resolve=>setTimeout(resolve,100));}
@@ -70,7 +74,17 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   assert.match(expandedEmail,/020-1234567/,'expanded email shows the phone');
   assert.doesNotMatch(expandedEmail,/1_1:/,'raw evidence IDs stay out of the card');
   await page.screenshot({path:'.local/email-expanded-details.png'});
-  const quick=page.getByRole('button',{name:'45 minutes',exact:true}).first();await quick.waitFor({timeout:30000});await quick.click();
+  const quick=page.getByRole('button',{name:'45 minutes',exact:true}).first();await quick.waitFor({timeout:30000});
+  const fixture=process.env.OPENROUTER_URL;
+  assert.equal((await fetch(fixture+'/pause-capture-answers',{method:'POST'})).status,200);
+  try {
+   await quick.click();
+   await page.waitForTimeout(500);
+   await page.screenshot({path:'.local/email-held.png'});
+   require('node:fs').writeFileSync('.local/email-held-aria.txt',await page.locator('body').ariaSnapshot());
+   await page.getByText('Working',{exact:true}).waitFor({state:'visible',timeout:10000});
+   await page.screenshot({path:'.local/email-working.png'});
+  } finally { await fetch(fixture+'/resume-capture-answers',{method:'POST'}); }
   let fittingReview;
   for(let n=0;n<100;n++){fittingReview=await fetch(url+'/v1/captures/'+fittingId).then(r=>r.json());if(fittingReview.status==='ready-for-review')break;await new Promise(resolve=>setTimeout(resolve,100));}
   assert.equal(fittingReview.status,'ready-for-review');

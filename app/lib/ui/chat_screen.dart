@@ -235,26 +235,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                     controller: c,
                                     linkLauncher: widget.linkLauncher,
                                   ),
-                                if (c.waiting)
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 16),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                          width: 12,
-                                          height: 12,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
-                                        SizedBox(width: 12),
-                                        Text(
-                                          'Working',
-                                          style: TextStyle(color: Tokens.muted),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
                                 if (c.error != null)
                                   Container(
                                     margin: const EdgeInsets.only(top: 16),
@@ -296,6 +276,35 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                     ),
+                    if (c.thinking)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          Tokens.gutter,
+                          8,
+                          Tokens.gutter,
+                          8,
+                        ),
+                        child: Semantics(
+                          liveRegion: true,
+                          label: 'Working',
+                          excludeSemantics: true,
+                          child: const Row(
+                            children: [
+                              SizedBox.square(
+                                dimension: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Text(
+                                'Working',
+                                style: TextStyle(color: Tokens.muted),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     Container(
                       key: const ValueKey('composer'),
                       constraints: const BoxConstraints(minHeight: 68),

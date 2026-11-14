@@ -20,6 +20,13 @@ class ChatController extends ChangeNotifier {
   final List<Entry> _entries = [];
   List<Entry> get entries => List.unmodifiable(_entries);
   int cursor = 0;
+  // Only history and the ordered event stream establish which events we have read.
+  // A direct action response may arrive ahead of earlier events in its transaction.
+  int _syncedCursor = 0;
+
+  bool get thinking =>
+      waiting ||
+      _entries.any((e) => e.kind == 'capture' && e.capture?.processing == true);
   bool waiting = false,
       loading = true,
       acting = false,
@@ -38,7 +45,7 @@ class ChatController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  void _merge(Entry e) {
+  void _merge(Entry e, {bool synced = false}) {
     if (_disposed) return;
     final index = _entries.indexWhere((v) => v.id == e.id);
     if (index < 0) {
@@ -49,6 +56,7 @@ class ChatController extends ChangeNotifier {
     final removed = e.change?.removedEntryIds ?? const [];
     if (removed.isNotEmpty) _entries.removeWhere((v) => removed.contains(v.id));
     if (e.cursor > cursor) cursor = e.cursor;
+    if (synced && e.cursor > _syncedCursor) _syncedCursor = e.cursor;
     if (e.kind != EntryKind.user && e.captureId.isEmpty) {
       waiting = false;
     }
@@ -127,9 +135,9 @@ class ChatController extends ChangeNotifier {
     if (_disposed || _syncing) return;
     _syncing = true;
     try {
-      final incoming = await repository.history(cursor);
+      final incoming = await repository.history(_syncedCursor);
       for (final e in incoming) {
-        _merge(e);
+        _merge(e, synced: true);
       }
       connected = true;
       if (needsSignIn) error = null;
@@ -146,10 +154,10 @@ class ChatController extends ChangeNotifier {
   void _watch() {
     if (_disposed) return;
     _subscription = repository
-        .watch(cursor)
+        .watch(_syncedCursor)
         .listen(
           (e) {
-            _merge(e);
+            _merge(e, synced: true);
             _notify();
           },
           onError: (Object e) {

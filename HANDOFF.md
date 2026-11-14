@@ -2,6 +2,12 @@
 
 State on 2026-11-14. Production runs `50b9682` from `guided-email-review` (Coolify deployment `fy2qz1rqsyklwp5uvutdbfaw`, finished, running:healthy). The owner requested deployment for phone testing. Startup logs report schema 5, zero migrations, model/Firebase/Serper configuration present, and no warnings or errors in the first 80 lines. The runtime log still reports revision=unknown; Coolify's completed deployment identifies the commit. The app is pinned to this branch and commit. Rollback: branch `main`, commit `679441b3bcf730e80e880167b25ba5787c27d70b` (the prior healthy runtime).
 
+## Phone feedback patch (0.10.2+31)
+
+The first reported Confirm saved its item. Read-only structured state showed three confirmed appointments and one confirmed questionnaire task, which explains four items. A client regression reproduced the stale Confirm button: the HTTP response skipped the earlier preview update by advancing the polling cursor. The patch separates the ordered-feed watermark from the latest visible cursor and covers response-first answers and in-flight polls too.
+
+Working now stays above the composer during normal chat waiting and email received/processing states. It has a live accessibility label and stays visible while reading a long review. Six focused regressions passed. `toolchain/check` exited 0 with 169 Flutter tests, Go race/vet, analysis/format and repository checks. Release web built; the email browser scenario passed with the event stream blocked for Confirm and the model answer held to verify Working. Remaining browser checks, final APK verification, delivery and web deployment are in progress. The server source is unchanged. Keep current user data and the feature branch; do not merge without phone approval.
+
 ## Fresh test data
 
 The owner requested a fresh start on 2026-11-14. Stopped the running container, verified and backed up SQLite and email sources to `/var/backups/minder/fresh-start-20261114T155318Z` on the server (private directory), then cleared items, chat/events, pending changes, audit, reminders/deliveries, captures/receipts/provenance and email files. Restored the five default profiles on startup. Preserved one push registration and 79 usage rows so notification registration and cost accounting remain intact. Post-restart counts are zero for the cleared tables; SQLite integrity and foreign-key checks passed. The runtime health endpoint returned `{"status":"ok"}`. Close and reopen the phone app to clear its in-memory history before testing.
