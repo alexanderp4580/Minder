@@ -38,6 +38,8 @@ The owner tried SnowWorld Landgraaf on a phone and got only `Witte Wereld 1`, wi
 
 ## Approved lookups
 
+In `main`, deployed at `679441b` (Coolify deployment `snqnkuzggologzjscsjppeqv`, running:healthy, `serper_key_set=true`, no warnings or errors in the first 40 log lines). Rollback: branch `main`, commit `60ec83c`.
+
 Spec: [approved lookups design](../superpowers/specs/2026-11-14-approved-lookups-design.md). Plan: [approved lookups plan](../superpowers/plans/2026-11-14-approved-lookups.md). A first version let the model run up to three searches after one tap. On 2026-11-14 the owner asked "try to get full address" and the model replied that it had used all its searches, though no search had run in that turn: the prompt described the lookup tools and a budget in turns where the model had no such tools. The owner asked why any limit existed and chose per-call approval.
 Now the model calls `offer_lookup` with a kind (`maps`, `places`, `search`) and a query. The card names the search. A tap runs exactly that search on the server; the model reads the hits as untrusted data and proposes, asks the owner, or offers one more search. No loop, no budget, no app change.
 
