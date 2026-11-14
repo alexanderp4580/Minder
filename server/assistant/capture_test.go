@@ -328,3 +328,21 @@ func TestNoValidCandidateFailsWithTheEvidenceReason(t *testing.T) {
 		t.Fatalf("reason %s: %v", got, err)
 	}
 }
+
+func TestAnOnlineMeetingKeepsNoLocation(t *testing.T) {
+	cases := map[string]string{"Microsoft Teams": "", "Zoom": "", "Kerkstraat 1, Utrecht": "Kerkstraat 1, Utrecht"}
+	for location, want := range cases {
+		m := &locatedModel{location: location}
+		result, err := extractFrom(t, m)
+		if err != nil || len(result.Candidates) != 1 || result.Candidates[0].Proposal.Location != want {
+			t.Fatalf("%q kept %q (%v)", location, result.Candidates[0].Proposal.Location, err)
+		}
+	}
+}
+
+type locatedModel struct{ location string }
+
+func (m *locatedModel) Complete(context.Context, []assistant.Message) (assistant.Response, error) {
+	arguments := `{"candidates":[{"id":"a","proposal":{"action":"create_item","title":"Dentist","kind":"event","location":"` + m.location + `","start_at":"2026-11-20T10:00:00+01:00"},"evidence":[{"part":"1","excerpt":"Dentist"}]}],"questions":[]}`
+	return assistant.Response{Calls: []assistant.Call{{Name: "extract_capture", Arguments: arguments}}, CostUSD: 0.001}, nil
+}
