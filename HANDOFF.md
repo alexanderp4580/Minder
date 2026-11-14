@@ -1,10 +1,16 @@
 # Handoff
 
-State on 2026-11-14. Production runs `b260753` from `guided-email-review` (Coolify deployment `cv8jglffxn182epwty2mxysj`, finished, running:healthy). It includes the 0.10.3 web client and failure reports. Startup logs report schema 5, zero migrations, configured model/Firebase/Serper and no warnings or errors. Runtime revision still logs unknown; the completed deployment identifies the commit. Rollback: `guided-email-review` at `ee99d879c3c4b03d9e84ec4772ba884745173c0e`. `main` remains at `679441b`.
+State on 2026-11-14. Production still runs `b260753` (schema 5) from `guided-email-review`. The one-agent change is implemented, verified locally and **not deployed**. Rollback target if it is deployed: `b260753`; schema 6 only adds tables, but the older binary refuses a schema-6 database, so take a database backup first and roll back with a matching image or the backup. `main` remains at `679441b`.
 
-## One agent: design awaiting review
+## One agent (implemented, not deployed)
 
-The owner rejected the separate extraction/chat behavior and the proposed email-access-only patch. Forwarded emails and pasted emails must use one agent with common instructions, source access and review tools. Draft: [one-agent design](docs/superpowers/specs/2026-11-14-one-agent-design.md). It covers retained sources and attachments, ordinary follow-ups, targeted candidate updates, unsupported duration handling and shared durable turn scheduling. No implementation or production change has started. Written design review is the next step, followed by the implementation plan. Existing duration and extraction-ID defects remain open.
+Spec: [one-agent design](docs/superpowers/specs/2026-11-14-one-agent-design.md). Plan: [plan](docs/superpowers/plans/2026-11-14-one-agent.md). Evidence: [one-agent evidence](docs/evidence/one-agent.md).
+
+Chat, forwarded email and pasted email use one agent: one instruction set, one context builder and one tool loop (`find_sources`, `read_source`, `inspect_review`, `propose_review` and the chat tools). Owner messages, quick replies and source arrivals are durable agent turns, run one at a time; a turn commits atomically with its outcome. Preparation only parses and stores. Updates change one candidate by ID and revision; omitted candidates stay. The extraction path is removed. Long pastes (up to 400,000 bytes) reach the agent whole. No call cap: the request budget, turn timeout and monthly limit bound a loop.
+
+Judgment calls: the code-side duplicate-booking check is gone (the prompt asks the model, and the real model did flag a duplicate); a bad review goes back to the model as a tool result instead of a correction call; the first-publication push is dropped if the review is answered before it is delivered, as before.
+
+Local results: `toolchain/check` exit 0; five browser scenarios pass; a real-model run on synthetic mail (11 calls, 0.019 USD) kept the 13:00 start, set no end or length, asked how long, answered bring/questionnaire questions from the body and attachment, updated only the answered candidate, and gave the same review for pasted text. APK 0.11.0+33: `.local/artifacts/Minder-0.11.0-arm64.apk`, 19,031,442 bytes, SHA-256 `68360a5f84ffd13ff8ac6c75ebf6c4bef484089b1336a7319211fedf376673a7`, package `io.liveleds.minder`, version code 2033, same signer as 0.10.3. Download: http://192.168.8.226:8788/Minder-0.11.0-arm64.apk (full download hash verified). Phone rendering and notifications are unreviewed.
 
 ## Failure reporting (0.10.3+32, deployed)
 
