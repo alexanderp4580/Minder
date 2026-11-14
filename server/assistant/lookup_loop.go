@@ -39,11 +39,11 @@ func approvalMessage(query string) Message {
 func (a *Service) askWithLookups(ctx context.Context, messages []Message, trace *replyTrace) (Response, error) {
 	budget, earlier := lookupBudget, 0.0
 	for {
-		messages[0].Purpose = PurposeLookup
+		purpose := PurposeLookup
 		if budget == 0 {
-			messages[0].Purpose = PurposeChat
+			purpose = PurposeChat
 		}
-		r, e := a.ask(ctx, messages, trace)
+		r, e := a.ask(ctx, withPurpose(messages, purpose), trace)
 		if e != nil {
 			return Response{}, e
 		}
@@ -58,6 +58,13 @@ func (a *Service) askWithLookups(ctx context.Context, messages []Message, trace 
 		earlier += r.CostUSD
 		messages = append(messages, resultsMessage(rows, budget))
 	}
+}
+
+// withPurpose returns the messages with the first one's purpose replaced. It never changes the caller's slice.
+func withPurpose(messages []Message, purpose string) []Message {
+	out := append([]Message(nil), messages...)
+	out[0].Purpose = purpose
+	return out
 }
 
 // lookupCalls returns the lookup calls of a reply, in order. Other calls are dropped; the

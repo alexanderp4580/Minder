@@ -32,7 +32,7 @@ func (c *Client) Lookup(ctx context.Context, kind assistant.LookupKind, query st
 	if err == nil {
 		hits, err = target.decode(body)
 	}
-	c.log(ctx, kind, query, target.credits, status, len(hits), started, err)
+	outcome{kind: kind, queryLen: len([]rune(query)), credits: target.credits, status: status, results: len(hits), elapsed: time.Since(started), err: err}.log(ctx)
 	return hits, err
 }
 
@@ -47,12 +47,19 @@ func (c *Client) base() string {
 	return c.URL
 }
 
-// log writes one line per lookup. It records sizes and costs, never the query, a hit or the key.
-func (c *Client) log(ctx context.Context, kind assistant.LookupKind, query string, credits, status, results int, started time.Time, err error) {
-	fields := []any{"kind", string(kind), "query_len", len([]rune(query)), "status", status, "duration_ms", time.Since(started).Milliseconds(), "trace_id", domain.TraceID(ctx)}
-	if err != nil {
-		slog.Warn("serper lookup failed", append(fields, "error", err)...)
+// outcome is what one lookup leaves in the log: sizes and costs, never the query, a hit or the key.
+type outcome struct {
+	kind                               assistant.LookupKind
+	queryLen, credits, status, results int
+	elapsed                            time.Duration
+	err                                error
+}
+
+func (o outcome) log(ctx context.Context) {
+	fields := []any{"kind", string(o.kind), "query_len", o.queryLen, "status", o.status, "duration_ms", o.elapsed.Milliseconds(), "trace_id", domain.TraceID(ctx)}
+	if o.err != nil {
+		slog.Warn("serper lookup failed", append(fields, "error", o.err)...)
 		return
 	}
-	slog.Info("serper lookup", append(fields, "results", results, "credits", credits)...)
+	slog.Info("serper lookup", append(fields, "results", o.results, "credits", o.credits)...)
 }

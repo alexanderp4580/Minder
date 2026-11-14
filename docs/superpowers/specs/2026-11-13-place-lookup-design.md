@@ -1,3 +1,5 @@
+> Extended by the [lookup loop design](2026-11-14-lookup-loop-design.md): after approval the model chooses maps, places or search and the server runs no fixed search. The offer card and approval rules below still hold.
+
 # Place lookup with Serper
 
 Status: approved by the owner ("Implement", 2026-11-13). Inline execution, no sub-agents.

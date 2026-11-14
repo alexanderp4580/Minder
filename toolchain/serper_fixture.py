@@ -9,7 +9,7 @@ CALLS = []
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
-        CALLS.append(body.get('q'))
+        CALLS.append(self.path + ' ' + body.get('q', ''))
         self.send_json({'places': [{'title': 'SnowWorld Landgraaf', 'address': 'Witte Wereld 1, 6372 VG Landgraaf, Netherlands', 'type': 'Indoor snowcenter', 'website': 'https://www.snowworld.com/landgraaf', 'rating': 4.2}]})
     def do_GET(self):
         self.send_json(CALLS)

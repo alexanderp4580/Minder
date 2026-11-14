@@ -150,3 +150,19 @@ func TestTheReplyCostIncludesEveryModelCall(t *testing.T) {
 		t.Fatalf("%+v %v", entries, e)
 	}
 }
+
+func TestALaterCallInTheSameReplyKeepsTheOfferPurpose(t *testing.T) {
+	a, s, f, _ := lookupFixture(t)
+	f.seq = []Response{
+		{Calls: []Call{searchCall("lookup_maps", "SnowWorld Landgraaf")}},
+		{Calls: []Call{{Name: "find_finished_items", Arguments: `{"query":"SnowWorld"}`}}},
+		{Text: "Nothing finished matches."},
+	}
+	approved(t, s)
+	if _, e := a.Reply(context.Background(), "Look it up"); e != nil {
+		t.Fatal(e)
+	}
+	if got := purposes(f); len(got) != 3 || got[2] != PurposeOffer {
+		t.Fatalf("purposes %v: the lookup loop leaked its purpose into a later call", got)
+	}
+}

@@ -1,15 +1,17 @@
 # Purpose
 
-Serper maps HTTP adapter.
+Serper HTTP adapter for the assistant's lookups.
 
 # Ownership
 
-The maps request (`https://google.serper.dev/maps`, which returns the postal code and town that `/places` omits), response decoding and its log line. Implements `assistant.PlaceFinder`.
+The three searches and their reply decoding. Implements `assistant.Finder`.
 
 # Local Contracts
 
-Keep the key in memory. Errors and logs never carry the key, the query text or the provider body; the log line `place lookup` records `query_len`, `places`, `status` and `duration_ms`.
-Send `{q, gl: "nl", hl: "en"}` with header `X-API-KEY`. Use a 10 s deadline, read at most 64 KiB and keep at most three places. Fixtures use local HTTP servers; tests never call Serper.
+One responsibility per file: `transport.go` (one authenticated POST, 10 s deadline, 64 KiB body, safe errors), `endpoint.go` (kind to path, credits and decoder: maps `/maps` 3, places `/places` 1, search `/search` 1), `decode.go` (trim a reply to at most three `assistant.Hit`s), `client.go` (compose them and log one line per lookup). Add a search by adding an endpoint row and, if its reply shape is new, a decoder.
+Keep the key in memory. Errors and logs never carry the key, the query text or the provider body; the log line `serper lookup` records `kind`, `query_len`, `results`, `status`, `credits` and `duration_ms`, and `serper lookup failed` is a warning with the error.
+Send `{q, gl: "nl", hl: "en"}` with header `X-API-KEY`. `Client.URL` is the base URL (default `https://google.serper.dev`). Fixtures use local HTTP servers; tests never call Serper.
+Maps returns the full address with postal code and town and the phone; places returns one best match whose address is often short; search returns title, link and snippet.
 
 # Work Guidance
 

@@ -27,7 +27,7 @@ Coolify runs the container with a persistent database volume.
 | `conversation` | Message acceptance, concurrency, replies and cancellation | `domain` |
 | `reminder` | Scheduling, actions, device validation and delivery worker | `domain`, `port` |
 | `openrouter` | HTTP model adapter and tool schema | `domain`, `assistant` |
-| `serper` | Serper places HTTP adapter | `domain`, `assistant` |
+| `serper` | Serper search HTTP adapter (maps, places, search) | `domain`, `assistant` |
 | `push` | FCM adapter and token classification | None |
 | `access` | Owner authentication and Cloudflare JWT adapter | None |
 | `config` | Process settings and startup validation | None |

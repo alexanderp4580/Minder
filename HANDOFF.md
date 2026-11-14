@@ -111,7 +111,7 @@ In `main` and deployed at `adb1bdf` (Coolify deployment `gn89izeozdgbno8bmucrxgx
 When a request names a venue without an address, chat shows an offer card (Skip, Look it up). Look it up runs one Serper places search for the offered query and the next preview carries the address in location and the website in the website field. Skip and any other text run no search. The server needs `SERPER_API_KEY` (TokenCrypt secret `serper_api_key`) as a Coolify process variable; without it chat is unchanged.
 Design: [docs/superpowers/specs/2026-11-13-place-lookup-design.md](docs/superpowers/specs/2026-11-13-place-lookup-design.md). Plan and evidence: [docs/superpowers/plans/2026-11-13-place-lookup.md](docs/superpowers/plans/2026-11-13-place-lookup.md), [docs/evidence/place-lookup.md](docs/evidence/place-lookup.md). APK 0.9.2 (`.local/artifacts/Minder-0.9.2-arm64.apk`, ignored by Git) reached Telegram once (message 2009). Nobody has tried a lookup against production or on a phone yet. Phone approval is pending.
 
-Postal-code fix on `brighter-logo`, not deployed: the lookup now uses Serper `/maps`, which returns the postal code and town (`/places` did not). See [docs/evidence/place-lookup.md](docs/evidence/place-lookup.md).
+Lookup loop on `brighter-logo`: after the owner taps Look it up, the model chooses Serper maps, places or search (up to three searches), reads the results and proposes or asks the owner; no server fallbacks. Postal codes now come from maps. Spec: [lookup loop design](docs/superpowers/specs/2026-11-14-lookup-loop-design.md); evidence: [docs/evidence/place-lookup.md](docs/evidence/place-lookup.md). Production runs `323e5fb` (maps only); the loop is not deployed. No app change.
 
 ## App icon and faster highlights
 

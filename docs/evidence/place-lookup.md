@@ -16,14 +16,13 @@ Spec: [place lookup design](../superpowers/specs/2026-11-13-place-lookup-design.
 |---|---|
 | Test-first | Domain, config, Serper adapter, assistant gate, openrouter tool exposure, app card and wire tests each failed before the code existed |
 | Startup log | Without `serper_key_set` in `logStartup`, `TestStartupSummaryShowsSettingsButNeverSecrets` fails; with it, it passes. The summary never holds the key |
-| Prompt order | `TestWithoutAFinderThereIsNoOfferToolOrRule` asserts the place rule comes before the untrusted item data and appears only when a finder is set |
-| Retry | `TestRetryAfterAFailedReplyStillSearches` and `TestNoSearchOnceTheOfferWasAnswered` cover a failed reply and an answered offer |
+| Prompt order | `TestWithAFinderTheRuleComesBeforeTheUntrustedItems` and `TestWithoutAFinderThereIsNoOfferPurposeOrRule` assert the rule comes before the untrusted item data and appears only when a finder is set |
+| Retry | `TestRetryAfterAFailedReplyStillLooksUp` and `TestNoLookupOnceTheOfferWasAnswered` cover a failed reply and an answered offer |
 | API wire | `TestChatServesOptionsOnlyForAPlaceLookupOffer` checks `/v1/chat` and `/v1/chat?after=1` (not mutation-checked) |
 | Live Serper | One real query for `SnowWorld Landgraaf` through TokenCrypt returned `Witte Wereld 1` and `https://www.snowworld.com/landgraaf?utm_source=gmb_listing&utm_medium=organic`, 1,170 ms, status 200 |
 | Flutter | Part of `toolchain/check`: Flutter tests, analyze and format |
 | Browser, place lookup | `toolchain/place-lookup-local-check` passed against compiled web, the model fixture and a fake Serper: the offer ran no search, Look it up ran exactly one, the preview showed `Witte Wereld 1, Landgraaf`, Skip ran none. Screenshots: `place-lookup-offer.png`, `place-lookup-preview.png` |
 | Browser, calendar and reminder | `toolchain/calendar-local-check` and `toolchain/reminder-local-check` passed |
-| Website field | `TestLookupReplyAfterAFreshOfferSearchesOnceAndFoldsInThePlaces` asserts the prompt rule and result message send the website to its own field; the preview screenshot shows a Website row |
 | Browser, chat | `toolchain/local-check` passed (offline icon, recovery and restored send) |
 | `toolchain/check` | Exit 0 on the final tree: checker tests, hook tests, Worker tests, architecture, DOX, orbital exports, Go race tests, vet, gofmt, Flutter tests, analyze, format, `git diff --check` |
 
@@ -35,12 +34,23 @@ Artifact: `.local/artifacts/Minder-0.9.2-arm64.apk` (ignored by Git), 19,289,894
 
 ## Postal code fix
 
-The owner tried SnowWorld Landgraaf on a phone: the address was only `Witte Wereld 1`, with no postal code or town, however often they asked. A live comparison on 2026-11-14 showed the cause. Serper `/places` returns `Witte Wereld 1`; `/maps` returns `Witte Wereld 1, 6372 VG Landgraaf, Netherlands` and the same website. `/maps` also returns `phoneNumber`, `description`, `openingHours`, `placeId` and `types`; the adapter does not read them yet. The adapter now posts to `/maps` and reads `type` where `/places` had `category`. The first live check above used `/places`, so it could not show this gap.
-Tests: the fixture uses the `/maps` shape and the full address; `TestDefaultEndpointIsTheMapsSearch` and the changed adapter and config tests failed before the change. Not deployed: production must run the new commit, and a `SERPER_URL` runtime variable set to the `/places` URL would stop startup (not verifiable; Coolify access was not granted).
+The owner tried SnowWorld Landgraaf on a phone and got only `Witte Wereld 1`, with no postal code or town. A live comparison on 2026-11-14 found the cause: Serper `/places` returns the short address, `/maps` returns `Witte Wereld 1, 6372 VG Landgraaf, Netherlands`. Deployed at `323e5fb` with the maps search; the lookup loop below replaces that single fixed endpoint. The first live check (earlier table) used `/places`, so it could not show the gap. Not yet verified on a phone.
+
+## Lookup loop
+
+Spec: [lookup loop design](../superpowers/specs/2026-11-14-lookup-loop-design.md). Plan: [lookup loop plan](../superpowers/plans/2026-11-14-lookup-loop.md). Branch `brighter-logo`.
+After the owner taps Look it up the model chooses `lookup_maps`, `lookup_places` or `lookup_search`, reads the results as untrusted data, and may search again up to three times in total, then proposes or asks the owner. No server fallback. The serper package is split into transport, endpoint table, decoders and a thin client. `SERPER_URL` is now a base URL.
+
+| Check | Result |
+|---|---|
+| Live, 2026-11-14 | One real query per kind through the adapter: maps returned the full SnowWorld address with postal code and phone (3 credits); places returned Rijksmuseum, `Museumstraat 1`, rating 4.7 (1 credit); search returned three pages with snippets (1 credit) |
+| Browser | `toolchain/place-lookup-local-check` passed: the model fixture chose `/maps`; exactly one request; the preview showed the postal code; Skip ran none |
+| Loop tests | Budget of three, one reply cannot overspend, mixed replies run only the lookups, a failed lookup reaches the model as an error row, blank query costs no budget, the model can ask the owner, every model call is billed |
+| Not verified | A real model's choice among the three tools, and its ask-instead-of-guess behaviour. Both need a phone or a real-model run |
 
 ## Limits
 
-- Serper credits are counted in logs only; there is no euro meter for them.
+- Serper credits are counted in logs only (`credits` on the `serper lookup` line); there is no euro meter for them.
 - The offer's query comes from the model, shown to the owner before any search. A model that writes a misleading query is visible to the owner, not blocked.
 - Typing `look it up` works like the tap. Phone behaviour is unverified until the APK is tried.
 - No lookup has run against production or on a phone yet; the live Serper check used the adapter alone.
