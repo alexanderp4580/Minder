@@ -54,9 +54,10 @@ On 2026-11-14 the owner forwarded an email with several appointments. Nothing ap
 - Candidates with valid evidence are kept. Invalid ones are dropped and the review says `I could not verify N appointments from this email`, with the original available. If none are valid the attempt fails with the evidence reason.
 
 ### Guided review
-- When extraction finishes, one entry says `I found 3 appointments in "<subject>". We will go through them one at a time.` (singular for one: `I found 1 appointment in "<subject>".`). Items that are not appointments are counted as `items`.
-- The email card shows one candidate at a time with `Appointment 2 of 3`, its preview, its question and quick replies, and Confirm and Skip. Confirming or skipping moves to the next. The end step says `Done: 2 added, 1 skipped.`
-- A question belongs to its candidate. Answering it closes that question only, never another candidate's.
+- When extraction finishes, one entry says `I found 3 appointments in "<subject>". We will go through them one at a time.` (`I found 1 appointment in "<subject>".` for one; `items` when they are not appointments).
+- The server publishes one candidate at a time, in email order. A candidate that is not yet current has state `queued`; it has no preview and posts no question. The current candidate is announced (`Appointment 2 of 3: <title>`) and then shows either its question with quick replies or its preview with Confirm and Discard (Discard is the skip). Confirming or discarding publishes the next. When none remain: `Done: 2 added, 1 skipped.`
+- The email card lists every appointment with its state (current, queued, confirmed, discarded). The flow lives in chat, where previews and questions already are.
+- A question belongs to its candidate; only the current candidate can have an open question, so answering one never closes another.
 - A quick reply that is a duration (`30 minutes`, `45 minutes`, `1 hour`, `90 minutes`, `1 hour 30 minutes`) is applied to the candidate directly with no model call. Other answers go through the model as today.
 - Online meetings: the extraction prompt puts nothing in `location` and the join link, if any, in `website`; a note line says `- Online meeting (Teams)`. A server pass clears `location` when it names a virtual venue only (Teams, Zoom, Google Meet, Webex, online, video call, phone call).
 - The app shows Open in Google Maps only for a location that is not a virtual venue.
@@ -67,7 +68,7 @@ On 2026-11-14 the owner forwarded an email with several appointments. Nothing ap
 ## Verification (acceptance)
 
 - Tests first for every rule above: no automatic retry, failure entry and push, Retry without a cap, partial candidates, evidence reasons logged without content, the opening message counts, question closing per candidate, duration answer without a model call, virtual-venue clearing, Maps visibility, push texts, no push after an answer, the 100,000-token request and the larger size limit.
-- Flutter widget tests for the stepper (steps, Skip, Confirm, done summary) and the Maps rule; goldens only where existing goldens cover the card.
+- Flutter widget tests for the Maps rule and the card's candidate states; goldens only where existing goldens cover the card.
 - `toolchain/check`; the email browser scenario extended with a three-appointment email; a real-model run on a synthetic three-appointment email with a Teams meeting (no real mailbox data).
 - New APK (version bumped). Deploy after the owner approves.
 
@@ -78,6 +79,7 @@ Task order, file splits (keep one responsibility per file), exact fixed-sentence
 ## My calls (the owner can change these)
 
 - Opening message comes after extraction, because the count is unknown before it.
+- The step-by-step flow is driven by the server in chat, not by a stepper inside the email card, because previews, questions and Confirm/Discard already live in chat.
 - A duration chip is applied locally without the model.
 - Failures also push once, because the owner expected a pop-up.
 - The email size limit goes to 400,000 bytes; I have not measured cost beyond the model's per-token price.
