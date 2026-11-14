@@ -211,7 +211,7 @@ void main() {
     expect(offsetLabel(120), '2 hours');
     expect(offsetLabel(2880), '2 days');
     expect(offsetLabel(10080), '1 week');
-    expect(kindLabel('event'), 'Appointment');
+    expect(kindLabel('event'), 'Event');
     expect(kindLabel('task'), 'Task');
     expect(kindLabel('reminder'), 'Reminder');
     expect(noteLines('- Bring glasses\n* Ref: AB12\n\nplain line'), [
@@ -295,13 +295,14 @@ void main() {
       tester,
       _change([
         _f('location', 'Kinkerstraat 123, Amsterdam'),
+        _f('location_kind', 'address'),
         _f('kind', 'event'),
       ]),
     );
     expect(find.text('Address:'), findsOneWidget);
     expect(find.text('Kinkerstraat 123, Amsterdam'), findsOneWidget);
     expect(find.text('Type:'), findsOneWidget);
-    expect(find.text('Appointment'), findsOneWidget);
+    expect(find.text('Event'), findsOneWidget);
     expect(find.text('Location:'), findsNothing);
   });
 

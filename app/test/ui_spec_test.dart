@@ -18,6 +18,8 @@ class EmptyItems extends Fake implements ItemRepository {
 }
 
 class Repo implements ChatRepository {
+  @override
+  Future<Entry> setChangeColor(String id, String color) async => saved.first;
   Repo(this.saved);
   final List<Entry> saved;
   @override
@@ -309,8 +311,12 @@ void main() {
     );
     // Confirm and Discard share one row, 8 px apart. Confirm is last, so its
     // cut corner sits at the bottom right of the card.
-    final confirm = tester.getRect(find.byType(FilledButton).first);
-    final discard = tester.getRect(find.byType(OutlinedButton).first);
+    final confirm = tester.getRect(
+      find.widgetWithText(FilledButton, 'Confirm'),
+    );
+    final discard = tester.getRect(
+      find.widgetWithText(OutlinedButton, 'Discard'),
+    );
     expect(confirm.height, 44);
     expect(discard.height, 44);
     expect(confirm.left - discard.right, Tokens.gap);

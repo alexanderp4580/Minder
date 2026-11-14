@@ -127,13 +127,23 @@ class CalendarItemDetails extends StatelessWidget {
                 : 'Starts',
             start,
           ),
-        if (showTiming && end != null) _row(trip ? 'Arrives' : 'Ends', end),
+        if (showTiming && end != null)
+          _row(
+            trip
+                ? 'Arrives'
+                : item.endDate != null && item.dateEnd == 'checkout'
+                ? 'Checkout'
+                : 'Ends',
+            end,
+          ),
         if (showTiming && (item.dueAt != null || item.dueDate != null))
           _row('Deadline', _when('', item.dueAt, item.dueDate, '')!),
         if (item.durationMinutes > 0)
           _row('Duration', Text(durationText(item.durationMinutes))),
         if (item.kind.isNotEmpty) _row('Type', Text(kindLabel(item.kind))),
-        if (item.location.isNotEmpty)
+        if (item.location.isNotEmpty && item.locationKind != 'address')
+          _row('Location', Text(item.location)),
+        if (item.location.isNotEmpty && item.locationKind == 'address')
           _row(
             'Address',
             ContentAction(

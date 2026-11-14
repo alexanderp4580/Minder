@@ -33,12 +33,13 @@ class Change {
     required this.fields,
     required this.state,
     this.undoId,
+    this.color = '',
     this.reminderOffsets = const [],
     this.reminderChoices = const [],
     this.removedEntryIds = const [],
   });
 
-  final String id, action, itemTitle;
+  final String id, action, itemTitle, color;
   final List<FieldChange> fields;
   final ChangeState state;
   final String? undoId;

@@ -36,8 +36,23 @@ class CalendarController extends ChangeNotifier {
     return out;
   }
 
+  List<Item> get items => List.unmodifiable(_items);
+
   int countOn(DateTime day) => itemsOn(day).length;
   List<Item> get selectedItems => itemsOn(selected);
+
+  Future<void> changeColor(Item item, String color) async {
+    final preview = await _repository.previewColor(item, color);
+    try {
+      await _repository.confirm(preview.change!.id);
+    } catch (_) {
+      try {
+        await _repository.discard(preview.change!.id);
+      } catch (_) {}
+      rethrow;
+    }
+    await load();
+  }
 
   Future<Entry> previewDelete(Item item) => _repository.previewDelete(item);
 

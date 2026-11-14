@@ -349,6 +349,8 @@ class ChatController extends ChangeNotifier {
     if (error != null) await sync();
   }
 
+  Future<void> setColor(String changeId, String color) =>
+      _act(() => repository.setChangeColor(changeId, color));
   Future<void> undo(String undoId) => _act(() => repository.undo(undoId));
   Future<void> remind(String reminderId, ReminderAction action) =>
       _act(() => repository.actOnReminder(reminderId, action));

@@ -35,6 +35,7 @@ Item item(
   'duration_minutes': duration,
   'priority': priority,
   'location': location,
+  if (location.isNotEmpty) 'location_kind': 'address',
 });
 
 Entry deletePreview(Item item) => entryFromJson({
@@ -81,11 +82,15 @@ Item appointment({
   'end_timezone': endZone,
   'duration_minutes': 30,
   'location': location,
+  if (location.isNotEmpty) 'location_kind': 'address',
   'notes': notes,
   'reminder_offsets_minutes': offsets,
 });
 
 class FakeItems implements ItemRepository {
+  @override
+  Future<Entry> previewColor(Item item, String color) async =>
+      throw UnimplementedError();
   final requests = <(DateTime, DateTime)>[];
   final confirmed = <String>[], discarded = <String>[];
   List<Item> items = [];
@@ -300,12 +305,12 @@ void main() {
         );
         expect(dayTarget.width, greaterThanOrEqualTo(44));
         await tester.ensureVisible(
-          find.text('Dentist appointment with Dr Smit'),
+          find.text('Dentist appointment with Dr Smit').last,
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         final title = tester.getRect(
-          find.text('Dentist appointment with Dr Smit'),
+          find.text('Dentist appointment with Dr Smit').last,
         );
         expect(title.left, greaterThanOrEqualTo(0));
         expect(title.right, lessThanOrEqualTo(width));
@@ -356,7 +361,7 @@ void main() {
     expect(find.text('Nothing planned.'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('day-2026-11-13')));
     await tester.pumpAndSettle();
-    expect(find.text('Dentist'), findsOneWidget);
+    expect(find.text('Dentist'), findsNWidgets(2));
     expect(find.text('09:00'), findsOneWidget);
     expect(find.text('30 min'), findsOneWidget);
     expect(find.text('P2'), findsOneWidget);
@@ -439,7 +444,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(repo.discarded, ['c-a']);
       expect(repo.confirmed, isEmpty);
-      expect(find.text('Dentist'), findsOneWidget);
+      expect(find.text('Dentist'), findsNWidgets(2));
       await tester.pumpWidget(const SizedBox());
       c.dispose();
     });
@@ -499,8 +504,8 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Dentist'));
-        await tester.tap(find.text('Dentist'));
+        await tester.ensureVisible(find.text('Dentist').last);
+        await tester.tap(find.text('Dentist').last);
         await tester.pumpAndSettle();
         expect(find.text('Notes'), findsOneWidget);
         await tester.ensureVisible(find.text('1 hour before'));
@@ -557,14 +562,12 @@ void main() {
       await finish(tester, c);
     });
 
-    testWidgets('an item with no details has no Details button', (
-      tester,
-    ) async {
+    testWidgets('every item offers Details for its colour', (tester) async {
       final (_, c) = await show(
         tester,
         item('t', 'Taxes', due: utc(2026, 11, 12, 17)),
       );
-      expect(find.text('Details'), findsNothing);
+      expect(find.text('Details'), findsOneWidget);
       await finish(tester, c);
     });
 
@@ -598,7 +601,7 @@ void main() {
       ]) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
-      expect(find.text('Appointment'), findsOneWidget);
+      expect(find.text('Event'), findsOneWidget);
       expect(find.text('Bring ID'), findsOneWidget);
       expect(find.text('1 day, 1 hour before'), findsOneWidget);
       tester.view.physicalSize = const Size(412, 1600);

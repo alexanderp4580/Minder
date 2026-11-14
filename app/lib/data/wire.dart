@@ -19,6 +19,7 @@ Change changeFromJson(Map<String, dynamic> j) => Change(
   ],
   state: ChangeState.values.asNameMap()[j['state']] ?? ChangeState.failed,
   undoId: j['undo_id'] as String?,
+  color: j['color'] as String? ?? '',
   reminderOffsets: [
     for (final m in j['reminder_offsets_minutes'] as List? ?? []) m as int,
   ],
@@ -85,6 +86,9 @@ Item itemFromJson(Map<String, dynamic> j) {
     priority: (j['priority'] as num?)?.toInt() ?? 0,
     version: (j['version'] as num?)?.toInt() ?? 0,
     location: j['location'] as String? ?? '',
+    locationKind: j['location_kind'] as String? ?? '',
+    dateEnd: j['date_end'] as String? ?? '',
+    color: j['color'] as String? ?? 'slate',
     phone: j['phone'] as String? ?? '',
     email: j['email'] as String? ?? '',
     website: j['website'] as String? ?? '',

@@ -147,6 +147,9 @@ func tools() []any {
 	props["clear_list"] = flag
 	props["location"] = map[string]string{"type": "string", "description": "Where the item happens, for example an address or a place name."}
 	props["clear_location"] = flag
+	props["color"] = map[string]any{"type": "string", "enum": domain.ItemColors, "description": "Item colour. Honour an explicit choice; otherwise suggest one on creation. Preserve on unrelated edits."}
+	props["location_kind"] = map[string]any{"type": "string", "enum": []string{"address", "label"}, "description": "address only for an actual supplied/resolved street address; label for Home or a place name without an address."}
+	props["date_end"] = map[string]any{"type": "string", "enum": []string{"inclusive", "checkout"}, "description": "inclusive for ordinary date-only event ranges; checkout only for an actual stay, excluding checkout day."}
 	for name, description := range map[string]string{
 		"phone":             "Contact phone number copied from the source. Keep it out of notes.",
 		"email":             "Contact email address copied from the source. Keep it out of notes.",
@@ -169,7 +172,7 @@ func tools() []any {
 		},
 	}
 	props["clear_details"] = flag
-	props["start_at"] = map[string]string{"type": "string", "description": "When the item begins, RFC3339 with timezone. Use for appointments and meetings. Use end_at for the event end, due_at only for deadlines. For date-only bookings use start_date/end_date (exclusive checkout) or due_date. Do not invent times."}
+	props["start_at"] = map[string]string{"type": "string", "description": "When the item begins, RFC3339 with timezone. Use for appointments and meetings. Use end_at for the event end, due_at only for deadlines. For date-only events use start_date/end_date with date_end inclusive, or checkout for actual stays or due_date. Do not invent times."}
 	props["clear_start"] = flag
 	for _, name := range []string{"kind", "end_at", "start_timezone", "end_timezone", "start_date", "end_date", "due_date"} {
 		props[name] = str

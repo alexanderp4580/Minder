@@ -7,6 +7,7 @@ abstract interface class ItemRepository {
 
   /// Asks the server what deleting [item] would remove. Nothing is deleted yet.
   Future<Entry> previewDelete(Item item);
+  Future<Entry> previewColor(Item item, String color);
 
   /// Deletes what [previewDelete] described.
   Future<Entry> confirm(String changeId);

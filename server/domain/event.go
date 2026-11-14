@@ -24,7 +24,7 @@ func validateEvent(i *Item) error {
 			return &Invalid{f.name, "Use a valid date or a timestamp, not both."}
 		}
 	}
-	if i.EndDate != "" && (i.StartDate == "" || i.EndDate <= i.StartDate) {
+	if i.EndDate != "" && (i.StartDate == "" || (i.EndDate < i.StartDate || (i.EndDate == i.StartDate && i.DateEnd != "inclusive"))) {
 		return &Invalid{"end_date", "Set an end date after the start date."}
 	}
 	if i.EndAt != "" {
@@ -63,6 +63,9 @@ func Overlaps(i Item, from, to time.Time, zone *time.Location) bool {
 		end := start.AddDate(0, 0, 1)
 		if i.StartDate != "" && i.EndDate != "" {
 			end, e = time.ParseInLocation(time.DateOnly, i.EndDate, zone)
+			if i.DateEnd == "inclusive" {
+				end = end.AddDate(0, 0, 1)
+			}
 			if e != nil {
 				return false
 			}

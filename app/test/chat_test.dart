@@ -39,6 +39,9 @@ Map<String, dynamic> preview({String state = 'pending', String? undo}) => {
 };
 
 class FakeRepository implements ChatRepository {
+  @override
+  Future<Entry> setChangeColor(String changeId, String color) async =>
+      entry('p', 6, 'preview', change: preview());
   final events = StreamController<Entry>.broadcast();
   final saved = <Entry>[];
   bool offline = false;

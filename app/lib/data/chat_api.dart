@@ -122,6 +122,23 @@ class ChatApi
       body: {'expected_version': item.version},
     ) as Map<String, dynamic>,
   );
+  @override
+  Future<Entry> previewColor(Item item, String color) async => entryFromJson(
+    await _request(
+      'POST',
+      '/v1/items/${Uri.encodeComponent(item.id)}/color',
+      body: {'expected_version': item.version, 'color': color},
+    ) as Map<String, dynamic>,
+  );
+  @override
+  Future<Entry> setChangeColor(String changeId, String color) async =>
+      entryFromJson(
+        await _request(
+          'POST',
+          '/v1/changes/${Uri.encodeComponent(changeId)}/color',
+          body: {'color': color},
+        ) as Map<String, dynamic>,
+      );
   Future<Entry> _post(String route) async =>
       entryFromJson(await _request('POST', route) as Map<String, dynamic>);
   @override

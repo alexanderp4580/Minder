@@ -1,9 +1,12 @@
+import 'carbon_icon.dart';
 import '../domain/capture_repository.dart';
 import '../domain/link_launcher.dart';
 import 'calendar_item_details.dart';
 import 'content_action.dart';
 import 'item_delete_dialog.dart';
 import 'item_sources.dart';
+import 'calendar_week.dart';
+import 'item_colours.dart';
 
 import 'dart:math' as math;
 
@@ -51,8 +54,6 @@ String _duration(int minutes) {
   final h = minutes ~/ 60, m = minutes % 60;
   return m == 0 ? '$h h' : '$h h $m min';
 }
-
-String _two(int n) => n.toString().padLeft(2, '0');
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({
@@ -181,13 +182,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
         IconButton(
           tooltip: 'Previous month',
           onPressed: c.previous,
-          icon: const Icon(Icons.chevron_left),
+          icon: const CarbonIcon(CarbonGlyph.left),
         ),
         const SizedBox(width: Tokens.gap),
         IconButton(
           tooltip: 'Next month',
           onPressed: c.next,
-          icon: const Icon(Icons.chevron_right),
+          icon: const CarbonIcon(CarbonGlyph.right),
         ),
       ],
     ),
@@ -212,91 +213,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
     ],
   );
 
-  Widget _week(int w) => Row(
-    children: [
-      for (var d = 0; d < 7; d++)
-        Expanded(
-          child: _cell(
-            DateTime(
-              c.gridStart.year,
-              c.gridStart.month,
-              c.gridStart.day + w * 7 + d,
-            ),
-          ),
-        ),
-    ],
+  Widget _week(int w) => CalendarWeek(
+    start: DateTime(
+      c.gridStart.year,
+      c.gridStart.month,
+      c.gridStart.day + w * 7,
+    ),
+    index: w,
+    items: c.items,
+    month: c.month,
+    selected: c.selected,
+    today: c.today,
+    onSelect: c.select,
   );
-
-  Widget _cell(DateTime day) {
-    final inMonth = day.month == c.month.month;
-    final selected = day == c.selected;
-    final isToday = day == c.today;
-    final count = c.countOn(day);
-    final faceHeight = math.max(
-      CalendarTokens.selectionSize,
-      MediaQuery.textScalerOf(context).scale(16) * 1.2 + 16,
-    );
-    return Semantics(
-      button: true,
-      selected: selected,
-      label:
-          '${_months[day.month - 1].substring(0, 3)} ${day.day}, $count ${count == 1 ? 'item' : 'items'}',
-      excludeSemantics: true,
-      child: SizedBox(
-        height: math.max(CalendarTokens.dayHeight, faceHeight + 12),
-        child: InkWell(
-          key: ValueKey('day-${day.year}-${_two(day.month)}-${_two(day.day)}'),
-          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-          onTap: () => c.select(day),
-          child: Center(
-            child: Container(
-              key: selected ? const ValueKey('calendar-selection') : null,
-              width: CalendarTokens.selectionSize,
-              height: faceHeight,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: selected ? Tokens.signal : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '${day.day}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      height: 1.2,
-                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                      color: inMonth ? Tokens.text : Tokens.dim,
-                      decoration: isToday ? TextDecoration.underline : null,
-                      decorationColor: Tokens.text,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    height: 4,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        for (var i = 0; i < count.clamp(0, 3); i++)
-                          Container(
-                            width: 4,
-                            height: 4,
-                            margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                            color: inMonth ? Tokens.text : Tokens.dim,
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _agenda() {
     final day = c.selected;
@@ -355,19 +284,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
         item.endTimezone.isNotEmpty &&
         item.startTimezone != item.endTimezone;
     final expanded = _expanded.contains(item.id);
-    final hasDetails =
-        item.phone.isNotEmpty ||
-        item.email.isNotEmpty ||
-        item.website.isNotEmpty ||
-        item.bookingReference.isNotEmpty ||
-        item.notes.isNotEmpty ||
-        item.location.isNotEmpty ||
-        item.reminderOffsets.isNotEmpty ||
-        item.endLocal.isNotEmpty ||
-        item.kind.isNotEmpty ||
-        item.durationMinutes > 0 ||
-        item.startAt != null ||
-        item.startDate != null;
     final chips = [
       if (!expanded && trip && item.startLocal.isNotEmpty)
         'Departs ${item.startLocal.replaceFirst('T', ' ')} ${item.startTimezone}',
@@ -390,13 +306,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
       }
     });
     return GestureDetector(
-      onTap: hasDetails ? toggle : null,
+      onTap: toggle,
       child: Container(
         margin: const EdgeInsets.only(bottom: Tokens.relatedGap),
         padding: const EdgeInsets.all(CalendarTokens.cardPadding),
         decoration: BoxDecoration(
           color: Tokens.panel,
-          border: Border.all(color: Tokens.line),
+          border: Border(
+            top: const BorderSide(color: Tokens.line),
+            right: const BorderSide(color: Tokens.line),
+            bottom: const BorderSide(color: Tokens.line),
+            left: BorderSide(color: itemColour(item.color), width: 3),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,7 +345,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     width: Tokens.minTarget,
                     height: Tokens.minTarget,
                   ),
-                  icon: const Icon(Icons.delete_outline, color: Tokens.muted),
+                  icon: const CarbonIcon(
+                    CarbonGlyph.delete,
+                    color: Tokens.muted,
+                  ),
                 ),
               ],
             ),
@@ -482,38 +406,43 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ],
               ),
             ],
-            if (hasDetails) ...[
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(top: 16),
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: Tokens.line)),
-                ),
-                child: Semantics(
-                  expanded: expanded,
-                  child: ContentAction(
-                    onPressed: toggle,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(expanded ? 'Hide details' : 'Details'),
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(
-                            expanded ? Icons.expand_less : Icons.expand_more,
-                            size: 16,
-                          ),
-                        ],
-                      ),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 16),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: Tokens.line)),
+              ),
+              child: Semantics(
+                expanded: expanded,
+                child: ContentAction(
+                  onPressed: toggle,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(expanded ? 'Hide details' : 'Details'),
+                        ),
+                        const SizedBox(width: 12),
+                        CarbonIcon(
+                          CarbonGlyph.down,
+                          turns: expanded ? 2 : 0,
+                          size: 16,
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-              if (expanded)
-                CalendarItemDetails(item: item, launcher: widget.linkLauncher),
-            ],
+            ),
+            if (expanded)
+              CalendarItemDetails(item: item, launcher: widget.linkLauncher),
+            if (expanded)
+              ItemColourEditor(
+                key: ValueKey('item-colour-${item.id}'),
+                value: item.color,
+                onApply: (color) => c.changeColor(item, color),
+              ),
           ],
         ),
       ),

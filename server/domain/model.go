@@ -32,6 +32,9 @@ type Detail struct {
 }
 
 type Item struct {
+	Color            string   `json:"color,omitempty"`
+	LocationKind     string   `json:"location_kind,omitempty"`
+	DateEnd          string   `json:"date_end,omitempty"`
 	Details          []Detail `json:"details,omitempty"`
 	Phone            string   `json:"phone,omitempty"`
 	Email            string   `json:"email,omitempty"`
@@ -69,6 +72,9 @@ type Item struct {
 	CompletedAt     string      `json:"completed_at,omitempty"`
 }
 type Proposal struct {
+	Color            string   `json:"color,omitempty"`
+	LocationKind     string   `json:"location_kind,omitempty"`
+	DateEnd          string   `json:"date_end,omitempty"`
 	Details          []Detail `json:"details,omitempty"`
 	ClearDetails     bool     `json:"clear_details,omitempty"`
 	Phone            string   `json:"phone,omitempty"`
@@ -140,6 +146,7 @@ type Field struct {
 	New  string `json:"new,omitempty"`
 }
 type Change struct {
+	Color     string  `json:"color,omitempty"`
 	ID        string  `json:"id"`
 	Action    string  `json:"action"`
 	ItemTitle string  `json:"item_title"`
@@ -194,6 +201,9 @@ type Audit struct {
 
 func Now() string { return time.Now().UTC().Format(time.RFC3339Nano) }
 func Validate(i *Item) error {
+	if err := validatePresentation(i); err != nil {
+		return err
+	}
 	if err := validateDetails(i); err != nil {
 		return err
 	}

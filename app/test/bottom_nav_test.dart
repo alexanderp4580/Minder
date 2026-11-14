@@ -1,3 +1,4 @@
+import 'package:minder/ui/carbon_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/ui/bottom_nav.dart';
@@ -35,11 +36,23 @@ void main() {
     expect(other, isNot(isSemantics(isSelected: true)));
     expect(other, isSemantics(label: 'Chat', isButton: true));
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.calendar_month_outlined)).color,
+      tester
+          .widget<CarbonIcon>(
+            find.byWidgetPredicate(
+              (w) => w is CarbonIcon && w.glyph == CarbonGlyph.calendar,
+            ),
+          )
+          .color,
       Tokens.signal,
     );
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.chat_bubble_outline)).color,
+      tester
+          .widget<CarbonIcon>(
+            find.byWidgetPredicate(
+              (w) => w is CarbonIcon && w.glyph == CarbonGlyph.chat,
+            ),
+          )
+          .color,
       Tokens.muted,
     );
     expect(
@@ -79,7 +92,13 @@ void main() {
     expect(tester.getCenter(find.text('Chat')).dx, chat.center.dx);
     expect(tester.getCenter(find.text('Calendar')).dx, calendar.center.dx);
     expect(
-      tester.getCenter(find.byIcon(Icons.chat_bubble_outline)).dx,
+      tester
+          .getCenter(
+            find.byWidgetPredicate(
+              (w) => w is CarbonIcon && w.glyph == CarbonGlyph.chat,
+            ),
+          )
+          .dx,
       chat.center.dx,
     );
     expect(calendar.width, 206);
@@ -100,7 +119,11 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(host(NavDestination.chat, (_) {}));
     final item = tester.getRect(find.byKey(const ValueKey('nav-chat')));
-    final icon = tester.getRect(find.byIcon(Icons.chat_bubble_outline));
+    final icon = tester.getRect(
+      find.byWidgetPredicate(
+        (w) => w is CarbonIcon && w.glyph == CarbonGlyph.chat,
+      ),
+    );
     final label = tester.getRect(find.text('Chat'));
     expect(icon.size, const Size(24, 24));
     expect(label.height, 12);

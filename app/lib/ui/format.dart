@@ -47,15 +47,18 @@ String actionLabel(String action) => switch (action) {
 String fieldLabel(String name) => switch (name) {
   'start_at' => 'Starts',
   'end_at' => 'Ends',
-  'start_date' => 'Start date',
-  'end_date' => 'End date / checkout',
+  'start_date' => 'Starts',
+  'end_date' => 'Ends',
   'due_date' => 'Deadline',
   'kind' => 'Type',
+  'color' => 'Colour',
+  'date_end' => 'Date boundary',
+  'location_kind' => 'Location type',
   'start_timezone' => 'Departure / start timezone',
   'end_timezone' => 'Arrival / end timezone',
   'duration_minutes' => 'Duration',
   'priority' => 'Priority',
-  'location' => 'Address',
+  'location' => 'Location',
   'phone' => 'Phone',
   'email' => 'Email',
   'website' => 'Website',
@@ -120,7 +123,7 @@ String offsetLabel(int minutes) {
 }
 
 String kindLabel(String kind) => switch (kind) {
-  'event' => 'Appointment',
+  'event' => 'Event',
   'task' => 'Task',
   'reminder' => 'Reminder',
   _ => kind,
@@ -187,6 +190,8 @@ List<PreviewRow> previewRows(Change change) {
       case 'end_timezone' when hasEnd:
       case 'timezone' when hasTime:
       case 'status' when f.oldValue.isEmpty && f.newValue == 'open':
+      case 'date_end':
+      case 'location_kind':
       case 'reminders' when change.reminderChoices.isNotEmpty:
         continue;
     }
@@ -198,6 +203,8 @@ List<PreviewRow> previewRows(Change change) {
           return minutes == null ? raw : durationText(minutes);
         case 'kind':
           return kindLabel(raw);
+        case 'color':
+          return raw[0].toUpperCase() + raw.substring(1);
         case 'phone':
         case 'email':
         case 'website':
@@ -240,6 +247,10 @@ List<PreviewRow> previewRows(Change change) {
       PreviewRow(
         ['start_at', 'start_date'].contains(f.name) && value('kind') == 'task'
             ? 'Scheduled'
+            : f.name == 'location' && value('location_kind') == 'address'
+            ? 'Address'
+            : f.name == 'end_date' && value('date_end') == 'checkout'
+            ? 'Checkout'
             : fieldLabel(f.name),
         oldValue: show(f.oldValue),
         newValue: f.newValue.isEmpty ? 'None' : show(f.newValue),

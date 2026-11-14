@@ -10,6 +10,7 @@ import 'tokens.dart';
 import 'capture_view.dart';
 import 'question_view.dart';
 import 'reminder_chips.dart';
+import 'item_colours.dart';
 
 const _meta = TextStyle(fontSize: 12, color: Tokens.muted, letterSpacing: 1.2);
 
@@ -53,7 +54,17 @@ class EntryView extends StatelessWidget {
             decoration: boxed
                 ? BoxDecoration(
                     color: mine ? Tokens.panel : Tokens.voidColor,
-                    border: Border.all(color: Tokens.edge),
+                    border: Border(
+                      top: const BorderSide(color: Tokens.edge),
+                      right: const BorderSide(color: Tokens.edge),
+                      bottom: const BorderSide(color: Tokens.edge),
+                      left: BorderSide(
+                        color: entry.change?.color.isNotEmpty == true
+                            ? itemColour(entry.change!.color)
+                            : Tokens.edge,
+                        width: entry.change?.color.isNotEmpty == true ? 3 : 1,
+                      ),
+                    ),
                   )
                 : null,
             child: _body(),
@@ -208,6 +219,19 @@ class _Preview extends StatelessWidget {
                   ],
                 ),
         ),
+      if ((change.action == 'create_item' || change.action == 'update_item') &&
+          change.state == ChangeState.pending) ...[
+        if (!change.fields.any((f) => f.name == 'color'))
+          const Text('Colour', style: _muted),
+        const SizedBox(height: 8),
+        ItemColourPicker(
+          selected: change.color,
+          onChanged: controller.acting
+              ? null
+              : (color) => controller.setColor(change.id, color),
+        ),
+        const SizedBox(height: 16),
+      ],
       if (change.reminderChoices.isNotEmpty) ...[
         const SizedBox(height: 4),
         const Text('Remind before', style: _muted),

@@ -13,6 +13,18 @@ import (
 
 // setAttributes applies optional item fields to a proposal preview.
 func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error {
+	if p.Color != "" {
+		i.Color = p.Color
+	}
+	if p.DateEnd != "" {
+		i.DateEnd = p.DateEnd
+	}
+	if p.ClearLocation || (p.Location != "" && p.Location != i.Location) {
+		i.LocationKind = ""
+	}
+	if p.LocationKind != "" {
+		i.LocationKind = p.LocationKind
+	}
 	// A duration previously derived from the event range is not a new constraint.
 	if i.EndAt != "" && (p.StartAt != "" || p.EndAt != "" || p.ClearEnd) && p.DurationMinutes == 0 {
 		i.DurationMinutes = 0
@@ -153,6 +165,9 @@ func itemFields(t port.Transaction, old, now domain.Item) []domain.Field {
 		{Name: "nag_minutes", Old: fmt.Sprint(old.NagMinutes), New: fmt.Sprint(now.NagMinutes)},
 		{Name: "priority", Old: zeroEmpty(old.Priority), New: zeroEmpty(now.Priority)},
 		{Name: "location", Old: old.Location, New: now.Location},
+		{Name: "color", Old: old.Color, New: now.Color},
+		{Name: "location_kind", Old: old.LocationKind, New: now.LocationKind},
+		{Name: "date_end", Old: old.DateEnd, New: now.DateEnd},
 		{Name: "phone", Old: old.Phone, New: now.Phone},
 		{Name: "email", Old: old.Email, New: now.Email},
 		{Name: "website", Old: old.Website, New: now.Website},

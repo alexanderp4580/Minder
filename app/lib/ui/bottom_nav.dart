@@ -1,3 +1,5 @@
+import 'carbon_icon.dart';
+
 import 'package:flutter/material.dart';
 
 import 'tokens.dart';
@@ -29,11 +31,11 @@ class BottomNav extends StatelessWidget {
               top: false,
               child: Row(
                 children: [
-                  _item(NavDestination.chat, 'Chat', Icons.chat_bubble_outline),
+                  _item(NavDestination.chat, 'Chat', CarbonGlyph.chat),
                   _item(
                     NavDestination.calendar,
                     'Calendar',
-                    Icons.calendar_month_outlined,
+                    CarbonGlyph.calendar,
                   ),
                 ],
               ),
@@ -44,7 +46,7 @@ class BottomNav extends StatelessWidget {
     );
   }
 
-  Widget _item(NavDestination destination, String label, IconData icon) {
+  Widget _item(NavDestination destination, String label, CarbonGlyph icon) {
     final selected = destination == current;
     return Expanded(
       child: Semantics(
@@ -73,7 +75,7 @@ class BottomNav extends StatelessWidget {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    CarbonIcon(
                       icon,
                       size: 24,
                       color: selected ? Tokens.signal : Tokens.muted,

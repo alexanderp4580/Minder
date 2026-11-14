@@ -30,6 +30,8 @@ type Commands interface {
 	Refresh(string) (domain.Entry, error)
 	Discard(string) (domain.Entry, error)
 	SetReminders(string, []int) (domain.Entry, error)
+	Preview(domain.Proposal) (domain.Entry, error)
+	SetColor(string, string) (domain.Entry, error)
 	Undo(string) (domain.Entry, error)
 }
 type Messages interface {
@@ -85,6 +87,8 @@ func New(s Queries, c Commands, messages Messages, reminders ReminderActions, v 
 	m.HandleFunc("GET /v1/chat", srv.chat)
 	m.HandleFunc("GET /v1/items", srv.items)
 	m.HandleFunc("POST /v1/items/{id}/delete", srv.deleteItem)
+	m.HandleFunc("POST /v1/items/{id}/color", srv.itemColor)
+	m.HandleFunc("POST /v1/changes/{id}/color", srv.changeColor)
 	m.HandleFunc("GET /v1/events", srv.events)
 	m.HandleFunc("POST /v1/chat/messages", srv.message)
 	m.HandleFunc("POST /v1/changes/{id}/confirm", srv.confirm)

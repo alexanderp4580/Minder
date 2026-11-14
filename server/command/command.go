@@ -151,6 +151,7 @@ func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 	var e error
 	change := &domain.Change{ID: id, Action: p.Action, ItemTitle: after.Title, Fields: fields, State: "pending"}
 	setReminderChoices(change, after)
+	setColorChoice(change, after)
 	*out, e = t.PutEntry(domain.Entry{CaptureID: p.CaptureID, Kind: "preview", Text: "Review this change.", Change: change})
 	if e != nil {
 		return e
@@ -440,6 +441,7 @@ func (c *Service) SetReminders(id string, offsets []int) (out domain.Entry, err 
 		}
 		entry.Change.Fields = itemFields(t, old, p.After)
 		setReminderChoices(entry.Change, p.After)
+		setColorChoice(entry.Change, p.After)
 		if out, e = t.PutEntry(entry); e != nil {
 			return e
 		}
