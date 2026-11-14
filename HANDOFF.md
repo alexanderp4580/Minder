@@ -1,6 +1,6 @@
 # Handoff
 
-State on 2026-11-13. Production runs `adb1bdf` from `main` (the Coolify app is pinned to branch `main` at that commit). It includes the place lookup, with `SERPER_API_KEY` set as a Coolify runtime variable.
+State on 2026-11-14. Branch `brighter-logo` (worktree `Minder-m0-chat`) is one commit ahead of `main`: the near-white M logo, app 0.9.3+28. Not merged; phone approval gates the merge. APK 0.9.3 (`.local/artifacts/Minder-0.9.3-arm64.apk`, ignored by Git, 19,283,214 bytes, SHA-256 `1f4c7f4b09b31e5692b9bfaa8cafc6a4248eae6bc2ad75e58e4d38846403bfa7`, signer matches earlier APKs) reached Telegram once (message 2027). It carries the logo and the place lookup. `toolchain/check` exited 0. Production runs `adb1bdf` from `main` (the Coolify app is pinned to branch `main` at that commit). It includes the place lookup, with `SERPER_API_KEY` set as a Coolify runtime variable.
 `main` holds every earlier branch. Only `main` and `m0-chat` remain, locally and on origin. The worktree `Minder-m0-chat` is on `m0-chat` at the same commit as `main`. The previous runtime was `d04c3a8`, reachable from `main`; roll back with branch `main` and that commit.
 
 ## Current work: approved controls and booking fields

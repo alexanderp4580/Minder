@@ -30,3 +30,7 @@ Telegram confirmed one upload of 0.6.2 (message 1994). Delivery used the TokenCr
 
 - Nobody has checked the icon on a physical launcher, or frame timing and battery use. Phone approval is pending.
 - Release web and the browser scenarios did not run for this change. It does not cross the client/server boundary.
+
+## Near-white M, 0.9.3+28
+
+Branch `brighter-logo`, not merged. `toolchain/check` exit 0 on 2026-11-14. Release arm64 APK 0.9.3 (code 28): apksigner verified, certificate SHA-256 `7bbc3aba…d2572` matches earlier APKs, aapt2 reports `io.liveleds.minder`. Telegram confirmed one upload (message 2027). Phone view of the icon is unverified.
