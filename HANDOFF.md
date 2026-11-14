@@ -2,6 +2,10 @@
 
 State on 2026-11-14. Production runs `b260753` from `guided-email-review` (Coolify deployment `cv8jglffxn182epwty2mxysj`, finished, running:healthy). It includes the 0.10.3 web client and failure reports. Startup logs report schema 5, zero migrations, configured model/Firebase/Serper and no warnings or errors. Runtime revision still logs unknown; the completed deployment identifies the commit. Rollback: `guided-email-review` at `ee99d879c3c4b03d9e84ec4772ba884745173c0e`. `main` remains at `679441b`.
 
+## One agent: design awaiting review
+
+The owner rejected the separate extraction/chat behavior and the proposed email-access-only patch. Forwarded emails and pasted emails must use one agent with common instructions, source access and review tools. Draft: [one-agent design](docs/superpowers/specs/2026-11-14-one-agent-design.md). It covers retained sources and attachments, ordinary follow-ups, targeted candidate updates, unsupported duration handling and shared durable turn scheduling. No implementation or production change has started. Written design review is the next step, followed by the implementation plan. Existing duration and extraction-ID defects remain open.
+
 ## Failure reporting (0.10.3+32, deployed)
 
 The latest phone review has four items: three appointments and a questionnaire task. The first was confirmed. The model added a one-hour end time that the supplied email text does not contain; no calendar attachment exists. That unsupported inference remains an extraction defect. The owner's targeted one-hour answer for item 2 reached the model. Its follow-up returned two candidates but failed the check requiring the answered item's original ID. The server stored status failed; it did not create the second preview. Omission versus renaming cannot be distinguished because the model reply is not stored.
