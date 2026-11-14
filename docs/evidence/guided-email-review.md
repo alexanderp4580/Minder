@@ -35,7 +35,7 @@ The owner forwarded an email with several appointments. Extraction failed twice 
 
 - `toolchain/check` exited 0 on the revised source: 163 Flutter tests, Go race tests/vet, Flutter analysis/formatting, architecture/DOX, Worker and toolchain/hook checks. Release web build exited 0. Its optional Wasm dry-run reported existing unsupported packages, and the icon-font optimizer reported the absent Cupertino font. The JavaScript web build succeeded.
 
-## APK
+## APK 0.10.1 (earlier release)
 
 Source `fbbe18d`. All five final browser scenarios exited 0: chat, reminder, calendar, place lookup and email.
 
@@ -43,7 +43,7 @@ Release arm64 APK: `.local/artifacts/Minder-0.10.1-arm64.apk` (ignored), 19,031,
 
 Telegram confirmed one upload: message 2029, file size 19,031,438. The APK needs the matching server changes to exercise the new email flow. The owner requested the matching server deployment for phone testing. Merge still awaits approval.
 
-## Deployment for phone testing
+## Initial deployment for phone testing
 
 The owner requested deployment on 2026-11-14 after receiving the APK. Pushed `guided-email-review` and pinned Coolify to `50b968228b470261dce76da1b47a205d2a256f45`. Deployment `fy2qz1rqsyklwp5uvutdbfaw` finished; the application reports `running:healthy`. Startup logs show schema 5, zero migrations, configured model/Firebase/Serper credentials and no warnings or errors in the first 80 lines. The server still logs revision=unknown; the completed Coolify deployment identifies the commit.
 
