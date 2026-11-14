@@ -23,6 +23,10 @@ The owner forwarded an email with several appointments. Extraction failed twice 
 | `toolchain/email-local-check` | Passed twice against compiled web, signed ingestion and real SQLite: the trip email (hotel, then the flight question), and a three-appointment email with a Teams meeting walked to a `Done: 2 added, 1 skipped.` summary; the Teams location was empty |
 | Real model, 2026-11-14 | A synthetic three-appointment dental email through a local server: three candidates, the Teams follow-up had an empty address, `- Online meeting (Microsoft Teams)` in notes, the opening message, `Appointment 1 of 3` and the first question appeared; cost about €0.0015 |
 
+## APK
+
+`.local/artifacts/Minder-0.10.0-arm64.apk` (ignored by Git), 19,283,210 bytes, SHA-256 `302dac8cc7b22ce02d0c58050131d617208b176bb5976a8a62c98487411b7015`. aapt2 reports `io.liveleds.minder`, version 0.10.0, code 29. The signer SHA-256 `7bbc3aba…d2572` matches earlier APKs. Telegram confirmed one upload (message 2028). `toolchain/check` exited 0 on the final tree. The app needs the matching server deploy: an older server publishes every appointment at once, which this app still shows.
+
 ## Limits
 
 - Not tried on a phone. The 2026-11-14 email that failed was not replayed; its exact validation failure is unknown.
