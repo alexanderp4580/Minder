@@ -23,6 +23,7 @@ const maxOutputTokens = 100000
 type Client struct {
 	Key, Model, URL string
 	Client          *http.Client
+	Trace           *Trace
 }
 
 func (m *Client) Ready() error {
@@ -31,7 +32,13 @@ func (m *Client) Ready() error {
 	}
 	return nil
 }
-func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (assistant.Response, error) {
+func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (result assistant.Response, err error) {
+	callID := domain.NewID()
+	defer func() {
+		if err != nil {
+			m.Trace.record(ctx, callID, "model_error", map[string]any{"error": err.Error()})
+		}
+	}()
 	if m.Key == "" {
 		slog.Error("model request failed", "stage", "setup", "reason", "model key is not configured")
 		return assistant.Response{}, &domain.ModelError{Message: "The model key is not configured."}
@@ -47,6 +54,7 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 	selectedTools := toolsFor(purposeOf(messages))
 	payload := map[string]any{"model": model, "messages": messages, "tools": selectedTools, "max_tokens": maxOutputTokens, "usage": map[string]bool{"include": true}}
 	b, _ := json.Marshal(payload)
+	m.Trace.record(ctx, callID, "request", map[string]any{"body": string(b)})
 	started := time.Now()
 	slog.Info("model request", "model", model, "endpoint_host", hostOf(url), "messages", len(messages), "tools", len(selectedTools), "request_bytes", len(b), "max_tokens", maxOutputTokens, "trace_id", domain.TraceID(ctx))
 	req, e := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(b))
@@ -66,9 +74,13 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 		return assistant.Response{}, &domain.ModelError{Message: "The model could not connect. Try again."}
 	}
 	defer res.Body.Close()
+	raw, readErr := io.ReadAll(io.LimitReader(res.Body, 2<<20))
+	m.Trace.record(ctx, callID, "response", map[string]any{"status": res.StatusCode, "body": string(raw), "limit_reached": len(raw) == 2<<20, "read_failed": readErr != nil})
+	if readErr != nil {
+		return assistant.Response{}, &domain.ModelError{Message: "The model reply was unreadable. Try again.", Reason: domain.ReasonUnreadable}
+	}
 	if res.StatusCode != 200 {
-		snippet, _ := io.ReadAll(io.LimitReader(res.Body, 512))
-		slog.Error("model request failed", "stage", "status", "status", res.StatusCode, "body", string(snippet), "duration_ms", time.Since(started).Milliseconds(), "trace_id", domain.TraceID(ctx))
+		slog.Error("model request failed", "stage", "status", "status", res.StatusCode, "response_bytes", len(raw), "duration_ms", time.Since(started).Milliseconds(), "trace_id", domain.TraceID(ctx))
 		return assistant.Response{}, &domain.ModelError{Message: fmt.Sprintf("The model returned an error (%d). Try again.", res.StatusCode)}
 	}
 	var wire struct {
@@ -87,7 +99,7 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 		} `json:"choices"`
 		Usage map[string]any `json:"usage"`
 	}
-	if e = json.NewDecoder(io.LimitReader(res.Body, 2<<20)).Decode(&wire); e != nil {
+	if e = json.NewDecoder(bytes.NewReader(raw)).Decode(&wire); e != nil {
 		slog.Error("model reply rejected", "reason", "unreadable", "error", e, "status", res.StatusCode, "duration_ms", time.Since(started).Milliseconds())
 		return assistant.Response{}, &domain.ModelError{Message: "The model reply was unreadable. Try again.", Reason: domain.ReasonUnreadable}
 	}

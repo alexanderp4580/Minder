@@ -32,10 +32,11 @@ type Sender interface {
 // Service stores forwarded emails, prepares them for the agent and reads retained sources.
 // Files and Parser may be nil when email is off; chat sources still read.
 type Service struct {
-	Sender     Sender
-	Parser     Parser
-	repository Repository
-	files      Files
+	Diagnostics func(context.Context, string, any)
+	Sender      Sender
+	Parser      Parser
+	repository  Repository
+	files       Files
 }
 
 func New(repository Repository, files Files) *Service {

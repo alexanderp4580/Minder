@@ -67,6 +67,10 @@ func run(logger *slog.Logger) error {
 	defer database.Close()
 	commands := command.New(database)
 	model := &openrouter.Client{Key: settings.ModelKey, Model: settings.Model, URL: settings.ModelEndpoint}
+	model.Trace, err = openrouter.NewTrace(settings.AgentTraceDir, settings.AgentTraceUntil)
+	if err != nil {
+		return err
+	}
 	assistantService := assistant.New(database, model, settings.MonthlyLimitEUR, settings.USDToEUR)
 	if settings.SerperKey != "" {
 		assistantService.WithLookups(&serper.Client{Key: settings.SerperKey, URL: settings.SerperEndpoint})
@@ -81,6 +85,9 @@ func run(logger *slog.Logger) error {
 		files = stored
 	}
 	emailService := capture.New(database, files)
+	if model.Trace != nil {
+		emailService.Diagnostics = model.RecordDiagnostic
+	}
 	assistantService.WithSources(emailService)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

@@ -75,6 +75,9 @@ func (l *loop) followUp(ctx context.Context, r Response) ([]Message, error) {
 	var problem string
 	if len(reviews) > 0 {
 		problem = l.checkReview(reviews)
+		if problem != "" {
+			l.service.recordDiagnostic(ctx, "review_rejected", map[string]any{"problem": problem, "calls": reviews})
+		}
 		needs = needs || problem != ""
 	}
 	if !needs {

@@ -4,10 +4,14 @@ package config
 import (
 	"fmt"
 	"math"
+	"path/filepath"
 	"strconv"
+	"time"
 )
 
 type Settings struct {
+	AgentTraceDir                                 string
+	AgentTraceUntil                               time.Time
 	Email                                         EmailSettings
 	DatabasePath, WebDir, BrandDir, ListenAddr    string
 	ModelKey, Model, ModelEndpoint                string
@@ -49,6 +53,17 @@ func Load(getenv func(string) string) (Settings, error) {
 		return Settings{}, fmt.Errorf("SERPER_URL cannot override the production endpoint")
 	}
 	var err error
+	cfg.AgentTraceDir = getenv("AGENT_TRACE_DIR")
+	traceUntil := getenv("AGENT_TRACE_UNTIL")
+	if cfg.AgentTraceDir != "" || traceUntil != "" {
+		if !filepath.IsAbs(cfg.AgentTraceDir) || traceUntil == "" {
+			return Settings{}, fmt.Errorf("AGENT_TRACE_DIR must be absolute and AGENT_TRACE_UNTIL must be set together")
+		}
+		cfg.AgentTraceUntil, err = time.Parse(time.RFC3339, traceUntil)
+		if err != nil {
+			return Settings{}, fmt.Errorf("AGENT_TRACE_UNTIL must be an RFC3339 timestamp")
+		}
+	}
 	cfg.MonthlyLimitEUR, err = positiveNumber(value("MONTHLY_LIMIT_EUR", "5"), "MONTHLY_LIMIT_EUR")
 	if err != nil {
 		return Settings{}, err

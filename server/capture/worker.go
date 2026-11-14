@@ -145,6 +145,9 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		return failed(e)
 	}
 	slog.Info("email prepared", "source_id", c.ID, "revision", c.Revision, "parts", len(document.Parts), "attachments", len(document.Attachments))
+	if s.Diagnostics != nil {
+		s.Diagnostics(domain.WithTrace(ctx, domain.ArrivalTurn(c.ID, c.Revision).ID), "email_prepared", map[string]any{"source_id": c.ID, "revision": c.Revision, "document": document})
+	}
 	return nil
 }
 

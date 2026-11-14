@@ -96,7 +96,7 @@ func TestModelFailuresLogTheCause(t *testing.T) {
 		t.Fatal("expected failure")
 	}
 	r := first(logs(), "model request failed")
-	if r == nil || r["level"] != "ERROR" || r["status"] != float64(402) || !strings.Contains(r["body"].(string), "insufficient credits") {
+	if r == nil || r["level"] != "ERROR" || r["status"] != float64(402) || r["response_bytes"] == nil || r["body"] != nil {
 		t.Fatalf("provider failure not logged: %v", r)
 	}
 	closed := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
@@ -114,6 +114,21 @@ func TestModelFailuresLogTheCause(t *testing.T) {
 	}
 	if connect == nil || !strings.Contains(connect["error"].(string), "connection refused") {
 		t.Fatalf("connection error cause not logged: %v", connect)
+	}
+}
+
+func TestProviderErrorBodyStaysOutOfOrdinaryLogs(t *testing.T) {
+	logs := capture(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		w.Write([]byte(`{"error":"PRIVATE_EMAIL reflected by provider"}`))
+	}))
+	defer srv.Close()
+	m := &Client{Key: "secret", URL: srv.URL}
+	m.Complete(context.Background(), []assistant.Message{{Role: "user", Content: "PRIVATE_EMAIL"}})
+	b, _ := json.Marshal(logs())
+	if strings.Contains(string(b), "PRIVATE_EMAIL") {
+		t.Fatal("provider echoed private content into ordinary logs")
 	}
 }
 

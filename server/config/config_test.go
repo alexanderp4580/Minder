@@ -3,7 +3,50 @@ package config
 import (
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestAgentTraceSettings(t *testing.T) {
+	for _, tc := range []struct {
+		name, dir, until string
+		invalid          bool
+	}{
+		{"disabled", "", "", false},
+		{"enabled", "/data/agent-traces", "2026-11-16T12:00:00Z", false},
+		{"expired", "/data/agent-traces", "2020-01-01T00:00:00Z", false},
+		{"missing expiry", "/data/agent-traces", "", true},
+		{"missing directory", "", "2026-11-16T12:00:00Z", true},
+		{"bad expiry", "/data/agent-traces", "tomorrow", true},
+		{"relative directory", "agent-traces", "2026-11-16T12:00:00Z", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := Load(func(key string) string {
+				if key == "AGENT_TRACE_DIR" {
+					return tc.dir
+				}
+				if key == "AGENT_TRACE_UNTIL" {
+					return tc.until
+				}
+				return ""
+			})
+			if (err != nil) != tc.invalid {
+				t.Fatalf("validation: %v", err)
+			}
+			if err != nil {
+				if !strings.Contains(err.Error(), "AGENT_TRACE") || strings.Contains(err.Error(), tc.dir) && tc.dir != "" {
+					t.Fatal("unsafe or unclear setting error")
+				}
+				return
+			}
+			if cfg.AgentTraceDir != tc.dir {
+				t.Fatal("directory ignored")
+			}
+			if tc.until != "" && cfg.AgentTraceUntil.Format(time.RFC3339) != tc.until {
+				t.Fatal("expiry ignored")
+			}
+		})
+	}
+}
 
 func TestLoadRejectsInvalidBudget(t *testing.T) {
 	for _, key := range []string{"MONTHLY_LIMIT_EUR", "USD_TO_EUR"} {

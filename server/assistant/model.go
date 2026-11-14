@@ -48,6 +48,15 @@ type Model interface {
 	Complete(context.Context, []Message) (Response, error)
 }
 
+// Diagnostics are optional; the adapter owns their private storage and expiry.
+func (a *Service) recordDiagnostic(ctx context.Context, event string, data any) {
+	if recorder, ok := a.model.(interface {
+		RecordDiagnostic(context.Context, string, any)
+	}); ok {
+		recorder.RecordDiagnostic(ctx, event, data)
+	}
+}
+
 type wireCall struct {
 	ID       string `json:"id"`
 	Type     string `json:"type"`

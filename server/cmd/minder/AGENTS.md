@@ -12,6 +12,7 @@ Keep Cloudflare headers and identity values out of main. Load authentication thr
 Cancel and wait for workers and the agent queue worker before closing SQLite. HTTP shutdown has a deadline.
 Main logs process failures after run returns, so deferred cleanup executes.
 Main builds the logger (`logging.go`), logs the effective settings with secrets reduced to set or unset flags, and routes HTTP server errors into the same log.
+Main initializes the model's optional private trace from validated settings before workers start and supplies its diagnostic callback to email capture. Startup logs the configured flag and capture expiry, never trace content.
 Shutdown logs each stage: signal, HTTP server, worker, conversation and database.
 
 With `SERPER_API_KEY` set, main enables lookups (offer tool and Serper adapter); without it chat is unchanged.

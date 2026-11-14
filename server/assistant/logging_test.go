@@ -14,6 +14,44 @@ import (
 	"github.com/alexanderp4580/Minder/server/store"
 )
 
+type diagnosticModel struct {
+	Model
+	records map[string]json.RawMessage
+}
+
+func (m *diagnosticModel) RecordDiagnostic(_ context.Context, event string, data any) {
+	b, _ := json.Marshal(data)
+	m.records[event] = b
+}
+
+func TestDiagnosticsIncludeReviewRejectionAndFinalOutcome(t *testing.T) {
+	a, s, f := newAssistant(t, Response{Text: "PRIVATE_FINAL", CostUSD: 0.001})
+	f.seq = []Response{{Calls: []Call{call("bad", "propose_review", `{"candidates":[]}`)}, CostUSD: 0.001}}
+	m := &diagnosticModel{Model: f, records: map[string]json.RawMessage{}}
+	a.model = m
+	if _, err := reply(t, a, s, "Read my email"); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(m.records["review_rejected"]), "source_id is required") {
+		t.Fatal("missing rejection")
+	}
+	if !strings.Contains(string(m.records["outcome"]), "PRIVATE_FINAL") {
+		t.Fatal("missing final outcome")
+	}
+}
+
+func TestDiagnosticsRecordFailedTurn(t *testing.T) {
+	a, s, f := newAssistant(t, Response{Calls: []Call{call("bad", "unknown_tool", `{}`)}, CostUSD: 0.001})
+	m := &diagnosticModel{Model: f, records: map[string]json.RawMessage{}}
+	a.model = m
+	if _, err := reply(t, a, s, "Read my email"); err == nil {
+		t.Fatal("expected failure")
+	}
+	if !strings.Contains(string(m.records["outcome"]), "unknown tool") {
+		t.Fatal("missing final failure")
+	}
+}
+
 // syncBuffer lets the test read log output while background goroutines still write it.
 type syncBuffer struct {
 	mu  sync.Mutex

@@ -9,6 +9,7 @@ HTTP payloads, tool schema, token cap, response decoding and provider usage.
 # Local Contracts
 
 Implement the assistant model contract. Keep provider keys in memory.
+`trace.go` owns optional private diagnostics. `NewTrace` secures the directory to 0700 and rejects a symlink directory; each event is a complete JSON file created at 0600. Requests include the wire body only, not HTTP headers or client configuration. Responses retain the body within the existing 2 MiB read limit and mark when that limit is reached; raw unreadable and rejected replies are captured too. Turn IDs and generated call IDs correlate events without entering filenames. Check the capture deadline before each event, including responses and agent diagnostics. Capture write failures emit only safe metadata and do not fail a model call. Expiry stops collection; existing files remain for inspection and explicit cleanup.
 Use request deadlines, bounded replies and safe provider errors. Send `max_tokens` 100,000 (the model allows 128,000), a ceiling no normal reply reaches; reject truncated replies (`ReasonCutOff`) and missing or negative costs.
 Provider fixtures use local HTTP servers. Real-model checks use temporary databases.
 

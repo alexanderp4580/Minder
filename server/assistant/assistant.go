@@ -99,6 +99,11 @@ func (a *Service) Run(ctx context.Context, turn domain.AgentTurn) (domain.AgentO
 	started := time.Now()
 	trace := &runTrace{stage: "start"}
 	out, err := a.run(ctx, turn, trace)
+	diagnostic := map[string]any{"turn": turn, "outcome": out, "stage": trace.stage}
+	if err != nil {
+		diagnostic["error"] = err.Error()
+	}
+	a.recordDiagnostic(ctx, "outcome", diagnostic)
 	duration := time.Since(started).Milliseconds()
 	switch {
 	case errors.Is(err, domain.ErrLimit):

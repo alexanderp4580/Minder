@@ -15,6 +15,7 @@ Logs use `log/slog`. Main sets the default logger from `LOG_LEVEL` (debug, info,
 Info logs record every request, state change, model call, push attempt, reminder event and lifecycle event. Debug logs record transactions, saved entries, stream entries and worker ticks.
 Each message names one event. Fields carry IDs, counts, sizes, `duration_ms` and error text. The request ID ties the lines of one request. `trace_id` and `reply_id` tie the lines of one assistant reply.
 Never log secrets, tokens, JWTs, message text, item titles or notes. Log lengths and IDs. Identify a push token by `domain.Fingerprint`.
+The owner-approved exception is opt-in private agent trace files, outside ordinary logs: `AGENT_TRACE_DIR` and `AGENT_TRACE_UNTIL` together enable content capture until the deadline. OpenRouter owns storage; capture records complete accepted emails and their parsed documents, and the agent records review rejections and its final outcome through the optional diagnostic recorder. Never capture HTTP authentication headers or process credentials. Original MIME includes its email headers and attachments.
 Tests capture logs with `slog.SetDefault` and a mutex-guarded buffer, and assert that private values stay out.
 
 # Work Guidance

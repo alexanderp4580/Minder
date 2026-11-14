@@ -60,5 +60,8 @@ func (s *Service) Ingest(ctx context.Context, envelope domain.CaptureEnvelope, r
 		}
 		return tx.PutReceipt(domain.CaptureReceipt{ID: envelope.RequestID, Digest: id, CaptureID: id})
 	})
+	if err == nil && s.Diagnostics != nil {
+		s.Diagnostics(ctx, "email_received", map[string]any{"source_id": id, "request_id": envelope.RequestID, "duplicate": duplicate, "envelope": envelope, "mime_base64": raw})
+	}
 	return
 }

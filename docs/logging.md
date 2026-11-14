@@ -9,18 +9,38 @@ Use this page to find out what the server did and why. The code contract is in [
 |---|---|---|
 | `LOG_LEVEL` | `debug`, `info`, `warn`, `error` | `info` |
 | `LOG_FORMAT` | `text`, `json` | `text` |
+| `AGENT_TRACE_DIR` | Absolute private directory, outside web and branding roots | unset |
+| `AGENT_TRACE_UNTIL` | RFC3339 capture deadline, set together with the directory | unset |
 
 An unknown value stops startup with an error that names the variable.
 Info records each request, state change, model call, push attempt, reminder event and lifecycle event.
 Debug adds transactions, saved entries, stream entries, worker ticks and successful sign-ins.
 Health checks log at debug. Set `LOG_LEVEL=debug` in Coolify only while you investigate, then remove it.
 
-## What the logs never hold
+## What ordinary logs never hold
 
 - Message text, item titles and notes. Logs carry lengths and IDs instead.
 - Push tokens, JWTs, API keys and the Firebase service account.
   A push token appears as `token_fp`, the first four bytes of its SHA-256 hash.
 - The mailbox of a rejected sign-in. Logs carry its domain.
+
+## Temporary private agent traces
+
+The owner approved sensitive capture to investigate missing questionnaire tasks after the one-agent change. Set both trace variables to enable it. Use `/data/agent-traces` on the persistent data volume in production, outside any served directory. Use an ignored `.local/` directory for local checks. Keep credentials in process variables; the trace records wire bodies, not HTTP headers or process configuration.
+
+Each event is a JSON file with `time`, `msg`, `trace_id`, optional `call_id` and `data`. The directory is 0700 and files are 0600. Files appear after their writes finish. The generated filenames contain no personal content or supplied IDs.
+
+- `email_received`: `data.mime_base64` holds the whole accepted original email, including its email headers and attachments, encoded as base64 to preserve every byte. Decode this field to recover the `.eml`. The record includes source ID, envelope and duplicate status. This capture happens after durable ingestion, even if the model never reads the source; no model context limit truncates it. The existing 20 MiB ingestion limit still applies.
+- `email_prepared`: the parsed document with text parts, subject, attachment metadata and coverage, correlated with its source ID and arrival turn ID. Compare this with the original and the model request to distinguish parsing, context and model omissions.
+- `request`: `data.body` contains the complete model request JSON, including instructions, recent chat, item/review context, tool schemas, source text, tool results and image data sent to the model.
+- `response`: status and raw body, including tool arguments and provider replies that fail decoding or validation. The existing 2 MiB response read limit still applies; `limit_reached` and `read_failed` identify incomplete captures.
+- `model_error`: the error returned by the adapter, correlated with the same call ID.
+- `review_rejected`: the review tool calls and the validation problem sent back to the agent.
+- `outcome`: turn, normalized agent outcome, stage and any error, before the command service commits it. Use the normal `reply finished` or `reply failed` log for the commit result.
+
+Read files in filename order and group agent events by `trace_id`, which equals the conversation's `reply_id`. Join ingestion records by `data.source_id`; preparation also carries the arrival turn ID. Within a turn, `call_id` pairs each request and response. Decode `data.body` as JSON to inspect the actual model exchange. A trace shows what the model received and returned; it cannot establish unreturned internal reasoning.
+
+The deadline stops new capture, including a response that arrives after expiry. Restarting with the same expired deadline does not restart collection. Remove both variables to disable it sooner. Existing traces remain private for inspection; remove the files after the investigation. Do not copy source content into Git, ordinary logs or verification reports. A disk/write failure logs `agent trace write failed` with event and correlation IDs only; the agent continues, so treat that capture as incomplete.
 
 ## Correlation
 
@@ -40,7 +60,7 @@ Each line has `time`, `level` and `msg`. These fields appear on the lines named.
 | Sign-in | `authentication rejected`, `signing keys fetched`, `signing key fetch failed` | `reason` is `missing_token`, `invalid_token` or `wrong_owner`; `detail` |
 | Messages | `message accepted`, `message rejected`, `reply started`, `reply finished`, `reply failed`, `reply panicked` | `text_len`, `reply_id`, `kinds`, `error` |
 | Assistant | `assistant reply started`, `usage reserved`, `usage settled`, `assistant reply finished`, `assistant reply failed`, `assistant reply blocked` | `items_in_context`, `prompt_bytes`, `cost_eur`, `month_cost_eur`, `limit_eur`, `stage` |
-| Model | `model request`, `model response`, `model request failed`, `model reply rejected` | `model`, `status`, `finish_reason`, `tool_calls`, `prompt_tokens`, `cost_usd`, `stage`, `reason`, `body` |
+| Model | `model request`, `model response`, `model request failed`, `model reply rejected` | `model`, `status`, `finish_reason`, `tool_calls`, `prompt_tokens`, `cost_usd`, `stage`, `reason`, `response_bytes` |
 | Changes | `change previewed`, `change confirmed`, `change confirm repeated`, `change discarded`, `change undone`, `change refreshed`, and the matching `rejected` lines | `action`, `change_id`, `item_id`, `version`, `fields`, `error_code` |
 | Items | `item saved`, `item deleted`, `reminder schedule set`, `reminder schedule cancelled` | `reminder_active`, `reminder_at`, `nag_minutes`, `status`, `created` |
 | Reminders | `reminder fired`, `reminder action`, `reminder action rejected` | `scheduled_at`, `late_seconds`, `next`, `action`, `occurrence_id` |
@@ -82,7 +102,7 @@ Follow these steps in order. Stop at the first step that fails.
 
 1. Find `message accepted` and note `reply_id`.
 2. Search for that `reply_id` or `trace_id`. The last error line names the stage.
-3. `model request failed` shows the provider status and the first 512 bytes of its error body.
+3. `model request failed` shows the provider status and response byte count. Private traces retain the error body while capture is enabled; ordinary logs omit it because providers may echo private content.
    `model reply rejected` shows why the server refused a reply: `unreadable`, `truncated`, `no_choice` or `cost_missing`.
 4. `assistant reply blocked` with `reason=monthly_limit` shows the spend and the limit.
 
