@@ -138,7 +138,7 @@ func (t *Tx) QueueCaptureNotifications(id string, revision int) error {
 	return e
 }
 func (s *Store) CaptureDeliveries(now time.Time) ([]domain.CaptureDelivery, error) {
-	rows, e := s.db.Query("SELECT n.source_id,n.revision,n.device_id,d.token FROM capture_push n JOIN push_device d ON d.id=n.device_id JOIN capture c ON c.id=n.source_id WHERE n.sent=0 AND n.next_at<=? AND coalesce(json_extract(c.body,'$.deleted'),0)=0 AND json_extract(c.body,'$.status') IN ('needs-answer','ready-for-review') AND n.revision=json_extract(c.body,'$.revision')", now.Unix())
+	rows, e := s.db.Query("SELECT n.source_id,n.revision,n.device_id,d.token FROM capture_push n JOIN push_device d ON d.id=n.device_id JOIN capture c ON c.id=n.source_id WHERE n.sent=0 AND n.next_at<=? AND coalesce(json_extract(c.body,'$.deleted'),0)=0 AND json_extract(c.body,'$.status') IN ('needs-answer','ready-for-review','failed') AND n.revision=json_extract(c.body,'$.revision')", now.Unix())
 	if e != nil {
 		return nil, e
 	}

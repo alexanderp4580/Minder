@@ -105,3 +105,20 @@ func Summary(c domain.Capture) (string, bool) {
 	}
 	return fmt.Sprintf("Done: %d added, %d skipped.", added, skipped), true
 }
+
+// PushBody is the text of the push for an email: the failure, or how many items wait.
+func PushBody(c domain.Capture) string {
+	if c.Status == "failed" {
+		return "Minder could not read an email."
+	}
+	var live []domain.CaptureCandidate
+	for _, candidate := range c.Candidates {
+		if candidate.State != "superseded" {
+			live = append(live, candidate)
+		}
+	}
+	if len(live) == 1 {
+		return fmt.Sprintf("1 %s needs your review", noun(live))
+	}
+	return fmt.Sprintf("%d %ss need your review", len(live), noun(live))
+}

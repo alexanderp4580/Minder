@@ -205,7 +205,8 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 			return e
 		}
 		current.UpdateReviewState()
-		if current.Status == "needs-answer" || current.Status == "ready-for-review" {
+		if first && len(current.Candidates) > 0 {
+			// Only the first publication is news. The owner's own answers get no push.
 			if e = tx.QueueCaptureNotifications(current.ID, current.Revision); e != nil {
 				return e
 			}
@@ -241,6 +242,9 @@ func (s *Service) fail(c domain.Capture, cause error) error {
 		current.Status = "failed"
 		current.Error = failureMessage(cause)
 		if e = tx.PutCapture(current); e != nil {
+			return e
+		}
+		if e = tx.QueueCaptureNotifications(current.ID, current.Revision); e != nil {
 			return e
 		}
 		_, e = tx.PutEntry(domain.Entry{ID: current.EntryID, Kind: "capture", Text: current.Error, Capture: &current})
@@ -309,7 +313,12 @@ func (s *Service) deliverNotifications(ctx context.Context, now time.Time) error
 	}
 	for _, delivery := range deliveries {
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		invalid, sendErr := s.Sender.Send(ctx, delivery.Token, map[string]string{"capture_id": delivery.CaptureID, "type": "capture_review", "title": "Minder", "body": "An email needs your review."})
+		body, e := s.pushBody(delivery.CaptureID)
+		if e != nil {
+			cancel()
+			return e
+		}
+		invalid, sendErr := s.Sender.Send(ctx, delivery.Token, map[string]string{"capture_id": delivery.CaptureID, "type": "capture_review", "title": "Minder", "body": body})
 		cancel()
 		next := time.Time{}
 		if sendErr != nil && !invalid {
@@ -346,4 +355,13 @@ func supersededSlot(candidates []domain.CaptureCandidate, id string) int {
 		}
 	}
 	return -1
+}
+
+// pushBody words the push for the capture's current state.
+func (s *Service) pushBody(id string) (string, error) {
+	c, e := s.repository.Capture(id)
+	if e != nil {
+		return "", e
+	}
+	return review.PushBody(c), nil
 }

@@ -138,6 +138,7 @@ func (s *Service) Retry(id string) (out domain.Entry, err error) {
 		if c.Deleted || c.Status != "failed" {
 			return domain.ErrConflict
 		}
+		c.Revision++ // a new revision, so its push is not mistaken for the failure's
 		c.Status = "received"
 		c.Attempts = 0
 		c.NextAt = 0
