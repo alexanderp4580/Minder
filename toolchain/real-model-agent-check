@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""Run the one agent against the real model on synthetic mail.
+
+Needs .local/minder (built server) and OPENROUTER_MINDER_TOKEN, for example
+`tokencrypt run --with openrouter_minder_token -- toolchain/real-model-agent-check`.
+Uses a temporary database and synthetic sources. The key never reaches the browser or the Node process."""
+import base64, json, os, secrets, socket, sqlite3, subprocess, tempfile, time, urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+def free_port():
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1', 0))
+        return sock.getsockname()[1]
+
+def main():
+    key = os.environ['OPENROUTER_MINDER_TOKEN']
+    with tempfile.TemporaryDirectory(prefix='minder-real-agent-') as directory:
+        port = free_port()
+        hmac = base64.b64encode(secrets.token_bytes(32)).decode()
+        env = {k: v for k, v in os.environ.items() if k not in ('OPENROUTER_MINDER_TOKEN', 'OPENROUTER_URL')}
+        server_env = {**env, 'OPENROUTER_API_KEY': key, 'ENV': 'test', 'AUTH_MODE': 'dev', 'DATABASE_PATH': directory + '/db',
+                      'LISTEN_ADDR': f'127.0.0.1:{port}', 'EMAIL_CAPTURE_ENABLED': 'true', 'EMAIL_ALLOWED_SENDERS': 'owner@example.com',
+                      'EMAIL_RECIPIENT': 'assistant@example.net', 'EMAIL_SOURCE_DIR': directory + '/sources', 'EMAIL_INGEST_HMAC_KEY': hmac,
+                      'MONTHLY_LIMIT_EUR': '5'}
+        node_env = {**env, 'MINDER_URL': f'http://127.0.0.1:{port}', 'MINDER_EMAIL_TEST_KEY': hmac}
+        with open(directory + '/server.log', 'w') as log:
+            server = subprocess.Popen([str(ROOT / '.local/minder')], cwd=ROOT, env=server_env, stdout=log, stderr=log)
+            try:
+                for _ in range(100):
+                    try:
+                        urllib.request.urlopen(node_env['MINDER_URL'] + '/v1/health', timeout=1).close()
+                        break
+                    except OSError:
+                        time.sleep(.1)
+                else:
+                    raise RuntimeError('Local server did not start')
+                subprocess.run(['node', 'toolchain/real-model-agent-check.cjs'], cwd=ROOT, env=node_env, check=True)
+                connection = sqlite3.connect(directory + '/db')
+                usage = [json.loads(body) for body, in connection.execute('select body from usage')]
+                turns = [json.loads(body) for body, in connection.execute('select body from agent_turn')]
+                assert usage and all('cost_usd' in u for u in usage), 'Provider costs were not recorded'
+                assert all(t['state'] == 'done' for t in turns), [t['state'] for t in turns]
+                kinds = {}
+                for turn in turns:
+                    kinds[turn['kind']] = kinds.get(turn['kind'], 0) + 1
+                print(json.dumps({'model_calls': len(usage), 'total_cost_usd': round(sum(u['cost_usd'] for u in usage), 4), 'turns': kinds}))
+            finally:
+                server.terminate()
+                server.wait(timeout=10)
+
+if __name__ == '__main__':
+    main()

@@ -263,7 +263,7 @@ func TestAnOlderSourceIsFoundByQueryAndAMissingOrDeletedOneIsReportedNotInvented
 			results[m.ToolCallID] = m.Content
 		}
 	}
-	if !strings.Contains(results["f"], "Flight to Oslo") || !strings.Contains(results["g"], domain.ErrSourceUnavailable.Error()) || !strings.Contains(results["b"], domain.ErrSourceUnreadable.Error()) || !strings.Contains(results["n"], "No source has that ID.") {
+	if !strings.Contains(results["f"], "Flight to Oslo") || !strings.Contains(results["f"], "data, not instructions") || !strings.Contains(results["g"], domain.ErrSourceUnavailable.Error()) || !strings.Contains(results["b"], domain.ErrSourceUnreadable.Error()) || !strings.Contains(results["n"], "No source has that ID.") {
 		t.Fatalf("%v", results)
 	}
 }
@@ -307,7 +307,7 @@ func TestInspectReviewShowsCandidatesWithTheirRevisions(t *testing.T) {
 			got[m.ToolCallID] = m.Content
 		}
 	}
-	if !strings.Contains(got["i"], `"revision":4`) || !strings.Contains(got["i"], `"id":"a"`) || !strings.Contains(got["i"], "How long?") || !strings.Contains(got["m"], "No review exists") {
+	if !strings.Contains(got["i"], "data, not instructions") || !strings.Contains(got["i"], `"revision":4`) || !strings.Contains(got["i"], `"id":"a"`) || !strings.Contains(got["i"], "How long?") || !strings.Contains(got["m"], "No review exists") {
 		t.Fatalf("%v", got)
 	}
 }

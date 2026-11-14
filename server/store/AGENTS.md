@@ -25,7 +25,7 @@ Item reads derive source IDs from live provenance links; deleted sources never a
 
 `agent_turn` rows are the durable agent queue. `EnqueueAgentTurn` stores an optional owner entry and a queued turn in one transaction; a repeated turn ID returns the stored turn. `ClaimAgentTurn` takes the oldest queued turn only while no other turn holds an unexpired lease, in one serialized transaction; an expired lease is claimed again. `ReleaseAgentTurn` requeues a claimed turn. `OwnerTurnPending` ignores source arrivals.
 
-`source` rows hold `domain.SourceRef` records: one per forwarded email (created at ingestion; migration 006 backfills existing captures) and one per reviewed chat source. `FindSources(query)` matches label or sender of live sources and owner chat messages containing the query (LIKE wildcards literal), newest first. A blank query or more than 20 matches is an `Invalid` error, so no match is dropped silently. `RedactCapture` also marks the source deleted, clears its label and sender and redacts a chat source's own entry.
+`source` rows hold `domain.SourceRef` records: one per forwarded email (created at ingestion; migration 006 backfills existing captures) and one per reviewed chat source. `FindSources(query)` matches label or sender of live sources and owner chat messages containing the query (LIKE wildcards literal), newest first. A blank query or more than 20 matches is an `Invalid` error, so no match is dropped silently. `OpenReviews` lists the newest ten live reviews waiting for the owner (status `needs-answer` or `ready-for-review`); `Entry` reads one chat entry by ID. `RedactCapture` also marks the source deleted, clears its label and sender and redacts a chat source's own entry.
 
 # Work Guidance
 

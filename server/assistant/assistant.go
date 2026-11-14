@@ -25,8 +25,6 @@ const (
 	// maxHistoryText is the longest earlier owner message shown whole. A longer one is shown as
 	// a source reference, so a pasted email does not repeat in every later request.
 	maxHistoryText = 4000
-	// maxOpenReviews bounds the reviews listed in the instructions.
-	maxOpenReviews = 10
 )
 
 type Repository interface {
