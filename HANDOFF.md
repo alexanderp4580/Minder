@@ -1,8 +1,8 @@
 # Handoff
 
-State on 2026-11-14. Production still runs `b260753` (schema 5) from `guided-email-review`. The one-agent change is implemented, verified locally and **not deployed**. Rollback target if it is deployed: `b260753`; schema 6 only adds tables, but the older binary refuses a schema-6 database, so take a database backup first and roll back with a matching image or the backup. `main` remains at `679441b`.
+State on 2026-11-14. Production runs `56958d3` from `guided-email-review` (Coolify deployment `431bmwiocoztck33eewunq0q`, finished, running:healthy). Startup applied migration 006 (schema 5 to 6), email capture is enabled, and the logs show no warnings or errors. The database was reset without a backup just before, and all backups were removed at the owner's request, so there is no rollback data. The previous deployment was `b260753` (schema 5); an older binary refuses schema 6. `main` remains at `679441b`; the branch is pushed and unmerged.
 
-## One agent (implemented, not deployed)
+## One agent (deployed)
 
 Spec: [one-agent design](docs/superpowers/specs/2026-11-14-one-agent-design.md). Plan: [plan](docs/superpowers/plans/2026-11-14-one-agent.md). Evidence: [one-agent evidence](docs/evidence/one-agent.md).
 
@@ -10,7 +10,7 @@ Chat, forwarded email and pasted email use one agent: one instruction set, one c
 
 Judgment calls: the code-side duplicate-booking check is gone (the prompt asks the model, and the real model did flag a duplicate); a bad review goes back to the model as a tool result instead of a correction call; the first-publication push is dropped if the review is answered before it is delivered, as before.
 
-Local results: `toolchain/check` exit 0; five browser scenarios pass; a real-model run on synthetic mail (11 calls, 0.019 USD) kept the 13:00 start, set no end or length, asked how long, answered bring/questionnaire questions from the body and attachment, updated only the answered candidate, and gave the same review for pasted text. APK 0.11.0+33: `.local/artifacts/Minder-0.11.0-arm64.apk`, 19,031,442 bytes, SHA-256 `68360a5f84ffd13ff8ac6c75ebf6c4bef484089b1336a7319211fedf376673a7`, package `io.liveleds.minder`, version code 2033, same signer as 0.10.3. Download: http://192.168.8.226:8788/Minder-0.11.0-arm64.apk (full download hash verified). Phone rendering and notifications are unreviewed.
+Local results: `toolchain/check` exit 0; five browser scenarios pass; a real-model run on synthetic mail (11 calls, 0.019 USD) kept the 13:00 start, set no end or length, asked how long, answered bring/questionnaire questions from the body and attachment, updated only the answered candidate, and gave the same review for pasted text. APK 0.11.0+33: `.local/artifacts/Minder-0.11.0-arm64.apk`, 19,031,442 bytes, SHA-256 `68360a5f84ffd13ff8ac6c75ebf6c4bef484089b1336a7319211fedf376673a7`, package `io.liveleds.minder`, version code 2033, same signer as 0.10.3. Download: http://192.168.8.226:8788/Minder-0.11.0-arm64.apk (full download hash verified). The APK matches the deployed server. Phone rendering and notifications are unreviewed.
 
 ## Failure reporting (0.10.3+32, deployed)
 
