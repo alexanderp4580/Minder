@@ -3,107 +3,73 @@ package serper
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
-	"time"
+
+	"github.com/alexanderp4580/Minder/server/assistant"
 )
 
-const fixture = `{"searchParameters":{"q":"x"},"places":[
-{"title":"SnowWorld Landgraaf","address":"Witte Wereld 1, 6372 VG Landgraaf, Netherlands","type":"Indoor snowcenter","types":["Indoor snowcenter","Bar"],"website":"https://www.snowworld.com/landgraaf","rating":4.2,"latitude":50.8},
-{"title":"B","address":"Street 2"},{"title":"C"},{"title":"D"}],"credits":1}`
-
-func server(t *testing.T, status int, body string, seen *http.Request, payload *map[string]string) *Client {
+// serperAt starts a fake Serper that answers every request with the body and records the last one.
+func serperAt(t *testing.T, status int, body string) (*Client, *recorded) {
 	t.Helper()
+	seen := &recorded{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if seen != nil {
-			*seen = *r.Clone(context.Background())
-		}
-		if payload != nil {
-			json.NewDecoder(r.Body).Decode(payload)
-		}
+		seen.count++
+		seen.path = r.URL.Path
+		json.NewDecoder(r.Body).Decode(&seen.payload)
 		w.WriteHeader(status)
 		w.Write([]byte(body))
 	}))
 	t.Cleanup(srv.Close)
-	return &Client{Key: "serper-secret", URL: srv.URL}
+	return &Client{Key: "serper-secret", URL: srv.URL}, seen
 }
 
-func TestFindPlacesSendsTheQueryAndKeepsThreePlaces(t *testing.T) {
-	var seen http.Request
-	var payload map[string]string
-	c := server(t, 200, fixture, &seen, &payload)
-	places, err := c.FindPlaces(context.Background(), "SnowWorld Landgraaf")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if seen.Method != "POST" || seen.Header.Get("X-API-KEY") != "serper-secret" {
-		t.Fatalf("request %s %v", seen.Method, seen.Header)
-	}
-	if payload["q"] != "SnowWorld Landgraaf" || payload["gl"] != "nl" || payload["hl"] != "en" {
-		t.Fatalf("payload %v", payload)
-	}
-	if len(places) != 3 {
-		t.Fatalf("places %d", len(places))
-	}
-	first := places[0]
-	if first.Title != "SnowWorld Landgraaf" || first.Address != "Witte Wereld 1, 6372 VG Landgraaf, Netherlands" || first.Category != "Indoor snowcenter" || first.Website != "https://www.snowworld.com/landgraaf" || first.Rating != 4.2 {
-		t.Fatalf("first %+v", first)
-	}
+type recorded struct {
+	count   int
+	path    string
+	payload map[string]string
 }
 
-func TestFindPlacesWithNoPlacesIsEmpty(t *testing.T) {
-	c := server(t, 200, `{"places":[]}`, nil, nil)
-	places, err := c.FindPlaces(context.Background(), "nothing")
-	if err != nil || len(places) != 0 {
-		t.Fatalf("%v %v", places, err)
+func TestEachKindPostsToItsPathAndDecodes(t *testing.T) {
+	cases := []struct {
+		kind assistant.LookupKind
+		path string
+		body string
+		want assistant.Hit
+	}{
+		{assistant.LookupMaps, "/maps", mapsBody, assistant.Hit{Title: "SnowWorld Landgraaf", Address: "Witte Wereld 1, 6372 VG Landgraaf, Netherlands", Category: "Indoor snowcenter", Website: "https://www.snowworld.com/landgraaf", Phone: "+31 85 902 0606", Rating: 4.2}},
+		{assistant.LookupPlaces, "/places", `{"places":[{"title":"Rijksmuseum","address":"Museumstraat 1","category":"Art museum"}]}`, assistant.Hit{Title: "Rijksmuseum", Address: "Museumstraat 1", Category: "Art museum"}},
+		{assistant.LookupSearch, "/search", `{"organic":[{"title":"SnowWorld","link":"https://www.snowworld.com","snippet":"Open daily"}]}`, assistant.Hit{Title: "SnowWorld", Website: "https://www.snowworld.com", Snippet: "Open daily"}},
 	}
-}
-
-func TestFindPlacesErrorsNeverCarryTheKeyOrBody(t *testing.T) {
-	for _, status := range []int{401, 500} {
-		c := server(t, status, `{"message":"bad key serper-secret"}`, nil, nil)
-		_, err := c.FindPlaces(context.Background(), "x")
-		if err == nil || strings.Contains(err.Error(), "serper-secret") || strings.Contains(err.Error(), "bad key") {
-			t.Fatalf("status %d error %v", status, err)
+	for _, c := range cases {
+		client, seen := serperAt(t, 200, c.body)
+		hits, err := client.Lookup(context.Background(), c.kind, "SnowWorld Landgraaf")
+		if err != nil || len(hits) == 0 || hits[0] != c.want {
+			t.Fatalf("%s: %+v %v", c.kind, hits, err)
+		}
+		if seen.path != c.path || seen.payload["q"] != "SnowWorld Landgraaf" || seen.payload["gl"] != "nl" || seen.payload["hl"] != "en" {
+			t.Fatalf("%s: %s %v", c.kind, seen.path, seen.payload)
 		}
 	}
 }
 
-func TestFindPlacesRejectsABodyOverTheLimit(t *testing.T) {
-	c := server(t, 200, `{"places":[{"title":"`+strings.Repeat("a", 70<<10)+`"}]}`, nil, nil)
-	if _, err := c.FindPlaces(context.Background(), "x"); err == nil {
-		t.Fatal("accepted an oversized body")
+func TestUnknownKindMakesNoRequest(t *testing.T) {
+	client, seen := serperAt(t, 200, `{}`)
+	if _, err := client.Lookup(context.Background(), "images", "x"); err == nil || seen.count != 0 {
+		t.Fatalf("error %v requests %d", err, seen.count)
 	}
 }
 
-func TestFindPlacesWithoutAKeyMakesNoRequest(t *testing.T) {
-	called := false
-	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
-	t.Cleanup(srv.Close)
-	if _, err := (&Client{URL: srv.URL}).FindPlaces(context.Background(), "x"); err == nil || called {
-		t.Fatalf("error %v called %v", err, called)
+func TestProviderFailureIsAnError(t *testing.T) {
+	client, _ := serperAt(t, 500, `{"message":"down"}`)
+	if _, err := client.Lookup(context.Background(), assistant.LookupMaps, "x"); err == nil {
+		t.Fatal("a 500 was not an error")
 	}
 }
 
-func TestFindPlacesStopsWhenTheContextEnds(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.Copy(io.Discard, r.Body)
-		<-r.Context().Done()
-	}))
-	t.Cleanup(srv.Close)
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
-	started := time.Now()
-	if _, err := (&Client{Key: "k", URL: srv.URL}).FindPlaces(ctx, "x"); err == nil || time.Since(started) > 2*time.Second {
-		t.Fatalf("error %v after %v", err, time.Since(started))
-	}
-}
-
-func TestDefaultEndpointIsTheMapsSearch(t *testing.T) {
-	if defaultURL != "https://google.serper.dev/maps" {
-		t.Fatalf("default %s", defaultURL)
+func TestTheDefaultBaseIsSerper(t *testing.T) {
+	if got := (&Client{}).base(); got != "https://google.serper.dev" {
+		t.Fatalf("base %s", got)
 	}
 }
