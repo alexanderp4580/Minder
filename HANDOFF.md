@@ -1,6 +1,10 @@
 # Handoff
 
-State on 2026-11-15. Production runs `595ff92` from `main` (Coolify deployment `vcvphgkmkrhscifpitwnhvfk`, finished, running:healthy, schema 6, no migration, startup log clean: no warnings or errors in the last 40 lines, `serper_key_set=true`, private tracing still configured until `2026-11-15T20:56:21Z`). The previous runtime is `739d110` (also schema 6). `main` holds every branch, including `guided-email-review`, merged at the owner's request. The Coolify app is pinned to `main` at that commit. App 0.13.0+35 is below.
+State on 2026-11-15. Production runs `595ff92` from `main` (Coolify deployment `vcvphgkmkrhscifpitwnhvfk`, finished, running:healthy, schema 6, no migration, startup log clean: no warnings or errors in the last 40 lines, `serper_key_set=true`, private tracing still configured until `2026-11-15T20:56:21Z`). The previous runtime is `739d110` (also schema 6). `main` holds every branch, including `guided-email-review`, merged at the owner's request. The Coolify app is pinned to `main` at that commit. App 0.13.1+36 is below; it is a client-only patch over 0.13.0.
+
+## Checkout wording fix (0.13.1+36)
+
+The owner reported that events still said Checkout. The agenda chip printed Checkout for every item with an end date. It now follows `date_end`: Checkout only for `checkout`, Ends otherwise (including older items with no `date_end`). Regression: `the agenda says Ends for an event and Checkout only for a stay`, red before the fix. `toolchain/check` exited 0. APK `.local/artifacts/Minder-0.13.1-arm64.apk`: 19,096,662 bytes, SHA-256 `40e9fdb3bb6a62ee1303578deca6dc437472bf88bfdc43ec9c4adcb3066e097e`, version code 2036, arm64 only, signer matches 0.12.0; LAN `http://192.168.8.226:8788/Minder-0.13.1-arm64.apk` returned the matching file. The web client ships in the server image, so this needs a deploy.
 
 ## Calendar colours and event spans (0.13.0+35)
 

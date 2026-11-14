@@ -165,4 +165,32 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'the agenda says Ends for an event and Checkout only for a stay',
+    (tester) async {
+      final c = CalendarController(
+        Items([
+          sample({'date_end': 'inclusive'}),
+          sample({'id': 'old', 'title': 'Old range'}),
+          sample({'id': 'hotel', 'title': 'Hotel', 'date_end': 'checkout'}),
+        ]),
+        now: () => DateTime(2026, 11, 21),
+      );
+      await c.load();
+      addTearDown(c.dispose);
+      tester.view.physicalSize = const Size(412, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: Tokens.theme,
+          home: CalendarScreen(controller: c),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Ends 2026-11-23'), findsNWidgets(2));
+      expect(find.text('Checkout 2026-11-23'), findsOneWidget);
+    },
+  );
 }

@@ -290,7 +290,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       if (!expanded && trip && item.endLocal.isNotEmpty)
         'Arrives ${item.endLocal.replaceFirst('T', ' ')} ${item.endTimezone}',
       if (item.endDate != null)
-        'Checkout ${item.endDate!.year}-${item.endDate!.month.toString().padLeft(2, '0')}-${item.endDate!.day.toString().padLeft(2, '0')}',
+        '${item.dateEnd == 'checkout' ? 'Checkout' : 'Ends'} ${item.endDate!.year}-${item.endDate!.month.toString().padLeft(2, '0')}-${item.endDate!.day.toString().padLeft(2, '0')}',
       if (!expanded && item.durationMinutes > 0)
         _duration(item.durationMinutes),
       if (item.priority > 0) 'P${item.priority}',
