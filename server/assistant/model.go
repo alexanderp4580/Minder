@@ -31,6 +31,15 @@ type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
+
+// Purpose on a request's first message tells the model adapter which tools to offer.
+const (
+	PurposeChat   = ""
+	PurposeOffer  = "offer"  // chat that may offer a lookup
+	PurposeLookup = "lookup" // an approved lookup: chat plus the lookup tools
+	PurposeEmail  = "email"
+)
+
 type Model interface {
 	Complete(context.Context, []Message) (Response, error)
 }
@@ -44,15 +53,4 @@ func (m Message) MarshalJSON() ([]byte, error) {
 		Role    string `json:"role"`
 		Content any    `json:"content"`
 	}{m.Role, content})
-}
-
-// Place is one result of a place lookup.
-type Place struct {
-	Title, Address, Category, Website string
-	Rating                            float64
-}
-
-// PlaceFinder looks up places for a query the owner approved.
-type PlaceFinder interface {
-	FindPlaces(context.Context, string) ([]Place, error)
 }

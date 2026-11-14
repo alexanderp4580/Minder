@@ -80,7 +80,7 @@ func (a *Service) Extract(ctx context.Context, document domain.CaptureDocument, 
 		for n := batch * 4; n < len(images) && n < (batch+1)*4; n++ {
 			parts = append(parts, ContentPart{Type: "text", Text: "Source part: " + images[n].ID}, ContentPart{Type: "image_url", ImageURL: &ImageURL{URL: "data:" + images[n].MediaType + ";base64," + base64.StdEncoding.EncodeToString(images[n].Data)}})
 		}
-		extracted, e := a.extractCaptureBatch(ctx, document, []Message{{Role: "system", Purpose: "email", Content: captureInstructions}, {Role: "user", Parts: parts}})
+		extracted, e := a.extractCaptureBatch(ctx, document, []Message{{Role: "system", Purpose: PurposeEmail, Content: captureInstructions}, {Role: "user", Parts: parts}})
 		if e != nil {
 			return result, e
 		}

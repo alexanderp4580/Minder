@@ -43,7 +43,7 @@ type Service struct {
 	repository  Repository
 	commands    Proposer
 	model       Model
-	places      PlaceFinder
+	finder      Finder
 	limit, rate float64
 	mu          sync.Mutex
 }
@@ -52,9 +52,9 @@ func New(s Repository, c Proposer, m Model, limit, rate float64) *Service {
 	return &Service{repository: s, commands: c, model: m, limit: limit, rate: rate}
 }
 
-// WithPlaces turns on the place lookup: the offer tool and the gate that runs it.
-func (a *Service) WithPlaces(p PlaceFinder) *Service {
-	a.places = p
+// WithLookups turns on lookups: the offer tool, and the lookup tools once the owner approves.
+func (a *Service) WithLookups(f Finder) *Service {
+	a.finder = f
 	return a
 }
 func (a *Service) Preflight() error {
@@ -124,10 +124,11 @@ func (a *Service) reply(ctx context.Context, text string, trace *replyTrace) ([]
 	}
 	zone, _ := time.LoadLocation("Europe/Amsterdam")
 	var extraRules []string
-	if a.places != nil {
-		extraRules = append(extraRules, placeRule)
+	purpose := PurposeChat
+	if a.finder != nil {
+		extraRules, purpose = append(extraRules, lookupRule), PurposeOffer
 	}
-	messages := []Message{{Role: "system", Content: systemPrompt(time.Now().In(zone), lists, profiles, contextItems(items), extraRules...)}}
+	messages := []Message{{Role: "system", Purpose: purpose, Content: systemPrompt(time.Now().In(zone), lists, profiles, contextItems(items), extraRules...)}}
 	trace.stage = "load history"
 	history, e := a.repository.History(0, 20)
 	if e != nil {
@@ -161,16 +162,18 @@ func (a *Service) reply(ctx context.Context, text string, trace *replyTrace) ([]
 			return nil, e
 		}
 	}
+	var r Response
 	if query, ok := a.lookupQuery(history, text); ok {
-		// The owner accepted an offer: search for the query they saw, then let the model use the result.
-		trace.stage = "place lookup"
-		messages = append(messages, Message{Role: "user", Content: a.placeMessage(ctx, query)})
+		// The owner accepted an offer: the model may search, within the budget, then answer.
+		trace.stage = "lookup"
+		r, e = a.askWithLookups(ctx, append(messages, approvalMessage(query)), trace)
+	} else {
+		r, e = a.ask(ctx, messages, trace)
 	}
-	r, e := a.ask(ctx, messages, trace)
 	if e != nil {
 		return nil, e
 	}
-	if a.places != nil {
+	if a.finder != nil {
 		if query, found, e := offerLookup(r); e != nil {
 			return nil, e
 		} else if found {

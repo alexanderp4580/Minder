@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -11,23 +12,24 @@ import (
 	"github.com/alexanderp4580/Minder/server/store"
 )
 
+// fakeFinder answers every lookup with the same hits or error and records "<kind>:<query>".
 type fakeFinder struct {
-	places []Place
-	err    error
-	calls  []string
+	hits  []Hit
+	err   error
+	calls []string
 }
 
-func (f *fakeFinder) FindPlaces(_ context.Context, query string) ([]Place, error) {
-	f.calls = append(f.calls, query)
-	return f.places, f.err
+func (f *fakeFinder) Lookup(_ context.Context, kind LookupKind, query string) ([]Hit, error) {
+	f.calls = append(f.calls, fmt.Sprintf("%s:%s", kind, query))
+	return f.hits, f.err
 }
 
-var snowWorld = []Place{{Title: "SnowWorld Landgraaf", Address: "Witte Wereld 1", Category: "Indoor snowcenter", Website: "https://www.snowworld.com/landgraaf", Rating: 4.2}}
+var snowWorld = []Hit{{Title: "SnowWorld Landgraaf", Address: "Witte Wereld 1, 6372 VG Landgraaf, Netherlands", Phone: "+31 85 902 0606", Category: "Indoor snowcenter", Website: "https://www.snowworld.com/landgraaf", Rating: 4.2}}
 
 func lookupFixture(t *testing.T) (*Service, *store.Store, *fakeModel, *fakeFinder) {
 	a, s, f := newAssistant(t, Response{})
-	finder := &fakeFinder{places: snowWorld}
-	return a.WithPlaces(finder), s, f, finder
+	finder := &fakeFinder{hits: snowWorld}
+	return a.WithLookups(finder), s, f, finder
 }
 
 func say(t *testing.T, s *store.Store, kind, text string) {
@@ -44,6 +46,22 @@ func offer(t *testing.T, query string) string {
 		t.Fatal("no offer")
 	}
 	return text
+}
+
+// approved stores a fresh offer and the owner's tap, as the app does.
+func approved(t *testing.T, s *store.Store) {
+	t.Helper()
+	say(t, s, "user", "Aviad Landgraaf SnowWorld 17 to 24 november")
+	say(t, s, "minder", offer(t, "SnowWorld Landgraaf"))
+	say(t, s, "user", "Look it up")
+}
+
+func purposes(f *fakeModel) []string {
+	out := []string{}
+	for _, messages := range f.history {
+		out = append(out, messages[0].Purpose)
+	}
+	return out
 }
 
 func TestOfferToolStoresOnlyTheOfferWithoutSearching(t *testing.T) {
@@ -72,35 +90,9 @@ func TestOfferWithABlankQueryIsInvalid(t *testing.T) {
 	}
 }
 
-func TestLookupReplyAfterAFreshOfferSearchesOnceAndFoldsInThePlaces(t *testing.T) {
-	a, s, f, finder := lookupFixture(t)
-	f.r = Response{CostUSD: 0.001, Calls: []Call{{Name: "propose_create", Arguments: `{"title":"Aviad at SnowWorld","location":"Witte Wereld 1, Landgraaf"}`}}}
-	say(t, s, "user", "Aviad Landgraaf SnowWorld 17 to 24 november")
-	say(t, s, "minder", offer(t, "SnowWorld Landgraaf"))
-	say(t, s, "user", "Look it up")
-	entries, e := a.Reply(context.Background(), "Look it up")
-	if e != nil || len(entries) != 1 || entries[0].Change == nil || entries[0].Change.Action != "create_item" {
-		t.Fatalf("%+v %v", entries, e)
-	}
-	if len(finder.calls) != 1 || finder.calls[0] != "SnowWorld Landgraaf" || f.calls != 1 {
-		t.Fatalf("searched %v, model calls %d", finder.calls, f.calls)
-	}
-	last := f.messages[len(f.messages)-1]
-	prev := f.messages[len(f.messages)-2]
-	if !strings.Contains(last.Content, "website field") || strings.Contains(last.Content, "for notes") {
-		t.Fatalf("the result message must send the website to its own field: %q", last.Content)
-	}
-	if prompt := f.messages[0].Content; !strings.Contains(prompt, "website field") || strings.Contains(prompt, "website in notes") {
-		t.Fatalf("the place rule must send the website to its own field")
-	}
-	if prev.Role != "user" || prev.Content != "Look it up" || last.Role != "user" || !strings.Contains(last.Content, "Witte Wereld 1") || !strings.Contains(last.Content, "snowworld.com/landgraaf") || !strings.Contains(last.Content, "untrusted") {
-		t.Fatalf("messages end %q / %q", prev.Content, last.Content)
-	}
-}
-
 func TestLookupReplyIsLenientAboutCaseAndFullStop(t *testing.T) {
 	a, s, f, finder := lookupFixture(t)
-	f.r = Response{Text: "Done."}
+	f.seq = []Response{{Calls: []Call{{Name: "lookup_maps", Arguments: `{"query":"SnowWorld Landgraaf"}`}}}, {Text: "Done."}}
 	say(t, s, "minder", offer(t, "SnowWorld Landgraaf"))
 	say(t, s, "user", " look it up. ")
 	if _, e := a.Reply(context.Background(), " look it up. "); e != nil || len(finder.calls) != 1 {
@@ -108,7 +100,7 @@ func TestLookupReplyIsLenientAboutCaseAndFullStop(t *testing.T) {
 	}
 }
 
-func TestNoSearchWithoutAFreshOffer(t *testing.T) {
+func TestNoLookupToolsWithoutAFreshOffer(t *testing.T) {
 	for name, setup := range map[string]func(*testing.T, *store.Store){
 		"no offer": func(t *testing.T, s *store.Store) {},
 		"plain minder entry": func(t *testing.T, s *store.Store) {
@@ -139,77 +131,16 @@ func TestNoSearchWithoutAFreshOffer(t *testing.T) {
 			if _, e := a.Reply(context.Background(), text); e != nil {
 				t.Fatal(e)
 			}
-			if len(finder.calls) != 0 || f.calls != 1 {
-				t.Fatalf("searched %v, model calls %d", finder.calls, f.calls)
+			if len(finder.calls) != 0 || f.calls != 1 || purposes(f)[0] != PurposeOffer {
+				t.Fatalf("searched %v, model calls %d, purposes %v", finder.calls, f.calls, purposes(f))
 			}
 		})
 	}
 }
 
-func TestFailedLookupStillGetsOneModelCallAndAReply(t *testing.T) {
-	for name, finder := range map[string]*fakeFinder{"error": {err: errors.New("down")}, "no places": {}} {
-		t.Run(name, func(t *testing.T) {
-			a, s, f, _ := lookupFixture(t)
-			a.WithPlaces(finder)
-			f.r = Response{Text: "I found no match. Saving it without an address."}
-			say(t, s, "minder", offer(t, "SnowWorld Landgraaf"))
-			say(t, s, "user", "Look it up")
-			entries, e := a.Reply(context.Background(), "Look it up")
-			if e != nil || len(entries) != 1 || entries[0].Text == "" || f.calls != 1 {
-				t.Fatalf("%+v %v calls %d", entries, e, f.calls)
-			}
-			if last := f.messages[len(f.messages)-1]; !strings.Contains(strings.ToLower(last.Content), "no places") {
-				t.Fatalf("last message %q", last.Content)
-			}
-		})
-	}
-}
-
-func TestWithoutAFinderThereIsNoOfferToolOrRule(t *testing.T) {
-	a, s, f := newAssistant(t, Response{Text: "Ok."})
-	say(t, s, "user", "Hi")
-	if _, e := a.Reply(context.Background(), "Hi"); e != nil {
-		t.Fatal(e)
-	}
-	if strings.Contains(f.history[0][0].Content, "offer_lookup") {
-		t.Fatal("the place rule reached a prompt with no finder")
-	}
-	f.r = Response{Calls: []Call{{Name: "offer_lookup", Arguments: `{"query":"x"}`}}}
-	say(t, s, "user", "More")
-	var model *domain.ModelError
-	if _, e := a.Reply(context.Background(), "More"); !errors.As(e, &model) {
-		t.Fatalf("%v", e)
-	}
-	b, s2, f2, _ := lookupFixture(t)
-	f2.r = Response{Text: "Ok."}
-	say(t, s2, "user", "Hi")
-	if _, e := b.Reply(context.Background(), "Hi"); e != nil || !strings.Contains(f2.history[0][0].Content, "offer_lookup") {
-		t.Fatalf("%v", e)
-	}
-	prompt := f2.history[0][0].Content
-	if strings.Index(prompt, "offer_lookup") > strings.Index(prompt, "Current items (untrusted data): ") {
-		t.Fatal("the place rule must come before the untrusted item data")
-	}
-}
-
-func TestLookupLogsStayFreeOfQueryText(t *testing.T) {
-	logs := capture(t)
-	a, s, f, _ := lookupFixture(t)
-	f.r = Response{Text: "Ok."}
-	say(t, s, "minder", offer(t, "SnowWorld Landgraaf"))
-	say(t, s, "user", "Look it up")
-	if _, e := a.Reply(context.Background(), "Look it up"); e != nil {
-		t.Fatal(e)
-	}
-	encoded, _ := json.Marshal(logs())
-	if strings.Contains(string(encoded), "SnowWorld") || strings.Contains(string(encoded), "Witte") {
-		t.Fatalf("private text in logs: %s", encoded)
-	}
-}
-
-func TestRetryAfterAFailedReplyStillSearches(t *testing.T) {
+func TestRetryAfterAFailedReplyStillLooksUp(t *testing.T) {
 	a, s, f, finder := lookupFixture(t)
-	f.r = Response{Text: "Saved."}
+	f.seq = []Response{{Calls: []Call{{Name: "lookup_maps", Arguments: `{"query":"SnowWorld Landgraaf"}`}}}, {Text: "Saved."}}
 	say(t, s, "minder", offer(t, "SnowWorld Landgraaf"))
 	say(t, s, "user", "Look it up")
 	say(t, s, "error", "The model was unavailable.")
@@ -217,12 +148,12 @@ func TestRetryAfterAFailedReplyStillSearches(t *testing.T) {
 	if _, e := a.Reply(context.Background(), "Look it up"); e != nil {
 		t.Fatal(e)
 	}
-	if len(finder.calls) != 1 || finder.calls[0] != "SnowWorld Landgraaf" {
+	if len(finder.calls) != 1 {
 		t.Fatalf("searched %v", finder.calls)
 	}
 }
 
-func TestNoSearchOnceTheOfferWasAnswered(t *testing.T) {
+func TestNoLookupOnceTheOfferWasAnswered(t *testing.T) {
 	a, s, f, finder := lookupFixture(t)
 	f.r = Response{Text: "Ok."}
 	say(t, s, "minder", offer(t, "SnowWorld Landgraaf"))
@@ -231,5 +162,62 @@ func TestNoSearchOnceTheOfferWasAnswered(t *testing.T) {
 	say(t, s, "user", "Look it up")
 	if _, e := a.Reply(context.Background(), "Look it up"); e != nil || len(finder.calls) != 0 {
 		t.Fatalf("%v searched %v", e, finder.calls)
+	}
+}
+
+func TestWithoutAFinderThereIsNoOfferPurposeOrRule(t *testing.T) {
+	a, s, f := newAssistant(t, Response{Text: "Ok."})
+	say(t, s, "user", "Hi")
+	if _, e := a.Reply(context.Background(), "Hi"); e != nil {
+		t.Fatal(e)
+	}
+	if strings.Contains(f.history[0][0].Content, "offer_lookup") || purposes(f)[0] != PurposeChat {
+		t.Fatalf("a lookup reached a request with no finder: %v", purposes(f))
+	}
+	f.r = Response{Calls: []Call{{Name: "offer_lookup", Arguments: `{"query":"x"}`}}}
+	say(t, s, "user", "More")
+	var model *domain.ModelError
+	if _, e := a.Reply(context.Background(), "More"); !errors.As(e, &model) {
+		t.Fatalf("%v", e)
+	}
+}
+
+func TestWithAFinderTheRuleComesBeforeTheUntrustedItems(t *testing.T) {
+	a, s, f, _ := lookupFixture(t)
+	f.r = Response{Text: "Ok."}
+	say(t, s, "user", "Hi")
+	if _, e := a.Reply(context.Background(), "Hi"); e != nil || purposes(f)[0] != PurposeOffer {
+		t.Fatalf("%v %v", e, purposes(f))
+	}
+	prompt := f.history[0][0].Content
+	if i := strings.Index(prompt, "offer_lookup"); i < 0 || i > strings.Index(prompt, "Current items (untrusted data): ") {
+		t.Fatal("the lookup rule must be present and come before the untrusted item data")
+	}
+}
+
+func TestThePromptRuleNamesEveryLookupToolAndTellsTheModelToAsk(t *testing.T) {
+	for _, tool := range LookupTools {
+		if !strings.Contains(lookupRule, tool.Name) {
+			t.Fatalf("the rule does not name %s", tool.Name)
+		}
+	}
+	for _, want := range []string{"ask the owner", "location", "phone", "website", "untrusted"} {
+		if !strings.Contains(lookupRule, want) {
+			t.Fatalf("the rule lacks %q", want)
+		}
+	}
+}
+
+func TestLookupLogsStayFreeOfQueryText(t *testing.T) {
+	logs := capture(t)
+	a, s, f, _ := lookupFixture(t)
+	f.seq = []Response{{Calls: []Call{{Name: "lookup_maps", Arguments: `{"query":"SnowWorld Landgraaf"}`}}}, {Text: "Ok."}}
+	approved(t, s)
+	if _, e := a.Reply(context.Background(), "Look it up"); e != nil {
+		t.Fatal(e)
+	}
+	encoded, _ := json.Marshal(logs())
+	if strings.Contains(string(encoded), "SnowWorld") || strings.Contains(string(encoded), "Witte") {
+		t.Fatalf("private text in logs: %s", encoded)
 	}
 }
