@@ -13,6 +13,8 @@ Transaction handles stay inside their callback. Read methods must return storage
 
 Captures, ingestion receipts and item-source links participate in the same transaction as previews and confirmed items.
 
+`AgentTurns` (`AgentTurn`, `PutAgentTurn`) lets a transaction end a turn together with its writes.
+
 `PurgeItem` belongs to the item capability and returns `Purged` (removed entry IDs, orphaned sources). The caller decides what to do with orphaned sources.
 
 # Work Guidance

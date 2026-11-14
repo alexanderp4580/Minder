@@ -27,6 +27,8 @@ Items and proposals carry optional `phone`, `email`, `website` and `booking_refe
 
 `FailureReason` (`ReasonCutOff`, `ReasonEvidence`, `ReasonNoReview`, `ReasonUnreadable`, `ReasonUnparsed`, `ReasonTimeout`, `ReasonLimit`, `ReasonOther`, `ReasonReviewItemMissing`) gives each email failure one fixed sentence; `ReasonOf` classifies an error and `ModelError.Reason` carries it. `Capture.Unverified` counts dropped candidates; candidate state `queued` means extracted but not yet published. `AsksDuration` recognises duration questions. `CaptureExtraction.Summary` and `.Notification` carry the model's opening and push text; `Capture.Notification` stores the latter.
 
+`AgentTurn` (kinds `owner`, `source_arrival`, `review_reply`; states `queued`, `active`, `done`, `failed`) points at retained text by entry or source ID and lists the entries its commit wrote. `ArrivalTurn(source, revision)` has a fixed ID, so one source revision queues one turn. `AgentOutcome` is the agent's unsaved decision; `ReviewPatch` carries candidates to add or change in one source's review and leaves omitted candidates alone.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

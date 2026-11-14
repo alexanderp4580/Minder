@@ -1,0 +1,1 @@
+CREATE TABLE agent_turn(id TEXT PRIMARY KEY, body TEXT NOT NULL);

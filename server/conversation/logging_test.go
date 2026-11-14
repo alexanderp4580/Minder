@@ -14,6 +14,7 @@ import (
 
 	"github.com/alexanderp4580/Minder/server/conversation"
 	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/port"
 	"github.com/alexanderp4580/Minder/server/store"
 )
 
@@ -76,23 +77,65 @@ type scripted struct {
 	trace *string
 }
 
-func (s scripted) Reply(ctx context.Context, _ string) ([]domain.Entry, error) {
+func (s scripted) Run(ctx context.Context, turn domain.AgentTurn) (domain.AgentOutcome, error) {
 	if s.trace != nil {
 		*s.trace = domain.TraceID(ctx)
 	}
 	if s.panic != nil {
 		panic(s.panic)
 	}
-	return []domain.Entry{{Kind: "minder"}, {Kind: "preview"}}, s.err
+	return domain.AgentOutcome{}, s.err
 }
-func open(t *testing.T, r conversation.Replier) *conversation.Service {
+
+// recorder is a finisher that notes what it was asked to store.
+type recorder struct {
+	mu        sync.Mutex
+	committed []domain.AgentTurn
+	failed    []domain.AgentTurn
+	causes    []error
+	fail      error
+	// db, when set, ends the turn the way the real finisher does, so the queue moves on.
+	db port.UnitOfWork
+}
+
+func (r *recorder) end(turn domain.AgentTurn, state string) {
+	if r.db == nil {
+		return
+	}
+	turn.State = state
+	r.db.Transact(func(tx port.Transaction) error { return tx.PutAgentTurn(turn) })
+}
+
+func (r *recorder) CommitAgentTurn(turn domain.AgentTurn, _ domain.AgentOutcome) ([]domain.Entry, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.fail != nil {
+		return nil, r.fail
+	}
+	r.committed = append(r.committed, turn)
+	r.end(turn, domain.TurnDone)
+	return []domain.Entry{{Kind: "minder"}, {Kind: "preview"}}, nil
+}
+func (r *recorder) FailAgentTurn(turn domain.AgentTurn, cause error) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.failed, r.causes = append(r.failed, turn), append(r.causes, cause)
+	r.end(turn, domain.TurnFailed)
+	return nil
+}
+func (r *recorder) counts() (int, int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.committed), len(r.failed)
+}
+func open(t *testing.T, a conversation.Agent, f conversation.Finisher) *conversation.Service {
 	t.Helper()
 	db, err := store.Open(filepath.Join(t.TempDir(), "db"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	s := conversation.New(context.Background(), db, r)
+	s := conversation.New(context.Background(), db, a, f)
 	t.Cleanup(s.Close)
 	return s
 }
@@ -100,7 +143,7 @@ func open(t *testing.T, r conversation.Replier) *conversation.Service {
 func TestAcceptedMessageAndReplyLifecycleAreLogged(t *testing.T) {
 	logs := capture(t)
 	var trace string
-	s := open(t, scripted{trace: &trace})
+	s := open(t, scripted{trace: &trace}, &recorder{})
 	accepted, err := s.Accept("Call the SECRETPLUMBER")
 	if err != nil {
 		t.Fatal(err)
@@ -127,7 +170,7 @@ func TestAcceptedMessageAndReplyLifecycleAreLogged(t *testing.T) {
 
 func TestRejectedMessagesAreLoggedWithReason(t *testing.T) {
 	logs := capture(t)
-	s := open(t, scripted{})
+	s := open(t, scripted{}, &recorder{})
 	if _, err := s.Accept("   "); err == nil {
 		t.Fatal("empty accepted")
 	}
@@ -136,9 +179,10 @@ func TestRejectedMessagesAreLoggedWithReason(t *testing.T) {
 	}
 }
 
-func TestReplyErrorAndPanicAreLoggedWithCause(t *testing.T) {
+func TestReplyErrorAndPanicAreLoggedWithCauseAndFailTheTurn(t *testing.T) {
 	logs := capture(t)
-	s := open(t, scripted{err: errors.New("provider exploded")})
+	finished := &recorder{}
+	s := open(t, scripted{err: errors.New("provider exploded")}, finished)
 	if _, err := s.Accept("one"); err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +191,8 @@ func TestReplyErrorAndPanicAreLoggedWithCause(t *testing.T) {
 		t.Fatalf("failure not logged: %v", failed)
 	}
 	logs2 := capture(t)
-	p := open(t, scripted{panic: "kaboom"})
+	panicked := &recorder{}
+	p := open(t, scripted{panic: "kaboom"}, panicked)
 	if _, err := p.Accept("two"); err != nil {
 		t.Fatal(err)
 	}
@@ -155,14 +200,22 @@ func TestReplyErrorAndPanicAreLoggedWithCause(t *testing.T) {
 	if pan["panic"] != "kaboom" || !strings.Contains(pan["stack"].(string), "goroutine") {
 		t.Fatalf("panic not logged: %v", pan)
 	}
+	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); time.Sleep(5 * time.Millisecond) {
+		if _, n := panicked.counts(); n == 1 {
+			break
+		}
+	}
+	if _, n := panicked.counts(); n != 1 || panicked.causes[0].Error() != "assistant panic" {
+		t.Fatalf("panic details must not reach the owner: %v", panicked.causes)
+	}
 }
 
 func TestBusyAndClosedAreLogged(t *testing.T) {
 	logs := capture(t)
 	release := make(chan struct{})
 	var once sync.Once
-	s := open(t, blocking{release})
-	t.Cleanup(func() { once.Do(func() { close(release) }) }) // runs before Close, which waits for the reply
+	s := open(t, blocking{release}, &recorder{})
+	t.Cleanup(func() { once.Do(func() { close(release) }) }) // runs before Close, which waits for the turn
 	if _, err := s.Accept("one"); err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +229,7 @@ func TestBusyAndClosedAreLogged(t *testing.T) {
 
 type blocking struct{ release chan struct{} }
 
-func (b blocking) Reply(context.Context, string) ([]domain.Entry, error) {
+func (b blocking) Run(context.Context, domain.AgentTurn) (domain.AgentOutcome, error) {
 	<-b.release
-	return nil, nil
+	return domain.AgentOutcome{}, nil
 }

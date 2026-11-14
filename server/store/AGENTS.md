@@ -23,6 +23,8 @@ Item reads derive source IDs from live provenance links; deleted sources never a
 
 `PurgeItem(id, keepPending)` deletes an item with its reminder schedule, occurrences and push deliveries, earlier pending changes, audit rows, chat entries, events and source links in one transaction. It returns the removed entry IDs and the sources left without an item. It logs counts, never titles.
 
+`agent_turn` rows are the durable agent queue. `EnqueueAgentTurn` stores an optional owner entry and a queued turn in one transaction; a repeated turn ID returns the stored turn. `ClaimAgentTurn` takes the oldest queued turn only while no other turn holds an unexpired lease, in one serialized transaction; an expired lease is claimed again. `ReleaseAgentTurn` requeues a claimed turn. `OwnerTurnPending` ignores source arrivals.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.
