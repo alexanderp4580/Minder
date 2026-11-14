@@ -5,40 +5,65 @@ import (
 	"strings"
 )
 
-// The place-lookup offer is a minder entry in a fixed format. The server recognises it by that
-// format, so a lookup only ever runs for a query the owner saw.
+// LookupKind names one way of searching the web for the owner.
+type LookupKind string
+
+const (
+	LookupMaps   LookupKind = "maps"
+	LookupPlaces LookupKind = "places"
+	LookupSearch LookupKind = "search"
+)
+
+// Offer is a search the owner is asked to approve.
+type Offer struct {
+	Kind  LookupKind
+	Query string
+}
+
+// The offer is a minder entry in a fixed format. The server recognises it by that format, so a
+// search only ever runs for a kind and query the owner saw.
 const (
 	OfferSkip      = "Skip"
 	OfferLookup    = "Look it up"
-	offerPrefix    = `Look up "`
-	offerSuffix    = `" on Google for its address and website?`
+	offerQuote     = ` "`
+	offerEnd       = `"?`
 	maxOfferQuery  = 100
 	lookupReplyKey = "look it up"
 )
 
-// OfferText returns the offer for a query: whitespace collapsed, quotes turned into
-// apostrophes, at most 100 runes. It reports false for a blank query.
-func OfferText(query string) (string, bool) {
-	query = strings.Join(strings.Fields(strings.ReplaceAll(query, `"`, "'")), " ")
+var offerLabels = map[LookupKind]string{
+	LookupMaps:   "Search Google Maps for",
+	LookupPlaces: "Search Google Places for",
+	LookupSearch: "Search the web for",
+}
+
+// OfferText returns the offer text for a kind and query: whitespace collapsed, quotes turned
+// into apostrophes, at most 100 runes. It reports false for an unknown kind or a blank query.
+func OfferText(offer Offer) (string, bool) {
+	label, known := offerLabels[offer.Kind]
+	query := strings.Join(strings.Fields(strings.ReplaceAll(offer.Query, `"`, "'")), " ")
 	if runes := []rune(query); len(runes) > maxOfferQuery {
 		query = strings.TrimSpace(string(runes[:maxOfferQuery]))
 	}
-	if query == "" {
+	if !known || query == "" {
 		return "", false
 	}
-	return offerPrefix + query + offerSuffix, true
+	return label + offerQuote + query + offerEnd, true
 }
 
-// ParseOffer returns the query of an offer text, or false for any other text.
-func ParseOffer(text string) (string, bool) {
-	if !strings.HasPrefix(text, offerPrefix) || !strings.HasSuffix(text, offerSuffix) || len(text) <= len(offerPrefix)+len(offerSuffix) {
-		return "", false
+// ParseOffer returns the offer an offer text holds, or false for any other text.
+func ParseOffer(text string) (Offer, bool) {
+	for kind, label := range offerLabels {
+		prefix := label + offerQuote
+		if !strings.HasPrefix(text, prefix) || !strings.HasSuffix(text, offerEnd) || len(text) <= len(prefix)+len(offerEnd) {
+			continue
+		}
+		offer := Offer{kind, text[len(prefix) : len(text)-len(offerEnd)]}
+		if rebuilt, ok := OfferText(offer); ok && rebuilt == text {
+			return offer, true
+		}
 	}
-	query := text[len(offerPrefix) : len(text)-len(offerSuffix)]
-	if rebuilt, ok := OfferText(query); !ok || rebuilt != text {
-		return "", false
-	}
-	return query, true
+	return Offer{}, false
 }
 
 // IsLookupReply reports whether the owner's text accepts an offer: Look it up, ignoring case,
