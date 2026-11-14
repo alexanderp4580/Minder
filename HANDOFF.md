@@ -32,7 +32,7 @@ APK `.local/artifacts/Minder-0.10.2-arm64.apk`: 19,031,438 bytes, SHA-256 `92a23
 
 ## Fresh test data
 
-2026-11-14, at the owner's request: cleared production items, chat/events, pending/audit records, reminders, captures, receipts, provenance and email files with no backup. Preserved 90 usage rows and one push registration. Integrity and foreign-key checks passed; the container restarted healthy and restores the five default profiles. The owner also asked to remove every backup: `/var/backups/minder` is empty and the Coolify `minder-email` backup is gone. No backups of Minder data exist now. Close and reopen the phone app before testing.
+2026-11-14, at the owner's request: cleared production items, chat/events, pending/audit records, reminders, captures, receipts, provenance and email files with no backup. Preserved 90 usage rows and one push registration. Integrity and foreign-key checks passed; the container restarted healthy and restores the five default profiles. The owner also asked to remove every backup: `/var/backups/minder` is empty and the Coolify `minder-email` backup is gone. No backups of Minder data exist now. The owner asked for another reset after the one-agent deployment; it also cleared the new `agent_turn` and `source` tables (usage 93 rows and the push registration kept, no backup, integrity ok). Close and reopen the phone app before testing.
 
 ## Guided email review (branch `guided-email-review`)
 
