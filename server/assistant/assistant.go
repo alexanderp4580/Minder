@@ -162,26 +162,24 @@ func (a *Service) reply(ctx context.Context, text string, trace *replyTrace) ([]
 			return nil, e
 		}
 	}
-	var r Response
-	if query, ok := a.lookupQuery(history, text); ok {
-		// The owner accepted an offer: the model may search, within the budget, then answer.
+	if offer, ok := a.approvedOffer(history, text); ok {
+		// The owner accepted an offer: run exactly that search, then let the model use the result.
 		trace.stage = "lookup"
-		r, e = a.askWithLookups(ctx, append(messages, approvalMessage(query)), trace)
-	} else {
-		r, e = a.ask(ctx, messages, trace)
+		messages = append(messages, a.lookupMessage(ctx, offer))
 	}
+	r, e := a.ask(ctx, messages, trace)
 	if e != nil {
 		return nil, e
 	}
 	if a.finder != nil {
-		if query, found, e := offerLookup(r); e != nil {
+		if offer, found, e := offerLookup(r); e != nil {
 			return nil, e
 		} else if found {
-			// The offer stands alone; the lookup waits for the owner's tap.
+			// The offer stands alone; the search waits for the owner's tap.
 			trace.stage = "offer lookup"
-			slog.Info("place lookup offered", "query_len", utf8.RuneCountInString(query), "trace_id", domain.TraceID(ctx))
-			offer, _ := domain.OfferText(query)
-			entry, e := a.repository.AddEntry(domain.Entry{Kind: "minder", Text: offer, CostEUR: r.CostUSD * a.rate})
+			logOffer(ctx, offer)
+			text, _ := domain.OfferText(offer)
+			entry, e := a.repository.AddEntry(domain.Entry{Kind: "minder", Text: text, CostEUR: r.CostUSD * a.rate})
 			if e != nil {
 				return nil, e
 			}

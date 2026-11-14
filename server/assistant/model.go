@@ -34,10 +34,9 @@ type Message struct {
 
 // Purpose on a request's first message tells the model adapter which tools to offer.
 const (
-	PurposeChat   = ""
-	PurposeOffer  = "offer"  // chat that may offer a lookup
-	PurposeLookup = "lookup" // an approved lookup: chat plus the lookup tools
-	PurposeEmail  = "email"
+	PurposeChat  = ""
+	PurposeOffer = "offer" // chat that may offer a lookup
+	PurposeEmail = "email"
 )
 
 type Model interface {
