@@ -300,8 +300,7 @@ func normaliseExtraction(e *domain.CaptureExtraction) {
 	for n := range e.Candidates {
 		candidate := &e.Candidates[n]
 		candidate.Options = cleanOptions(candidate.Options)
-		lowerQuestion := strings.ToLower(candidate.Question)
-		if (strings.Contains(lowerQuestion, "how long") || strings.Contains(lowerQuestion, "duration")) && len(candidate.Options) == 0 {
+		if domain.AsksDuration(candidate.Question) && len(candidate.Options) == 0 {
 			candidate.Options = []string{"30 minutes", "45 minutes", "1 hour"}
 		}
 		var allowed []int
