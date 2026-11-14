@@ -7,37 +7,8 @@ import 'package:http/testing.dart';
 import 'package:minder/application/chat_controller.dart';
 import 'package:minder/data/chat_api.dart';
 import 'package:minder/data/wire.dart';
-import 'package:minder/domain/links.dart';
 import 'package:minder/ui/capture_view.dart';
 import 'package:minder/ui/tokens.dart';
-
-/// Mirrors `virtualVenueCases` in server/domain/venue_test.go. Keep them identical.
-const virtualVenueCases = {
-  'Teams': true,
-  'Microsoft Teams': true,
-  'Microsoft Teams meeting': true,
-  'Via Teams': true,
-  'teams': true,
-  'Zoom': true,
-  'Zoom meeting link': true,
-  'Google Meet': true,
-  'Webex': true,
-  'Skype': true,
-  'Online': true,
-  'Online meeting': true,
-  'Video call': true,
-  'Phone call': true,
-  'Telephone': true,
-  'Virtual': true,
-  'Teamsstraat 4, Utrecht': false,
-  'Zoomlaan 1': false,
-  'Kerkstraat 1': false,
-  'Meeting room Teams-hoek 2': false,
-  'Teams or in person': false,
-  'Witte Wereld 1, 6372 VG Landgraaf': false,
-  '': false,
-  '   ': false,
-};
 
 Future<void> _pump(
   WidgetTester tester,
@@ -61,12 +32,6 @@ Future<void> _pump(
 }
 
 void main() {
-  test('virtual venues are recognised like the server does', () {
-    virtualVenueCases.forEach((location, expected) {
-      expect(isVirtualVenue(location), expected, reason: '"$location"');
-    });
-  });
-
   test(
     'the capture wire carries the unverified count and queued candidates',
     () {

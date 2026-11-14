@@ -300,9 +300,6 @@ func normaliseExtraction(e *domain.CaptureExtraction) {
 	for n := range e.Candidates {
 		candidate := &e.Candidates[n]
 		candidate.Options = cleanOptions(candidate.Options)
-		if domain.IsVirtualVenue(candidate.Proposal.Location) {
-			candidate.Proposal.Location = ""
-		}
 		if domain.AsksDuration(candidate.Question) && len(candidate.Options) == 0 {
 			candidate.Options = []string{"30 minutes", "45 minutes", "1 hour"}
 		}

@@ -715,24 +715,6 @@ void main() {
       await finish(tester, c);
     });
 
-    testWidgets('an online meeting has no Maps action', (tester) async {
-      final (launcher, c) = await show(
-        tester,
-        appointment(location: 'Microsoft Teams'),
-      );
-      await tester.ensureVisible(find.text('Details'));
-      await tester.tap(find.text('Details'));
-      await tester.pumpAndSettle();
-      expect(find.text('Microsoft Teams'), findsOneWidget);
-      expect(find.text('Opens Google Maps'), findsNothing);
-      expect(find.text('Where'), findsOneWidget);
-      await tester.ensureVisible(find.text('Microsoft Teams'));
-      await tester.tap(find.text('Microsoft Teams'));
-      await tester.pump();
-      expect(launcher.opened, isEmpty);
-      await finish(tester, c);
-    });
-
     testWidgets('a phone number and an email in the notes open their apps', (
       tester,
     ) async {

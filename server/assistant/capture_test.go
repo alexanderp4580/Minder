@@ -329,13 +329,11 @@ func TestNoValidCandidateFailsWithTheEvidenceReason(t *testing.T) {
 	}
 }
 
-func TestAnOnlineMeetingKeepsNoLocation(t *testing.T) {
-	cases := map[string]string{"Microsoft Teams": "", "Zoom": "", "Kerkstraat 1, Utrecht": "Kerkstraat 1, Utrecht"}
-	for location, want := range cases {
-		m := &locatedModel{location: location}
-		result, err := extractFrom(t, m)
-		if err != nil || len(result.Candidates) != 1 || result.Candidates[0].Proposal.Location != want {
-			t.Fatalf("%q kept %q (%v)", location, result.Candidates[0].Proposal.Location, err)
+func TestTheModelDecidesTheLocation(t *testing.T) {
+	for _, location := range []string{"", "Microsoft Teams", "Kerkstraat 1, Utrecht"} {
+		result, err := extractFrom(t, &locatedModel{location: location})
+		if err != nil || len(result.Candidates) != 1 || result.Candidates[0].Proposal.Location != location {
+			t.Fatalf("%q became %q (%v)", location, result.Candidates[0].Proposal.Location, err)
 		}
 	}
 }

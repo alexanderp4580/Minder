@@ -143,47 +143,6 @@ bool _isPhone(String text, int start, int end, String number) {
   return phoneLabel || startsLikeANumber || (separated && digits >= 10);
 }
 
-const _virtualVenueWords = {
-  'teams',
-  'zoom',
-  'meet',
-  'webex',
-  'skype',
-  'online',
-  'video',
-  'phone',
-  'telephone',
-  'virtual',
-};
-const _virtualFillerWords = {
-  'microsoft',
-  'google',
-  'via',
-  'meeting',
-  'call',
-  'link',
-  'conference',
-  'remote',
-};
-
-/// Whether [location] names only an online or phone meeting, like
-/// "Microsoft Teams meeting". A street address is not one. Mirrors
-/// `IsVirtualVenue` in server/domain/venue.go.
-bool isVirtualVenue(String location) {
-  var venue = false;
-  for (final word in location.toLowerCase().split(
-    RegExp(r'[^\p{L}\p{N}]+', unicode: true),
-  )) {
-    if (word.isEmpty) continue;
-    if (_virtualVenueWords.contains(word)) {
-      venue = true;
-    } else if (!_virtualFillerWords.contains(word)) {
-      return false;
-    }
-  }
-  return venue;
-}
-
 /// A Google Maps search for [address].
 Uri mapsUri(String address) => Uri.parse(
   'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}',
