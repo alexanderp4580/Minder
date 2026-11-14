@@ -32,9 +32,7 @@ APK `.local/artifacts/Minder-0.10.2-arm64.apk`: 19,031,438 bytes, SHA-256 `92a23
 
 ## Fresh test data
 
-Latest reset: after deployment of 0.10.3, the owner requested a fresh database without a backup. Cleared items, chat/events, pending/audit records, reminders, captures, receipts, provenance and email files. No backup was created. Preserved 87 usage rows and one push registration. Startup restored the five default profiles. Post-restart read-only checks confirmed empty app data, SQLite integrity/foreign-key checks and healthy service. Earlier backups were left untouched. Close and reopen the phone app before testing.
-
-Previous reset: 2026-11-14 for the owner's 0.10.2 retry. Stopped the current running container, verified and backed up SQLite and email sources to the private server directory `/var/backups/minder/fresh-start-20261114T165005Z`, then cleared 4 items, 21 chat entries, 42 events, pending/audit records, reminders, capture/receipt/provenance and email files. Startup restored the five default profiles. Preserved one push registration and 84 usage rows. Post-restart counts are zero for the cleared tables; SQLite integrity and foreign-key checks passed, and `/v1/health` returned `{"status":"ok"}`. Close and reopen the phone app to clear in-memory history before testing. The earlier backup `/var/backups/minder/fresh-start-20261114T155318Z` remains on the server. The LAN APK server remains running.
+2026-11-14, at the owner's request: cleared production items, chat/events, pending/audit records, reminders, captures, receipts, provenance and email files with no backup. Preserved 90 usage rows and one push registration. Integrity and foreign-key checks passed; the container restarted healthy and restores the five default profiles. The owner also asked to remove every backup: `/var/backups/minder` is empty and the Coolify `minder-email` backup is gone. No backups of Minder data exist now. Close and reopen the phone app before testing.
 
 ## Guided email review (branch `guided-email-review`)
 
