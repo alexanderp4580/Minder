@@ -29,6 +29,8 @@ Items and proposals carry optional `phone`, `email`, `website` and `booking_refe
 
 `AgentTurn` (kinds `owner`, `source_arrival`, `review_reply`; states `queued`, `active`, `done`, `failed`) points at retained text by entry or source ID and lists the entries its commit wrote. `ArrivalTurn(source, revision)` has a fixed ID, so one source revision queues one turn. `AgentOutcome` is the agent's unsaved decision; `ReviewPatch` carries candidates to add or change in one source's review and leaves omitted candidates alone.
 
+`SourceRef` (kinds `email`, `chat`) names retained material; `SourceDocument` pairs it with its `CaptureDocument`. `ErrSourceUnavailable` (deleted) and `ErrSourceUnreadable` (kept but unreadable) are the tool-facing read failures. `Capture.Prepared` marks a source whose files are stored and whose arrival turn is queued; `Capture.Kind` is `chat` for a review of pasted text. `ChatLabel` names a chat source from its first line.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

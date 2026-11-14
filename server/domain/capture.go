@@ -38,7 +38,11 @@ type Capture struct {
 	NextAt               int64               `json:"next_at,omitempty"`
 	LeaseUntil           int64               `json:"lease_until,omitempty"`
 	Deleted              bool                `json:"deleted,omitempty"`
-	CostEUR              float64             `json:"cost_eur,omitempty"`
+	// Kind is "chat" for a review of pasted text; an empty kind is a forwarded email.
+	Kind string `json:"kind,omitempty"`
+	// Prepared marks a source whose files are stored and whose review turn is queued.
+	Prepared bool    `json:"prepared,omitempty"`
+	CostEUR  float64 `json:"cost_eur,omitempty"`
 }
 type CaptureAttachment struct {
 	ID        string `json:"id"`
@@ -103,7 +107,7 @@ type CaptureExtraction struct {
 }
 
 func (c Capture) Due(now time.Time) bool {
-	return !c.Deleted && (c.Status == "received" || c.Status == "processing") && c.NextAt <= now.Unix() && c.LeaseUntil <= now.Unix()
+	return !c.Deleted && !c.Prepared && (c.Status == "received" || c.Status == "processing") && c.NextAt <= now.Unix() && c.LeaseUntil <= now.Unix()
 }
 
 // UpdateReviewState derives review status without reopening terminal candidates.

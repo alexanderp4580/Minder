@@ -19,7 +19,7 @@ func TestIngestDurableDuplicate(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	s := New(db, files, nil)
+	s := New(db, files)
 	env := domain.CaptureEnvelope{From: "owner@example.com", To: "assistant@example.net", DMARC: "pass", RequestID: "first"}
 	raw := []byte("From: owner@example.com\r\nSubject: Booking\r\n\r\nFlight")
 	id, duplicate, e := s.Ingest(context.Background(), env, raw)

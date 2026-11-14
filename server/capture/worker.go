@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
 	"github.com/alexanderp4580/Minder/server/review"
@@ -52,6 +51,9 @@ func (s *Service) Run(ctx context.Context) {
 		}
 	}
 }
+
+// ProcessNext prepares the oldest received source: it parses the original, stores the
+// attachments and queues one agent turn to review it. It decides nothing about the content.
 func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 	parent := ctx
 	if err := parent.Err(); err != nil {
@@ -75,8 +77,8 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		}
 		return s.fail(c, cause)
 	}
-	if s.Parser == nil || s.extractor == nil || s.Preview == nil {
-		return failed(ErrDocument)
+	if s.Parser == nil || s.files == nil {
+		return failed(errDocument)
 	}
 	f, e := s.files.Open(c.ID, "original")
 	if e != nil {
@@ -85,7 +87,7 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 	document, e := s.Parser.Parse(ctx, f)
 	f.Close()
 	if e != nil {
-		return failed(ErrDocument)
+		return failed(errDocument)
 	}
 	e = s.repository.Transact(func(tx port.Transaction) error {
 		current, err := tx.Capture(c.ID)
@@ -108,14 +110,6 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 	if e != nil {
 		return failed(e)
 	}
-
-	document.CaptureID = c.ID
-	document.PreviousCandidates = c.Candidates
-	extraction, e := s.extractor.Extract(ctx, document, c.Answers)
-	if e != nil {
-		return failed(e)
-	}
-	slog.Info("email extraction completed", "source_id", c.ID, "revision", c.Revision, "candidates", len(extraction.Candidates))
 	e = s.repository.Transact(func(tx port.Transaction) error {
 		current, e := tx.Capture(c.ID)
 		if e != nil {
@@ -128,111 +122,29 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 		current.OriginalDate = document.OriginalDate
 		current.Attachments = append(current.Attachments[:1], document.Attachments...)
 		current.Coverage = document.Coverage
-		current.Questions = extraction.Questions
-		current.Unverified = extraction.Dropped
-		current.LeaseUntil = 0
-		current.NextAt = 0
+		current.Prepared = true
+		current.LeaseUntil, current.NextAt = 0, 0
 		current.Error = ""
-		// Terminal candidates remain authoritative when answers regenerate proposals.
-		terminal := map[string]bool{}
-		for _, candidate := range current.Candidates {
-			if candidate.State == "confirmed" || candidate.State == "discarded" {
-				terminal[candidate.ID] = true
-			}
-		}
-		previousByID := map[string]domain.CaptureCandidate{}
-		for _, candidate := range current.Candidates {
-			previousByID[candidate.ID] = candidate
-		}
-		first := len(current.Candidates) == 0
-		returned := map[string]bool{}
-		for n, candidate := range extraction.Candidates {
-			id := candidate.ID
-			if id == "" {
-				id = stableCandidateID(candidate, n)
-			}
-			returned[id] = true
-		}
-		for id, candidate := range previousByID {
-			if candidate.State == "superseded" && !returned[id] {
-				return &domain.ModelError{Message: "The model omitted an item awaiting clarification.", Reason: domain.ReasonReviewItemMissing}
-			}
-		}
-		for n, candidate := range extraction.Candidates {
-			if candidate.ID == "" {
-				candidate.ID = stableCandidateID(candidate, n)
-			}
-			if terminal[candidate.ID] {
-				continue
-			}
-			existing := false
-			for _, previous := range current.Candidates {
-				if previous.ID == candidate.ID && previous.State != "superseded" {
-					existing = true
-				}
-			}
-			if existing {
-				continue
-			}
-			if len(document.PreviousCandidates) > 0 {
-				known := false
-				for _, previous := range document.PreviousCandidates {
-					if previous.ID == candidate.ID {
-						known = true
-					}
-				}
-				if !known {
-					return &domain.Invalid{Field: "capture", Message: "The model changed candidate identities. Retry the review."}
-				}
-			}
-			candidate.Revision = current.Revision
-			candidate.State = "queued"
-			candidate.Proposal.CaptureID = current.ID
-			candidate.Proposal.CandidateID = candidate.ID
-			candidate.Proposal.CaptureRevision = candidate.Revision
-			if slot := supersededSlot(current.Candidates, candidate.ID); slot >= 0 {
-				current.Candidates[slot] = candidate // a regenerated candidate keeps its place in the review order
-			} else {
-				current.Candidates = append(current.Candidates, candidate)
-			}
-		}
-		if first {
-			current.Notification = extraction.Notification
-			if extraction.Summary != "" {
-				if _, e = tx.PutEntry(domain.Entry{Kind: "minder", Text: extraction.Summary}); e != nil {
-					return e
-				}
-			}
-		}
-		if current.Unverified > 0 {
-			if _, e = tx.PutEntry(domain.Entry{Kind: "minder", Text: fmt.Sprintf("I could not verify %d appointments from this email.", current.Unverified)}); e != nil {
-				return e
-			}
-		}
-		if e = review.Advance(tx, &current, s.Preview); e != nil {
-			return e
-		}
-		current.UpdateReviewState()
-		if first && len(current.Candidates) > 0 {
-			// Only the first publication is news. The owner's own answers get no push.
-			if e = tx.QueueCaptureNotifications(current.ID, current.Revision); e != nil {
-				return e
-			}
-		}
 		if e = tx.PutCapture(current); e != nil {
 			return e
 		}
-		if _, e = tx.PutEntry(domain.Entry{ID: current.EntryID, Kind: "capture", Text: "Review the email details.", Capture: &current}); e != nil {
+		ref, e := tx.Source(c.ID)
+		if e != nil {
 			return e
 		}
-		if review.HasOpenQuestions(current) {
-			return review.PostQuestions(tx, current)
+		ref.Label = document.Subject
+		if e = tx.PutSource(ref); e != nil {
+			return e
 		}
-		return nil
+		if _, e = tx.PutEntry(domain.Entry{ID: current.EntryID, Kind: "capture", Text: "Reading the email.", Capture: &current}); e != nil {
+			return e
+		}
+		return tx.PutAgentTurn(domain.ArrivalTurn(current.ID, current.Revision))
 	})
 	if e != nil {
 		return failed(e)
 	}
+	slog.Info("email prepared", "source_id", c.ID, "revision", c.Revision, "parts", len(document.Parts), "attachments", len(document.Attachments))
 	return nil
 }
 
@@ -246,21 +158,7 @@ func (s *Service) fail(c domain.Capture, cause error) error {
 		if current.Deleted || current.Revision != c.Revision || current.LeaseUntil != c.LeaseUntil {
 			return domain.ErrConflict
 		}
-		current.Attempts++
-		current.LeaseUntil, current.NextAt = 0, 0
-		current.Status = "failed"
-		current.Error = failureMessage(cause)
-		if e = tx.PutCapture(current); e != nil {
-			return e
-		}
-		if e = tx.QueueCaptureNotifications(current.ID, current.Revision); e != nil {
-			return e
-		}
-		if _, e = tx.PutEntry(domain.Entry{ID: current.EntryID, Kind: "capture", Text: current.Error, Capture: &current}); e != nil {
-			return e
-		}
-		_, e = postFailureReport(tx, current)
-		return e
+		return review.Fail(tx, current, cause)
 	})
 	if err != nil {
 		return err
@@ -269,17 +167,8 @@ func (s *Service) fail(c domain.Capture, cause error) error {
 	return cause
 }
 
-// failureMessage is the fixed sentence the owner sees for a failed attempt.
-func failureMessage(cause error) string {
-	var invalid *domain.Invalid
-	switch {
-	case errors.As(cause, &invalid):
-		return invalid.Message
-	case errors.Is(cause, ErrDocument):
-		return domain.ReasonUnparsed.Sentence()
-	}
-	return domain.ReasonOf(cause).Sentence()
-}
+// errDocument is the failure for an original that cannot be parsed or has nowhere to be read.
+var errDocument = &domain.ModelError{Message: "The email could not be parsed. The original is available.", Reason: domain.ReasonUnparsed}
 
 func (s *Service) cleanupDeleted() error {
 	repository, ok := s.repository.(interface {
@@ -358,16 +247,6 @@ func (s *Service) releaseClaim(claim domain.Capture) error {
 		current.NextAt = 0
 		return tx.PutCapture(current)
 	})
-}
-
-// supersededSlot returns the position of a superseded candidate with this id, or -1.
-func supersededSlot(candidates []domain.CaptureCandidate, id string) int {
-	for index, candidate := range candidates {
-		if candidate.ID == id && candidate.State == "superseded" {
-			return index
-		}
-	}
-	return -1
 }
 
 // pushBody words the push for the capture's current state.

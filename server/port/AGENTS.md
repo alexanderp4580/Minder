@@ -15,6 +15,8 @@ Captures, ingestion receipts and item-source links participate in the same trans
 
 `AgentTurns` (`AgentTurn`, `PutAgentTurn`) lets a transaction end a turn together with its writes.
 
+`Sources` (`Source`, `PutSource`) stores references to retained sources.
+
 `PurgeItem` belongs to the item capability and returns `Purged` (removed entry IDs, orphaned sources). The caller decides what to do with orphaned sources.
 
 # Work Guidance

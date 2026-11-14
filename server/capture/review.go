@@ -2,72 +2,28 @@ package capture
 
 import (
 	"context"
-	"errors"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
 	"github.com/alexanderp4580/Minder/server/review"
 	"io"
-	"strings"
-	"unicode/utf8"
 )
 
-func (s *Service) Answer(ctx context.Context, id string, revision int, text string) (domain.Entry, error) {
-	return s.answer(ctx, id, revision, text, false, "")
-}
-func (s *Service) Acknowledge(ctx context.Context, id string, revision int) (domain.Entry, error) {
-	return s.answer(ctx, id, revision, "Continue with the readable content.", true, "")
-}
-func (s *Service) answer(ctx context.Context, id string, revision int, text string, ack bool, target string) (out domain.Entry, err error) {
-	text = strings.TrimSpace(text)
-	if utf8.RuneCountInString(text) < 1 || utf8.RuneCountInString(text) > 4000 {
-		return out, &domain.Invalid{Field: "answer", Message: "Use an answer with 1 to 4,000 characters."}
-	}
+// Acknowledge accepts that unreadable parts stay unread, so the review can finish.
+func (s *Service) Acknowledge(_ context.Context, id string, revision int) (out domain.Entry, err error) {
 	err = s.repository.Transact(func(tx port.Transaction) error {
 		c, e := tx.Capture(id)
 		if e != nil {
 			return e
 		}
-		if c.Deleted || c.Revision != revision || c.Status == "processing" || c.Status == "received" || c.Status == "reviewed" {
+		if c.Deleted || c.Revision != revision || c.Status != "needs-answer" {
 			return domain.ErrConflict
 		}
-		if target != "" {
-			found := false
-			for _, candidate := range c.Candidates {
-				if candidate.ID == target && (candidate.State == "pending" || candidate.State == "needs-answer") {
-					found = true
-				}
-			}
-			if !found {
-				return domain.ErrConflict
-			}
-		}
-		c.Answers = append(c.Answers, domain.CaptureAnswer{Revision: revision, CandidateID: target, Text: text})
-		c.Revision++
-		if ack {
-			c.CoverageAcknowledged = true
-		}
-		for n := range c.Candidates {
-			candidate := &c.Candidates[n]
-			if candidate.State == "confirmed" || candidate.State == "discarded" || candidate.State == "superseded" || (target != "" && candidate.ID != target) || (target == "" && candidate.State == "pending") {
-				continue
-			}
-			candidate.State = "superseded"
-			if e = failPending(tx, candidate.ChangeID); e != nil {
-				return e
-			}
-		}
-		c.Status = "received"
-		c.NextAt = 0
-		c.LeaseUntil = 0
-		c.Attempts = 0
-		c.Error = ""
-		if e = review.CloseQuestions(tx, c, "Questions answered."); e != nil {
-			return e
-		}
+		c.CoverageAcknowledged = true
+		c.UpdateReviewState()
 		if e = tx.PutCapture(c); e != nil {
 			return e
 		}
-		out, e = tx.PutEntry(domain.Entry{ID: c.EntryID, Kind: "capture", Text: "Answer received. Processing.", Capture: &c})
+		out, e = tx.PutEntry(domain.Entry{ID: c.EntryID, Kind: "capture", Text: "Review the email details.", Capture: &c})
 		return e
 	})
 	return
@@ -140,6 +96,7 @@ func (s *Service) Retry(id string) (out domain.Entry, err error) {
 		}
 		c.Revision++ // a new revision, so its push is not mistaken for the failure's
 		c.Status = "received"
+		c.Prepared = false
 		c.Attempts = 0
 		c.NextAt = 0
 		c.LeaseUntil = 0
@@ -167,11 +124,4 @@ func (s *Service) Attachment(id, attachmentID string) (io.ReadCloser, domain.Cap
 		}
 	}
 	return nil, domain.CaptureAttachment{}, domain.ErrNotFound
-}
-
-// Reserved for typed non-transient extraction failures.
-var ErrDocument = errors.New("The email could not be parsed. The original is available.")
-
-func (s *Service) AnswerCandidate(ctx context.Context, id string, revision int, candidateID, text string) (domain.Entry, error) {
-	return s.answer(ctx, id, revision, text, false, candidateID)
 }

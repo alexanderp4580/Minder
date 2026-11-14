@@ -20,16 +20,16 @@ const (
 // AgentTurn is one accepted piece of work for the agent. Its text stays on the retained
 // chat entry or source; the turn only points at it.
 type AgentTurn struct {
-	ID               string   `json:"id"`
-	Kind             string   `json:"kind"`
-	EntryID          string   `json:"entry_id,omitempty"`
-	SourceID         string   `json:"source_id,omitempty"`
-	CandidateID      string   `json:"candidate_id,omitempty"`
-	ExpectedRevision int      `json:"expected_revision,omitempty"`
-	State            string   `json:"state"`
-	CreatedAt        string   `json:"created_at"`
-	LeaseUntil       int64    `json:"lease_until,omitempty"`
-	Error            string   `json:"error,omitempty"`
+	ID               string `json:"id"`
+	Kind             string `json:"kind"`
+	EntryID          string `json:"entry_id,omitempty"`
+	SourceID         string `json:"source_id,omitempty"`
+	CandidateID      string `json:"candidate_id,omitempty"`
+	ExpectedRevision int    `json:"expected_revision,omitempty"`
+	State            string `json:"state"`
+	CreatedAt        string `json:"created_at"`
+	LeaseUntil       int64  `json:"lease_until,omitempty"`
+	Error            string `json:"error,omitempty"`
 	// EntryIDs are the chat entries the finished turn wrote, so a repeated commit can return them.
 	EntryIDs []string `json:"entry_ids,omitempty"`
 }

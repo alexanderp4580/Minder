@@ -52,6 +52,9 @@ func (s *Service) Ingest(ctx context.Context, envelope domain.CaptureEnvelope, r
 		if _, e = tx.PutEntry(domain.Entry{ID: c.EntryID, Kind: "capture", Text: "Email received. Processing.", Capture: &c}); e != nil {
 			return e
 		}
+		if e = tx.PutSource(domain.SourceRef{ID: id, Kind: domain.SourceEmail, EntryID: c.EntryID, CaptureID: id, Sender: envelope.From, CreatedAt: c.ReceivedAt}); e != nil {
+			return e
+		}
 		if e = tx.PutCapture(c); e != nil {
 			return e
 		}

@@ -1,18 +1,20 @@
-// Package capture owns durable email ingestion and review orchestration.
+// Package capture owns durable email ingestion, source preparation and source reading.
 package capture
 
 import (
 	"context"
-	"github.com/alexanderp4580/Minder/server/domain"
-	"github.com/alexanderp4580/Minder/server/port"
 	"io"
 	"time"
+
+	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/port"
 )
 
 type Repository interface {
 	port.UnitOfWork
 	Capture(string) (domain.Capture, error)
 	ClaimCapture(time.Time) (domain.Capture, error)
+	FindSources(string) ([]domain.SourceRef, error)
 }
 type Files interface {
 	SaveOriginal(context.Context, string, io.Reader) (string, int64, error)
@@ -20,25 +22,23 @@ type Files interface {
 	Open(string, string) (io.ReadCloser, error)
 	DeleteSource(string) error
 }
-type Extractor interface {
-	Extract(context.Context, domain.CaptureDocument, []domain.CaptureAnswer) (domain.CaptureExtraction, error)
-}
 type Parser interface {
 	Parse(context.Context, io.Reader) (domain.CaptureDocument, error)
 }
 type Sender interface {
 	Send(context.Context, string, map[string]string) (bool, error)
 }
+
+// Service stores forwarded emails, prepares them for the agent and reads retained sources.
+// Files and Parser may be nil when email is off; chat sources still read.
 type Service struct {
 	Sender     Sender
 	Parser     Parser
-	Preview    func(port.Transaction, domain.Proposal) (domain.Entry, error)
 	repository Repository
 	files      Files
-	extractor  Extractor
 }
 
-func New(repository Repository, files Files, extractor Extractor) *Service {
-	return &Service{repository: repository, files: files, extractor: extractor}
+func New(repository Repository, files Files) *Service {
+	return &Service{repository: repository, files: files}
 }
 func (s *Service) Get(id string) (domain.Capture, error) { return s.repository.Capture(id) }

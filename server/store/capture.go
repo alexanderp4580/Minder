@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/alexanderp4580/Minder/server/domain"
 	"github.com/alexanderp4580/Minder/server/port"
 	"time"
@@ -130,7 +131,38 @@ func (t *Tx) RedactCapture(id string) error {
 			return e
 		}
 	}
-	_, e = t.tx.Exec("DELETE FROM capture_push WHERE source_id=?", id)
+	if _, e = t.tx.Exec("DELETE FROM capture_push WHERE source_id=?", id); e != nil {
+		return e
+	}
+	return t.deleteSource(id)
+}
+
+// deleteSource marks the source deleted and forgets its label and sender. The text of a pasted
+// source is the owner's own chat entry, so it is redacted too.
+func (t *Tx) deleteSource(id string) error {
+	ref, e := t.Source(id)
+	if errors.Is(e, domain.ErrNotFound) {
+		return nil
+	}
+	if e != nil {
+		return e
+	}
+	ref.Deleted, ref.Label, ref.Sender = true, "", ""
+	if e = t.PutSource(ref); e != nil {
+		return e
+	}
+	if ref.Kind != domain.SourceChat {
+		return nil
+	}
+	entry, e := t.Entry(ref.EntryID)
+	if errors.Is(e, domain.ErrNotFound) {
+		return nil
+	}
+	if e != nil {
+		return e
+	}
+	entry.Text = "Source deleted."
+	_, e = t.PutEntry(entry)
 	return e
 }
 func (t *Tx) QueueCaptureNotifications(id string, revision int) error {
