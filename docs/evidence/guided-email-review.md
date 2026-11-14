@@ -1,6 +1,6 @@
 # Guided email review
 
-Date: 2026-11-14. App 0.10.1+30. Spec: [guided email review design](../superpowers/specs/2026-11-14-guided-email-review-design.md). Plan: [guided email review plan](../superpowers/plans/2026-11-14-guided-email-review.md). Branch `guided-email-review`, deployed for phone testing and not merged.
+Date: 2026-11-14. App 0.10.2+31. Spec: [guided email review design](../superpowers/specs/2026-11-14-guided-email-review-design.md). Plan: [guided email review plan](../superpowers/plans/2026-11-14-guided-email-review.md). Branch `guided-email-review`, deployed for phone testing and not merged.
 
 ## Why
 
@@ -55,7 +55,11 @@ The owner reported that the first Confirm appeared to do nothing, although the r
 
 A synthetic client regression reproduced the stale button with the event stream silent: the Confirm HTTP response advanced the poll cursor past the earlier confirmed-preview event. The same race could skip the closed-question entry when an answer response arrived first. ChatController now keeps its history/event-stream watermark separate from the latest visible cursor. Only history and ordered stream events advance that watermark.
 
-The Working spinner now stays above the composer, outside the scrolling message list, as an accessible live status. It covers email received/processing states as well as normal chat waiting. It clears when extraction finishes or fails; email completion does not clear unrelated chat waiting. Six focused tests passed after reproducing the missing preview/question updates, missing email indicator and off-screen indicator in long reviews. `toolchain/check` exited 0 with 169 Flutter tests, Go race/vet, analysis/format and repository checks. Release web built. The email browser scenario passed with the stream blocked for first Confirm and a held model answer; the Working screenshot is `.local/email-working.png`. Remaining browser checks, final APK verification and delivery are in progress. This patch changes only the client and local verification fixtures.
+The Working spinner now stays above the composer, outside the scrolling message list, as an accessible live status. It covers email received/processing states as well as normal chat waiting. It clears when extraction finishes or fails; email completion does not clear unrelated chat waiting. Six focused tests passed after reproducing the missing preview/question updates, missing email indicator and off-screen indicator in long reviews. `toolchain/check` exited 0 with 169 Flutter tests, Go race/vet, analysis/format and repository checks. Release web built. The email browser scenario passed with the stream blocked for first Confirm and a held model answer; the Working screenshot is `.local/email-working.png`. All five browser scenarios exited 0: email, chat, reminder, calendar and place lookup. APK 0.10.2 built and passed signature/package/version verification.
+
+Source `ee99d879c3c4b03d9e84ec4772ba884745173c0e`. APK `.local/artifacts/Minder-0.10.2-arm64.apk` is 19,031,438 bytes, SHA-256 `92a2360ce3276b904fe068dbfc334ce4e25cdc6704071fb2d1bfe4fdc368c738`, package `io.liveleds.minder`, version code 2031. Its signer matches 0.10.1. The single Telegram upload attempt returned HTTP 504; delivery remains unconfirmed and no retry ran. The owner has a pending delivery-check question and resend option.
+
+Coolify deployment `jtptw3myyrdsxktwodwgeias` finished at this commit and the application reports running:healthy. Startup logs show schema 5, zero migrations, configured model/Firebase/Serper credentials and no warnings or errors in the first 80 lines. Runtime revision still reports unknown; the completed deployment identifies the commit. Rollback target: branch guided-email-review at `50b968228b470261dce76da1b47a205d2a256f45`. Server source and schema did not change. The branch remains unmerged; phone approval of 0.10.2 is pending. This patch changes only the client and local verification fixtures.
 
 ## Fresh-start reset
 
