@@ -2,6 +2,9 @@ import 'entry.dart';
 
 enum ReminderAction { done, acknowledge, snooze15, snooze60, tonight, tomorrow }
 
+/// The longest message the server accepts, in UTF-8 bytes. It covers a pasted email.
+const maxMessageBytes = 400000;
+
 abstract interface class ChatRepository {
   Future<List<Entry>> history(int after);
   Stream<Entry> watch(int after);

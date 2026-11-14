@@ -18,14 +18,14 @@ Use TokenCrypt/process variables or the provider's secret editor. Both the Worke
 | `EMAIL_INGEST_URL` | Not used | Fixed HTTPS ingestion URL ending `/v1/email/ingest` |
 | `EMAIL_ACCESS_CLIENT_ID`, `EMAIL_ACCESS_CLIENT_SECRET` | Access policy at the edge admits this identity; Go still checks HMAC | Dedicated Access service-token credentials |
 
-The server uses its existing OpenRouter configuration and monthly model budget. Each email retains a call count across retries.
+The server uses its existing OpenRouter configuration and monthly model budget. Every model call of the agent is recorded in usage, with the source ID for source turns.
 Poppler `pdfinfo`, `pdftotext` and `pdftoppm` must be present; the Docker runtime installs `poppler-utils`.
 JPEG/PNG and scanned pages require the configured model to accept image input. No silent paid-model substitution occurs.
 Check that capability and the selected provider's content-retention settings before live capture. Fixture tests do not verify a real model or retention policy.
 
 ## Activation order
 
-1. Back up the database and persistent volume. The additive database migrations create captures, receipts, source links and a review-notification outbox.
+1. Back up the database and persistent volume. The additive database migrations create captures, receipts, source links, a review-notification outbox, the agent turn queue and source records (migration 006 also backfills a source record for each stored email).
 2. Deploy the reviewed server image with the capture feature enabled and source directory on the persistent volume. Confirm that the existing app, reminders and owner authentication still work.
 3. Create a path-scoped Cloudflare Access application/policy for `/v1/email/ingest`, admitting only the dedicated service token. Preserve the owner-only policy for every other route.
 4. Configure the Worker environment and secrets privately. Its manifest has no content storage bindings. Deploy `email-worker/worker.mjs` with Wrangler and verify the fixed destination and clock.
@@ -38,8 +38,7 @@ No live DNS, Access policy, Worker or production deployment changed during local
 
 ## Normal operation
 
-A durable Received entry means the server saved the exact original and extraction job. The one-second job worker parses it,
-publishes review candidates/questions and queues one generic notification per source revision/device.
+A durable Received entry means the server saved the exact original. The one-second worker parses it, stores its attachments and queues one agent turn. The agent then reads the source and publishes the review (candidates and questions), and one notification is queued per source revision/device. Pasted text takes the same path as an owner message.
 The source remains available if parsing fails or the monthly budget is exhausted.
 
 Only Confirm changes items and reminder schedules. Other candidates stay independent. A targeted clarification supersedes that candidate's old preview.
@@ -53,13 +52,13 @@ Do not treat a warning as evidence that an attachment was read.
 ## Failure tracing
 
 Use capture/job IDs, stage, counts and safe error codes. Never copy email bodies, subjects, addresses, credentials or attachments into operational logs.
-The `email extraction completed` event reports revision and candidate count. Existing request and model logs provide timing and cost boundaries.
+The `email prepared` event reports revision, part and attachment counts; `agent turn committed` reports the turn kind and what it wrote. Existing request and model logs provide timing and cost boundaries.
 
 - No Received entry: check routing, trusted sender authentication, Worker configuration, Access service token, HMAC key, request clock and ingestion reachability. Re-forward after correcting the problem.
-- Received/Processing: inspect the job lease, provider readiness, source storage and document tools. A crashed worker's lease can be reclaimed after five minutes.
-- Failed: inspect the safe error, retry after correcting configuration or budget, or provide readable material. Transient extraction delays are 5 seconds, 30 seconds, 2 minutes and 10 minutes; five total attempts then stop.
+- Received/Processing: inspect the preparation lease, source storage and document tools, then the agent queue. A crashed worker's lease can be reclaimed after five minutes. A turn cut short by shutdown stays queued and resumes after restart.
+- Failed: inspect the safe error and the failure report in chat, retry after correcting configuration or budget, or provide readable material. Nothing retries automatically; Retry prepares the email again and queues a new turn.
 - Missing review notification: inspect the source revision/device outbox and existing FCM registration. The capture remains in chat even if push fails.
-- Wrong proposed facts: clarify the affected candidate. Do not confirm it and expect the model to repair it later.
+- Wrong proposed facts: ask Minder where a value came from. The agent reads the source again and corrects the candidate, or reply to its question. Do not confirm a wrong item and expect it to be repaired later.
 
 ## Sources, deletion and backups
 
@@ -81,5 +80,5 @@ verify attachment SHA-256 values and source links, then test one pending review.
 - `toolchain/local-check`, `toolchain/reminder-local-check`, `toolchain/calendar-local-check`: regression scenarios, each with its own fixture port.
 - `node --test email-worker/worker.test.mjs`: sender admission and shared Go/JavaScript signing vectors.
 
-For rollback, disable the email routing rule first, then set `EMAIL_CAPTURE_ENABLED=false`. Preserve originals and database backups.
+For rollback, disable the email routing rule first, then set `EMAIL_CAPTURE_ENABLED=false`. Preserve originals and database backups. Schema 6 adds tables only, but the older binary refuses it.
 Do not start an older binary against a newer schema: the existing migration guard refuses it. Use a matching image or an approved backup restore.

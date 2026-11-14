@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
@@ -24,8 +25,11 @@ class ChatController extends ChangeNotifier {
   // A direct action response may arrive ahead of earlier events in its transaction.
   int _syncedCursor = 0;
 
+  /// True while the agent works: a message waits for its reply, the owner spoke last (a quick
+  /// reply, or a reply still queued after a reconnect), or an email card is still being read.
   bool get thinking =>
       waiting ||
+      (_entries.isNotEmpty && _entries.last.kind == EntryKind.user) ||
       _entries.any((e) => e.kind == 'capture' && e.capture?.processing == true);
   bool waiting = false,
       loading = true,
@@ -183,6 +187,12 @@ class ChatController extends ChangeNotifier {
   Future<void> send(String text) async {
     final body = text.trim();
     if (_disposed || waiting || body.isEmpty) return;
+    if (utf8.encode(body).length > maxMessageBytes) {
+      _unsent = body; // nothing is cut; the text goes back to the composer
+      error = 'That message is too long. Keep it under 400,000 bytes.';
+      _notify();
+      return;
+    }
     error = null;
     waiting = true;
     _notify();

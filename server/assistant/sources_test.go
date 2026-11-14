@@ -229,6 +229,20 @@ func TestAttachmentImagesReachTheAgentAfterTheToolResults(t *testing.T) {
 	}
 }
 
+func TestTheAgentKnowsTheSourceIDOfThePasteItIsAskedToReview(t *testing.T) {
+	x := newAgent(t)
+	x.f.r = Response{Text: "ok"}
+	turn, entryID := x.owner(t, appointmentsText)
+	if _, err := x.a.Run(context.Background(), turn); err != nil {
+		t.Fatal(err)
+	}
+	m := x.f.history[0]
+	record, owner := m[len(m)-2], m[len(m)-1]
+	if !strings.Contains(record.Content, `"owner_message_source_id":"`+entryID+`"`) || owner.Content != appointmentsText {
+		t.Fatalf("%+v %+v", record, owner)
+	}
+}
+
 func TestAnOlderSourceIsFoundByQueryAndAMissingOrDeletedOneIsReportedNotInvented(t *testing.T) {
 	x := newAgent(t)
 	x.sources.found = []domain.SourceRef{{ID: "old", Kind: domain.SourceEmail, Label: "Flight to Oslo"}}

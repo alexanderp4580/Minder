@@ -8,8 +8,8 @@ Design tokens: [foundation.md](foundation.md). Screens: [screens.md](screens.md)
 The Flutter client runs on Android and web. One Go process serves the web build and HTTP API.
 SQLite holds items, profiles, chat entries, pending changes, audit records, reminder schedules, devices and usage.
 The reminder worker sends Android notifications through Firebase Cloud Messaging.
-The assistant calls OpenRouter for text replies and proposed changes. Opt-in email capture uses the same model budget for isolated source extraction.
-A Cloudflare Email Worker hands raw MIME directly to machine-authenticated ingress; the Go worker reads persisted sources and publishes reviewed candidates in chat.
+One agent calls OpenRouter for chat, forwarded email and pasted text. It reads retained sources through tools and proposes changes and reviews. Email capture only stores and prepares sources; the agent shares the model budget.
+A Cloudflare Email Worker hands raw MIME directly to machine-authenticated ingress; the Go worker prepares the persisted source and queues an agent turn, and the agent publishes the review in chat.
 
 The client needs a server connection. The server validates item changes before saving them.
 Model and Firebase service account keys stay on the server.
@@ -22,9 +22,9 @@ Coolify runs the container with a persistent database volume.
 | `domain` | Values, validation, recurrence, reminders, identifiers and profile defaults | None |
 | `port` | Atomic transaction and persistence contracts | `domain` |
 | `store` | SQLite adapter, migrations, transactions and projections | `domain`, `port` |
-| `command` | Preview, Confirm, Discard, Undo and conflict refresh | `domain`, `port`, `review` |
-| `assistant` | Context, proposals, cost reservations and model contract | `domain` |
-| `conversation` | Message acceptance, concurrency, replies and cancellation | `domain` |
+| `command` | Preview, Confirm, Discard, Undo, conflict refresh and agent turn commits | `domain`, `port`, `review` |
+| `assistant` | The one agent: context, tool loop, review validation, cost reservations and model contract | `domain` |
+| `conversation` | Message acceptance, the durable serial agent queue and its worker | `domain` |
 | `reminder` | Scheduling, actions, device validation and delivery worker | `domain`, `port` |
 | `openrouter` | HTTP model adapter and tool schema | `domain`, `assistant` |
 | `serper` | Serper search HTTP adapter (maps, places, search) | `domain`, `assistant` |
@@ -32,8 +32,8 @@ Coolify runs the container with a persistent database volume.
 | `access` | Owner authentication and Cloudflare JWT adapter | None |
 | `config` | Process settings and startup validation | None |
 | `api` | HTTP routes, responses, event stream and static files | `domain`, `conversation` |
-| `capture` | Durable source ingestion, extraction jobs, isolated questions and review publication | `domain`, `port`, `review` |
-| `review` | One-at-a-time email review: next candidate, messages and question entries | `domain`, `port` |
+| `capture` | Durable source ingestion, source preparation, source reading and review delivery | `domain`, `port`, `review` |
+| `review` | One-at-a-time source review: next candidate, messages, question entries and failure reports | `domain`, `port` |
 | `mailparse` | Bounded MIME, calendar, PDF and image conversion | `domain` |
 | `mailfiles` | Private atomic original/attachment files | None |
 | `mailauth` | Signed Worker envelope/body admission and environment allowlists | `domain`, `config` |
@@ -44,7 +44,7 @@ The SQLite adapter implements these contracts and rolls back all writes if a tra
 Domain and application packages have no SQLite, HTTP client or provider SDK imports.
 
 The API accepts query, command, message, reminder and authentication interfaces.
-`conversation` validates and accepts messages, runs one reply at a time and records safe errors.
+`conversation` validates and accepts owner messages and quick replies into a durable queue. One worker runs queued turns (owner messages, source arrivals, review replies) one at a time through the agent and commits each outcome with its turn; a failed turn records one visible report.
 `Close` cancels and waits for active replies. Process shutdown also waits for the reminder worker before closing SQLite.
 `openrouter` implements the assistant model interface. `serper` implements the optional place finder: the model may offer a lookup, and the server searches only after the owner taps Look it up on a fresh offer. `push` implements the reminder sender interface.
 
@@ -96,7 +96,7 @@ FCM delivery failures retain retry state. An unregistered FCM token disables tha
 | `GET /v1/health` | Health check, without sign-in |
 | `GET /brand/minder-icon.png` | Public OAuth branding image |
 | `GET /v1/chat?after=&limit=` | Chat history or changes after a cursor |
-| `POST /v1/chat/messages` | Accept text and start an assistant reply |
+| `POST /v1/chat/messages` | Queue an owner message (up to 400,000 bytes) for the agent and return at once |
 | `GET /v1/events?after=` | Stream entry changes and pings |
 | `GET /v1/items?from=&to=` | Calendar items across at most 62 days |
 | `POST /v1/changes/{id}/confirm` | Apply a preview |
@@ -163,8 +163,8 @@ Phone approval gates merging. The handoff records deployment and APK status.
 ## Email source lifecycle
 
 The complete contract is in [email capture](superpowers/specs/2026-11-12-email-capture-design.md); operating steps are in [email capture operations](email-capture-operations.md).
-SQLite capture rows hold job leases, candidate revisions, answers and attachment manifests. Unique receipts and item-source links share the existing transaction boundary.
+SQLite capture rows hold preparation leases, candidate revisions and attachment manifests. Source rows name every retained email and reviewed chat text. Agent turn rows hold the durable queue. Unique receipts and item-source links share the existing transaction boundary.
 The source directory holds opaque private files. Ingress commits source and job before acknowledgment; there is no Cloudflare content buffer.
-Extraction creates previews, never final items. Targeted answers invalidate affected previews. Confirm/Discard update capture state, audit, source links and reminders atomically.
+The agent reads sources with tools and publishes reviews; it creates previews, never final items. A targeted update replaces only its candidate and withdraws that candidate's preview. Confirm/Discard update capture state, audit, source links and reminders atomically. Reading a source changes nothing.
 Source deletion commits a tombstone/redaction before restart-safe file cleanup. Generic review notifications use a durable per-revision/device outbox.
 CaptureController and typed client repositories keep transport details out of the UI. Source updates do not clear an unrelated chat request's waiting state.

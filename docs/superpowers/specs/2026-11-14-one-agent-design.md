@@ -1,6 +1,6 @@
 # One agent for chat and email
 
-Status: draft for owner review. The owner chose one agent and the same flow for forwarded emails and emails pasted into chat. This document specifies that change; implementation has not started. It supersedes the proposed patch that would merely add email access to the existing separate chat flow.
+Status: implemented on `guided-email-review`; production and phone review are tracked in the handoff. The owner chose one agent and the same flow for forwarded emails and emails pasted into chat. This document specifies that change.
 
 ## Outcome
 

@@ -128,6 +128,7 @@ Capture captureFromJson(Map<String, dynamic> j) => Capture(
   id: j['id'] as String,
   status: j['status'] as String,
   revision: (j['revision'] as num?)?.toInt() ?? 0,
+  kind: j['kind'] as String? ?? '',
   sender: j['sender'] as String? ?? '',
   subject: j['subject'] as String? ?? '',
   error: j['error'] as String? ?? '',

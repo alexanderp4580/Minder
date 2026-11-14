@@ -162,8 +162,8 @@ func TestModelReceivesConfirmedProposalBeforeNextQuestion(t *testing.T) {
 	if _, e = reply(t, a, s, "What is open?"); e != nil {
 		t.Fatal(e)
 	}
-	if len(f.messages) != 5 {
-		t.Fatalf("Model received %d messages; expected system, user, preview, result, user", len(f.messages))
+	if len(f.messages) != 6 {
+		t.Fatalf("Model received %d messages; expected system, user, preview, result, owner context, user", len(f.messages))
 	}
 	if f.messages[2].Role != "assistant" || !strings.Contains(f.messages[2].Content, `"state":"confirmed"`) {
 		t.Fatal("confirmed preview missing from model context")
@@ -171,7 +171,10 @@ func TestModelReceivesConfirmedProposalBeforeNextQuestion(t *testing.T) {
 	if f.messages[3].Role != "assistant" || !strings.Contains(f.messages[3].Content, "Saved: M0 live check.") {
 		t.Fatal("saved result missing from model context")
 	}
-	if f.messages[4].Role != "user" || f.messages[4].Content != "What is open?" {
+	if !strings.Contains(f.messages[4].Content, "owner_message_source_id") {
+		t.Fatal("the owner's message source ID is missing from the context")
+	}
+	if f.messages[5].Role != "user" || f.messages[5].Content != "What is open?" {
 		t.Fatal("latest request was not last")
 	}
 }

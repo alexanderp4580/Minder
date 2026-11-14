@@ -58,9 +58,9 @@ func (a *Service) buildContext(turn domain.AgentTurn) (messages []Message, items
 		}
 		messages = append(messages, arrival)
 	case domain.TurnReviewReply:
-		messages = append(messages, reviewReplyContext(turn), Message{Role: "user", Content: own.Text})
+		messages = append(messages, reviewReplyContext(turn, own.ID), Message{Role: "user", Content: own.Text})
 	default:
-		messages = append(messages, Message{Role: "user", Content: own.Text})
+		messages = append(messages, ownerContext(own.ID), Message{Role: "user", Content: own.Text})
 	}
 	return
 }
@@ -115,11 +115,21 @@ func (a *Service) arrivalMessage(turn domain.AgentTurn) (Message, error) {
 
 // reviewReplyContext says which review the owner's next message answered. It is context for
 // the agent's judgment, not an instruction to change the candidate.
-func reviewReplyContext(turn domain.AgentTurn) Message {
+func reviewReplyContext(turn domain.AgentTurn, entryID string) Message {
 	encoded, _ := json.Marshal(struct {
-		SourceID    string `json:"source_id"`
-		CandidateID string `json:"candidate_id,omitempty"`
-		Revision    int    `json:"revision"`
-	}{turn.SourceID, turn.CandidateID, turn.ExpectedRevision})
+		SourceID      string `json:"source_id"`
+		CandidateID   string `json:"candidate_id,omitempty"`
+		Revision      int    `json:"revision"`
+		MessageSource string `json:"owner_message_source_id"`
+	}{turn.SourceID, turn.CandidateID, turn.ExpectedRevision, entryID})
 	return Message{Role: "user", Content: "Review context for the owner's next message (data): " + string(encoded) + ". It is a quick reply or answer in that review. Decide whether it answers the open question, asks about the evidence, corrects a value or changes the subject."}
+}
+
+// ownerContext gives the agent the source ID of the owner's next message, so pasted material
+// can be read and reviewed by reference. It is data, and it adds no instruction.
+func ownerContext(entryID string) Message {
+	encoded, _ := json.Marshal(struct {
+		MessageSource string `json:"owner_message_source_id"`
+	}{entryID})
+	return Message{Role: "user", Content: "Owner message context (data): " + string(encoded) + ". Use that source ID with read_source or propose_review when the owner pastes material for you to review."}
 }

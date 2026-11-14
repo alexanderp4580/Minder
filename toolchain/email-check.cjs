@@ -104,29 +104,57 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   assert.equal(checkupsCapture.candidates[0].proposal.location||'','','a Teams meeting has no address');
   const chatTexts=async()=>entriesOf(await fetch(url+'/v1/chat?after=0&limit=300').then(r=>r.json())).filter(e=>e.kind==='minder').map(e=>e.text);
   let texts=await chatTexts();assert.ok(texts.includes('Three clinic visits, starting with the online dentist visit.'),JSON.stringify(texts));assert.ok(texts.includes('Appointment 1 of 3: Dentist'));
-  const answerTo=async(candidateId,text)=>{const c=await fetch(url+'/v1/captures/'+checkupsId).then(r=>r.json());const r=await fetch(url+'/v1/captures/'+checkupsId+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:c.revision,candidate_id:candidateId,text})});assert.equal(r.status,200,'answer '+candidateId);};
-  await answerTo('dentist','1 hour');checkupsCapture=await capture(c=>c.candidates[0].state==='pending');assert.equal(checkupsCapture.candidates[0].proposal.duration_minutes,60,'the model used the duration answer');assert.equal(states(checkupsCapture),'pending queued queued');assert.ok(checkupsCapture.calls>=2,'the answer reached the model');assert.deepEqual(checkupsCapture.candidates[0].proposal.details,[{label:'Meeting link',value:'https://teams.example/join/dentist'}]);
+  const answerTo=async(captureId,title,text)=>{const c=await fetch(url+'/v1/captures/'+captureId).then(r=>r.json());const candidate=c.candidates.find(x=>x.proposal.title===title);assert.ok(candidate,'candidate '+title);const r=await fetch(url+'/v1/captures/'+captureId+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:c.revision,candidate_id:candidate.id,text})});assert.equal(r.status,200,'answer '+title);const entry=await r.json();assert.equal(entry.kind,'user','a quick reply is the owner\'s own message');assert.equal(entry.text,text);};
+  await answerTo(checkupsId,'Dentist','1 hour');checkupsCapture=await capture(c=>c.candidates[0].state==='pending');assert.equal(checkupsCapture.candidates[0].proposal.duration_minutes,60,'the model used the duration answer');assert.equal(states(checkupsCapture),'pending queued queued');assert.deepEqual(checkupsCapture.candidates[0].proposal.details,[{label:'Meeting link',value:'https://teams.example/join/dentist'}]);
   assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[0].change_id+'/confirm',{method:'POST'})).status,200);
-  checkupsCapture=await capture(c=>c.candidates[1].state==='needs-answer');await answerTo('checkup','30 minutes');checkupsCapture=await capture(c=>c.candidates[1].state==='pending');
+  checkupsCapture=await capture(c=>c.candidates[1].state==='needs-answer');await answerTo(checkupsId,'Checkup','30 minutes');checkupsCapture=await capture(c=>c.candidates[1].state==='pending');
   assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[1].change_id+'/discard',{method:'POST'})).status,200);
   checkupsCapture=await capture(c=>c.candidates[2].state==='pending');assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[2].change_id+'/confirm',{method:'POST'})).status,200);
   texts=await chatTexts();assert.equal(texts[texts.length-1],'Done: 2 added, 1 skipped.','the review ends with a summary');
   const checkupItems=(await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json())).filter(i=>['Dentist','Checkup','Follow-up'].includes(i.title));assert.deepEqual(checkupItems.map(i=>i.title).sort(),['Dentist','Follow-up']);assert.deepEqual(checkupItems.find(i=>i.title==='Dentist').details,[{label:'Meeting link',value:'https://teams.example/join/dentist'}]);
-  // A rejected answer must append a report after Questions answered, rather than only updating the old card.
+  // A model failure while reading is reported in chat, keeps the original and recovers with Retry.
   const failureRaw=Buffer.from('From: Owner <owner@example.com>\r\nSubject: Failure report check\r\n\r\nfailure-report-check: three appointments and a questionnaire.');
   const failureReceipt=await fetch(url+'/v1/email/ingest',{method:'POST',body:failureRaw,headers:await sign(failureRaw,'failure-report')});assert.equal(failureReceipt.status,201);const failureId=(await failureReceipt.json()).capture_id;
   let failed;
-  for(let n=0;n<100;n++){failed=await fetch(url+'/v1/captures/'+failureId).then(r=>r.json());if(failed.status==='needs-answer')break;await new Promise(r=>setTimeout(r,100));}
-  assert.equal(failed.candidates.length,4);
-  await page.reload();await page.waitForSelector('flutter-view',{timeout:60000});await page.locator('flt-semantics-placeholder').evaluate(e=>e.click()).catch(()=>{});
-  await page.getByRole('button',{name:'1 hour',exact:true}).last().click();
   for(let n=0;n<100;n++){failed=await fetch(url+'/v1/captures/'+failureId).then(r=>r.json());if(failed.status==='failed')break;await new Promise(r=>setTimeout(r,100));}
-  assert.equal(failed.status,'failed');assert.match(failed.error,/model did not return the item being reviewed/);
-  const failedHistory=entriesOf(await fetch(url+'/v1/chat?after=0&limit=200').then(r=>r.json()));
+  assert.equal(failed.status,'failed');assert.equal(failed.candidates.length,0);assert.match(failed.error,/something went wrong/);
+  const failedHistory=entriesOf(await fetch(url+'/v1/chat?after=0&limit=300').then(r=>r.json()));
   assert.equal(failedHistory[failedHistory.length-1].kind,'minder');assert.equal(failedHistory[failedHistory.length-1].text,failed.error);
+  await page.reload();await page.waitForSelector('flutter-view',{timeout:60000});await page.locator('flt-semantics-placeholder').evaluate(e=>e.click()).catch(()=>{});
   await page.getByText(failed.error,{exact:false}).last().waitFor({timeout:10000});
-  assert.equal(await page.getByText('Working',{exact:true}).count(),0);
+  assert.equal(await page.getByText('Working',{exact:true}).count(),0,'a failed turn ends Working');
+  assert.equal((await fetch(url+'/v1/captures/'+failureId+'/retry',{method:'POST'})).status,200);
+  for(let n=0;n<100;n++){failed=await fetch(url+'/v1/captures/'+failureId).then(r=>r.json());if(failed.status==='needs-answer')break;await new Promise(r=>setTimeout(r,100));}
+  assert.equal(failed.status,'needs-answer','Retry reads the email again');assert.equal(failed.candidates.length,4);
+  // Pasted material: a long paste (over 4,000 characters) goes through the same agent and gives the same review.
+  const filler='Parking is behind the clinic and opening hours are posted at the door.\n'.repeat(80);
+  const pasted='Dentist, checkup and follow-up appointments at the clinic. The dentist visit is a Microsoft Teams meeting.\n'+filler;
+  assert.ok(pasted.length>4000);
+  const accepted=await fetch(url+'/v1/chat/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:pasted})});assert.equal(accepted.status,202);
+  const pastedId=(await accepted.json()).entry.id;
+  const pastedCapture=async(predicate)=>{let c;for(let n=0;n<150;n++){c=await fetch(url+'/v1/captures/'+pastedId).then(r=>r.ok?r.json():null);if(c&&predicate(c))return c;await new Promise(resolve=>setTimeout(resolve,100));}throw new Error('pasted review never reached the expected state: '+JSON.stringify(c));};
+  let pastedReview=await pastedCapture(c=>c.candidates.length===3);
+  assert.equal(pastedReview.kind,'chat');assert.equal(states(pastedReview),'needs-answer queued queued','the pasted review matches the forwarded one');
+  assert.deepEqual(pastedReview.candidates.map(c=>c.proposal.title),['Dentist','Checkup','Follow-up']);
+  // A question during the open review is answered from the source and changes nothing.
+  const asked=await fetch(url+'/v1/chat/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'What should I bring to the dentist?'})});assert.equal(asked.status,202);
+  for(let n=0;n<100;n++){const texts2=await chatTexts();if(texts2.includes('Bring your insurance card and arrive ten minutes early.'))break;await new Promise(resolve=>setTimeout(resolve,100));}
+  assert.ok((await chatTexts()).includes('Bring your insurance card and arrive ten minutes early.'),'the answer comes from the retained source');
+  const afterQuestion=await pastedCapture(()=>true);assert.equal(states(afterQuestion),'needs-answer queued queued');assert.equal(afterQuestion.revision,pastedReview.revision,'a question is not an answer');
+  // A targeted answer changes only its candidate.
+  await answerTo(pastedId,'Dentist','1 hour');
+  pastedReview=await pastedCapture(c=>c.candidates[0].state==='pending');
+  assert.equal(pastedReview.candidates[0].proposal.duration_minutes,60);assert.equal(states(pastedReview),'pending queued queued');
+  assert.equal(pastedReview.candidates[1].question,'How long will it take?');
+  // The agent works through the tool loop, reading the source before it proposes.
+  const played=await fetch(process.env.OPENROUTER_URL+'/requests').then(r=>r.json());
+  assert.ok(played.some(line=>line.startsWith('paste')),'the paste was read by the agent');assert.ok(played.some(line=>line.startsWith('arrival')),'an arrival was read by the agent');
+  // Deleting the pasted source needs a confirmation and redacts its text.
+  const deletion=await fetch(url+'/v1/captures/'+pastedId+'/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:pastedReview.revision})}).then(r=>r.json());
+  assert.equal((await fetch(url+'/v1/changes/'+deletion.change.id+'/confirm',{method:'POST'})).status,200);
+  assert.equal((await fetch(url+'/v1/captures/'+pastedId).then(r=>r.json())).deleted,true);
+  assert.ok(!entriesOf(await fetch(url+'/v1/chat?after=0&limit=400').then(r=>r.json())).some(e=>e.kind==='user'&&e.text.includes('Parking is behind the clinic')),'the pasted text is gone from the chat');
   assert.deepEqual(errors,[]);
-  console.log('PASS: compiled web email review, targeted answer, owner download, confirmation, travel calendar, reviewed cancellation a three-appointment email reviewed one at a time, and a visible failure report after a rejected four-item follow-up.');
+  console.log('PASS: compiled web email review, targeted answer, owner download, confirmation, travel calendar, reviewed cancellation, a three-appointment email reviewed one at a time, a visible failure with Retry, and the same review from a long pasted text with a source question and deletion.');
  }catch(error){if(page){require('node:fs').writeFileSync('.local/email-accessibility.txt',await page.locator('body').ariaSnapshot().catch(()=>''));require('node:fs').writeFileSync('.local/email-dom.html',await page.content().catch(()=>''));}if(page)await page.screenshot({path:'.local/email-failure.png'}).catch(()=>{});throw error;}finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

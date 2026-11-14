@@ -54,7 +54,11 @@ class _CaptureViewState extends State<CaptureView> {
     final controller = _controller;
     if (controller == null) {
       return Text(
-        widget.capture.deleted ? 'Email source deleted.' : 'Email review',
+        widget.capture.deleted
+            ? '${widget.capture.pasted ? 'Source' : 'Email source'} deleted.'
+            : widget.capture.pasted
+            ? 'Review of pasted text'
+            : 'Email review',
       );
     }
     return AnimatedBuilder(
@@ -178,7 +182,9 @@ class _CaptureViewState extends State<CaptureView> {
   Widget _content(CaptureController controller) {
     final capture = widget.capture;
     if (capture.deleted) {
-      return const Text('Email source deleted. Confirmed items remain.');
+      return Text(
+        '${capture.pasted ? 'Source' : 'Email source'} deleted. Confirmed items remain.',
+      );
     }
     final noItems =
         !capture.processing &&
@@ -193,9 +199,9 @@ class _CaptureViewState extends State<CaptureView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'EMAIL',
-            style: TextStyle(
+          Text(
+            capture.pasted ? 'PASTED TEXT' : 'EMAIL',
+            style: const TextStyle(
               fontSize: 12,
               color: Tokens.muted,
               letterSpacing: 1,
@@ -203,7 +209,7 @@ class _CaptureViewState extends State<CaptureView> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Email review',
+            capture.pasted ? 'Review of pasted text' : 'Email review',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           if (capture.sender.isNotEmpty)
@@ -216,13 +222,13 @@ class _CaptureViewState extends State<CaptureView> {
               'needs-answer' =>
                 capture.candidates.isEmpty
                     ? 'Some details need your answer.'
-                    : 'Found in this email. I have a few questions.',
+                    : 'Found in this ${capture.pasted ? 'text' : 'email'}. I have a few questions.',
               'failed' =>
                 capture.error.isEmpty
                     ? 'Processing failed. The original is available.'
                     : capture.error,
               'reviewed' => 'Review complete.',
-              _ => 'Found in this email:',
+              _ => 'Found in this ${capture.pasted ? 'text' : 'email'}:',
             }),
           if (noItems)
             const Padding(
@@ -239,7 +245,7 @@ class _CaptureViewState extends State<CaptureView> {
               child: Text(
                 'I could not verify ${capture.unverified} '
                 '${capture.unverified == 1 ? 'appointment' : 'appointments'} '
-                'from this email.',
+                'from this ${capture.pasted ? 'text' : 'email'}.',
                 style: const TextStyle(color: Tokens.muted),
               ),
             ),
@@ -255,8 +261,9 @@ class _CaptureViewState extends State<CaptureView> {
                 controller: _answer,
                 minLines: 1,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Answer or clarify this email',
+                decoration: InputDecoration(
+                  labelText:
+                      'Answer or clarify this ${capture.pasted ? 'text' : 'email'}',
                 ),
               ),
               const SizedBox(height: 8),
@@ -317,7 +324,9 @@ class _CaptureViewState extends State<CaptureView> {
             onPressed: controller.busy
                 ? null
                 : () => controller.delete(capture),
-            child: const Text('Delete email source…'),
+            child: Text(
+              capture.pasted ? 'Delete source…' : 'Delete email source…',
+            ),
           ),
           if (controller.error != null)
             Text(

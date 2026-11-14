@@ -7,6 +7,7 @@ class Capture {
     required this.id,
     required this.status,
     required this.revision,
+    this.kind = '',
     this.sender = '',
     this.subject = '',
     this.error = '',
@@ -18,7 +19,7 @@ class Capture {
     this.attachments = const [],
     this.candidates = const [],
   });
-  final String id, status, sender, subject, error;
+  final String id, status, kind, sender, subject, error;
   final int revision;
 
   /// Appointments the assistant dropped because the email did not back them up.
@@ -28,6 +29,10 @@ class Capture {
   final List<String> coverage;
   final List<CaptureAttachment> attachments;
   final List<CaptureCandidate> candidates;
+
+  /// A review of text the owner pasted into chat. Cards stored before the field existed
+  /// have no kind and are forwarded emails.
+  bool get pasted => kind == 'chat';
   bool get processing => status == 'received' || status == 'processing';
   bool get needsCoverageReview => coverage.isNotEmpty && !coverageAcknowledged;
 }

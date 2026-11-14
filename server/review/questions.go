@@ -28,7 +28,11 @@ func HasOpenQuestions(c domain.Capture) bool {
 // PostQuestions adds one chat message holding the open questions of this revision, after the email card.
 func PostQuestions(tx port.Transaction, c domain.Capture) error {
 	snapshot := c
-	_, err := tx.PutEntry(domain.Entry{ID: questionEntryID(c.ID, c.Revision), CaptureID: c.ID, Kind: "question", Text: "Questions about the email.", Capture: &snapshot})
+	text := "Questions about the email."
+	if c.Kind == domain.SourceChat {
+		text = "Questions about the pasted text."
+	}
+	_, err := tx.PutEntry(domain.Entry{ID: questionEntryID(c.ID, c.Revision), CaptureID: c.ID, Kind: "question", Text: text, Capture: &snapshot})
 	return err
 }
 

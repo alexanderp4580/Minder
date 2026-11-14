@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 
 import '../application/chat_controller.dart';
@@ -322,9 +321,6 @@ class _ChatScreenState extends State<ChatScreen> {
                               controller: _text,
                               minLines: 1,
                               maxLines: 4,
-                              inputFormatters: [
-                                LengthLimitingTextInputFormatter(4000),
-                              ],
                               textInputAction: TextInputAction.send,
                               onSubmitted: (_) => _send(),
                               decoration: const InputDecoration(

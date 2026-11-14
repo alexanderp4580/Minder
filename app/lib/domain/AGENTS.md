@@ -19,7 +19,7 @@ Capture/source values and repository methods are typed; dates without times stay
 
 `Item` carries phone, email, website and bookingReference as typed values, plus `details` as an ordered `Detail` label/value list. `BookingDetails` separates clearly labelled older contact/reference lines for display, keeps conflicts and calendar UID/sequence Ref lines in Notes, and never writes to the server.
 
-`Capture.unverified` counts appointments the server dropped; candidate state `queued` means not yet published. `CaptureCandidate.details` is a read-only Item projection of a proposal for shared detail rendering. Its synthetic ID never authorizes item changes. `capture_questions.dart` supplies duration choices for older captures and English duration labels.
+`Capture.kind` is `chat` for a review of pasted text (`pasted`); a card without it is a forwarded email. `maxMessageBytes` is the server's 400,000-byte message limit. `Capture.unverified` counts appointments dropped in older reviews; candidate state `queued` means not yet published. `CaptureCandidate.details` is a read-only Item projection of a proposal for shared detail rendering. Its synthetic ID never authorizes item changes. `capture_questions.dart` supplies duration choices for older captures and English duration labels.
 
 `Entry.options` holds quick replies the server computed; only a place-lookup offer has them (`Skip`, `Look it up`).
 

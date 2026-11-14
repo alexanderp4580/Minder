@@ -505,3 +505,19 @@ func TestFailingAnArrivalForADeletedSourceWritesNothingVisible(t *testing.T) {
 		t.Fatalf("%d %d", len(before), len(after))
 	}
 }
+
+func TestAQuestionAboutPastedTextDoesNotCallItAnEmail(t *testing.T) {
+	f := newAgent(t)
+	entry, _ := f.db.AddEntry(domain.Entry{Kind: "user", Text: "Dentist on 20 November at 10:00."})
+	f.db.EnqueueAgentTurn(domain.AgentTurn{ID: "t", Kind: domain.TurnOwner}, &domain.Entry{Kind: "user", Text: "Review this"})
+	turn := f.claim(t)
+	ask := candidate("", "Dentist", "How long will it take?")
+	ask.Evidence = []domain.CaptureEvidence{{Part: "text", Excerpt: "Dentist"}}
+	patch := &domain.ReviewPatch{SourceID: entry.ID, Candidates: []domain.CaptureCandidate{ask}}
+	if _, err := f.commands.CommitAgentTurn(turn, domain.AgentOutcome{TurnID: turn.ID, Review: patch}); err != nil {
+		t.Fatal(err)
+	}
+	if texts := f.texts(t); texts[len(texts)-1] != "question: Questions about the pasted text." {
+		t.Fatalf("%q", texts)
+	}
+}

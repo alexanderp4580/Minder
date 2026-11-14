@@ -94,12 +94,13 @@ Each list or project can be opened in any view. The view choice is remembered pe
 ### 5.3 Email forwarding
 
 - A dedicated address / mailbox to forward emails to.
-- Each email is parsed automatically into one or more items (events, tasks, reminders).
+- Each email is read by the same assistant that handles chat, and proposed as one or more items (events, tasks, reminders). Pasting the same text into chat gives the same review.
 - Extracts: title, date/time, end time, location, deadlines, reference numbers, links.
 - Handles: booking confirmations, appointments, invoices/bills (due date), deliveries, meeting invites (.ics), school/club newsletters (multiple dates).
 - The original email is kept as an attachment on the item.
 - Always review and confirm in Minder before creating or changing items. No automatic acceptance.
-- Ask follow-up questions in Minder when material details are missing or ambiguous.
+- Ask follow-up questions in Minder when material details are missing or ambiguous. Never guess an end time or length: ask, or use what the source or the owner says.
+- The assistant can answer questions about a kept email, such as what to bring, from the original and its attachments, during the review and after it, until the source is deleted.
 - Receive at `assistant@minder.liveleds.io` through Cloudflare Email Routing. Parse with the existing OpenRouter model setup; the owner accepts those services processing the forwarded content.
 - Accept forwards only from the required comma-separated environment parameter `EMAIL_ALLOWED_SENDERS`, with authenticated sender checks. Configure actual addresses privately through deployment environment settings. Missing or invalid configuration fails closed; no hardcoded sender addresses. The original sender inside a forward is unrestricted.
 - Use a direct Worker-to-server handoff with no temporary Cloudflare content buffer. If no capture appears in the app, the owner checks and re-forwards; offline delivery recovery is not required.
