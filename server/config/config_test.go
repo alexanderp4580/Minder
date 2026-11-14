@@ -95,9 +95,13 @@ func TestSerperSettings(t *testing.T) {
 	if err != nil || off.SerperKey != "" || off.SerperEndpoint != "" {
 		t.Fatalf("default %+v %v", off, err)
 	}
-	on, err := Load(env(map[string]string{"SERPER_API_KEY": "k", "SERPER_URL": "https://google.serper.dev/maps"}))
-	if err != nil || on.SerperKey != "k" || on.SerperEndpoint != "https://google.serper.dev/maps" {
+	on, err := Load(env(map[string]string{"SERPER_API_KEY": "k", "SERPER_URL": "https://google.serper.dev"}))
+	if err != nil || on.SerperKey != "k" || on.SerperEndpoint != "https://google.serper.dev" {
 		t.Fatalf("set %+v %v", on, err)
+	}
+	_, err = Load(env(map[string]string{"SERPER_API_KEY": "k", "SERPER_URL": "https://google.serper.dev/maps"}))
+	if err == nil || !strings.Contains(err.Error(), "SERPER_URL") {
+		t.Fatalf("a path on the base URL %v", err)
 	}
 	_, err = Load(env(map[string]string{"SERPER_API_KEY": "secret-value", "SERPER_URL": "http://example.test"}))
 	if err == nil || !strings.Contains(err.Error(), "SERPER_URL") || strings.Contains(err.Error(), "secret-value") || strings.Contains(err.Error(), "example.test") {

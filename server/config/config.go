@@ -45,7 +45,7 @@ func Load(getenv func(string) string) (Settings, error) {
 	if environment == "production" && cfg.ModelEndpoint != "" && cfg.ModelEndpoint != "https://openrouter.ai/api/v1/chat/completions" {
 		return Settings{}, fmt.Errorf("OPENROUTER_URL cannot override the production endpoint")
 	}
-	if environment == "production" && cfg.SerperEndpoint != "" && cfg.SerperEndpoint != "https://google.serper.dev/maps" {
+	if environment == "production" && cfg.SerperEndpoint != "" && cfg.SerperEndpoint != "https://google.serper.dev" {
 		return Settings{}, fmt.Errorf("SERPER_URL cannot override the production endpoint")
 	}
 	var err error
