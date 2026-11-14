@@ -131,8 +131,8 @@
 
 The owner rejected three hand-written rules and one misplaced field. Tasks, each test-first:
 
-- **R1 Remove the chip parser.** Delete `capture/duration.go`, `domain.ParseDuration` and their tests; every answer goes through the model. The model fixture sets a duration from the answer.
-- **R2 Remove the venue word list.** Delete `domain/venue.go`, the clearing in `normaliseExtraction`, the Dart `isVirtualVenue` and the `Where` row. Maps shows for any location. The prompt keeps saying online meetings have no address.
+- [x] **R1 Remove the chip parser.** Delete `capture/duration.go`, `domain.ParseDuration` and their tests; every answer goes through the model. The model fixture sets a duration from the answer.
+- [x] **R2 Remove the venue word list.** Delete `domain/venue.go`, the clearing in `normaliseExtraction`, the Dart `isVirtualVenue` and the `Where` row. Maps shows for any location. The prompt keeps saying online meetings have no address.
 - [x] **R3 Add `details`.** `domain.Detail{Label, Value}`; `Item.Details`, `Proposal.Details`, `Proposal.ClearDetails`; validation limits; `setAttributes` and `itemFields`; tool schema property `details` and `clear_details`; prompt lines (capture: meeting link goes in `details`; chat: facts that fit no field); Dart `Item.details`, wire, details rows, preview row.
 - [x] **R4 Agent-written text.** `CaptureExtraction.Summary` and `.Notification` (`json:"summary"`, `json:"notification"`); `extract_capture` schema properties; `Capture.Notification`; the worker posts `Summary` as the opening on the first extraction and stores `Notification`; `review.Opening` is deleted; `review.PushBody` returns the failure sentence, else the stored notification, else `An email needs your review.`
-- **R5 Verify.** Fixtures, browser scenario, real model run, `toolchain/check`, DOX, evidence, APK 0.10.1+30, one Telegram upload. No merge or deploy.
+- [x] **R5 Verify.** Fixtures, browser scenario, real model run, `toolchain/check`, DOX, evidence, APK 0.10.1+30, one Telegram upload. No merge or deploy.

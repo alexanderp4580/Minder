@@ -37,7 +37,15 @@ The owner forwarded an email with several appointments. Extraction failed twice 
 
 ## APK
 
-APK and final browser checks in progress. The earlier 0.10.0 APK (Telegram message 2028) does not contain Revision 2.
+Source `fbbe18d`. All five final browser scenarios exited 0: chat, reminder, calendar, place lookup and email.
+
+Release arm64 APK: `.local/artifacts/Minder-0.10.1-arm64.apk` (ignored), 19,031,438 bytes. SHA-256 `e7225a914cc245a8c3db1016ddf515402c762f0bb4295dd57fb23c4f3bb55eeb`. `apksigner verify --print-certs` exited 0 for this APK and 0.10.0; both report signer `7bbc3aba5e417ffe87efa00c53c183c6490dc61905ce7231aaf99f87666d2572`. `aapt2 dump badging` reports `io.liveleds.minder`, version 0.10.1, Android version code 2030 (pubspec 30 plus the arm64 split offset); the earlier APK reports 29.
+
+Telegram confirmed one upload: message 2029, file size 19,031,438. The APK needs the matching server changes to exercise the new email flow. Production remains on `679441b`; merge and deployment await owner approval.
+
+## DOX
+
+Updated the owning domain, command, assistant, provider, capture, review, client and toolchain contracts. Parent ownership and child indexes remain unchanged because this revision adds no package or layer. Review ran inline, as the owner requested; no independent reviewer.
 
 ## Limits
 
