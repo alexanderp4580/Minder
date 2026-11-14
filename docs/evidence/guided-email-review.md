@@ -11,15 +11,15 @@ The owner forwarded an email with several appointments. Extraction failed twice 
 - One extraction attempt per revision. A failure shows one fixed sentence in the email entry and sends one push; the owner taps Retry. No automatic retries, no call cap.
 - `max_tokens` is 100,000 (the model allows 128,000); one email's request may be 400,000 bytes.
 - Valid candidates are kept when others fail evidence; the review says how many could not be verified. Each rejected attempt logs a reason code, never content.
-- The review is one appointment at a time, driven by the server in chat: an opening message with the count, an `Appointment i of N` announcement, the question or preview of the current candidate, Confirm or Discard (the skip), and a `Done` summary. Duration chips are applied without the model.
-- Online meetings keep no address (prompt and `IsVirtualVenue`); Maps appears only for a real address.
+- The review is one appointment at a time, driven by the server in chat: an opening message with the count, an `Appointment i of N` announcement, the question or preview of the current candidate, Confirm or Discard (the skip), and a `Done` summary. Every answer goes through the model.
+- Online meetings: the prompt tells the model to leave the address empty; no code judges a location.
 - Pushes: `N appointments need your review` on the first publication, `Minder could not read an email.` on failure, nothing for the owner's own answers.
 
 ## Checks
 
 | Check | Result |
 |---|---|
-| Tests first | Each rule above had a failing test before its code: limits, failure once and reasons, the reason log without content, partial candidates, queued publishing, confirm and discard advancing, push counts and silence after answers, duration parsing and local application, virtual venues (shared table in Go and Dart), the Maps row and the card states |
+| Tests first | Each rule above had a failing test before its code: limits, failure once and reasons, the reason log without content, partial candidates, queued publishing, confirm and discard advancing, push counts and silence after answers, every answer reaching the model and the card states |
 | `toolchain/email-local-check` | Passed twice against compiled web, signed ingestion and real SQLite: the trip email (hotel, then the flight question), and a three-appointment email with a Teams meeting walked to a `Done: 2 added, 1 skipped.` summary; the Teams location was empty |
 | Real model, 2026-11-14 | A synthetic three-appointment dental email through a local server: three candidates, the Teams follow-up had an empty address, `- Online meeting (Microsoft Teams)` in notes, the opening message, `Appointment 1 of 3` and the first question appeared; cost about €0.0015 |
 
