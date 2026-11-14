@@ -1,6 +1,6 @@
 # Handoff
 
-State on 2026-11-15. Production runs `595ff92` from `guided-email-review` (Coolify deployment `vcvphgkmkrhscifpitwnhvfk`, finished, running:healthy, schema 6, no migration, startup log clean: no warnings or errors in the last 40 lines, `serper_key_set=true`, private tracing still configured until `2026-11-15T20:56:21Z`). The previous runtime is `739d110` (also schema 6). The branch is pushed and unmerged; phone approval still gates merging. App 0.13.0+35 is below.
+State on 2026-11-15. Production runs `595ff92` from `main` (Coolify deployment `vcvphgkmkrhscifpitwnhvfk`, finished, running:healthy, schema 6, no migration, startup log clean: no warnings or errors in the last 40 lines, `serper_key_set=true`, private tracing still configured until `2026-11-15T20:56:21Z`). The previous runtime is `739d110` (also schema 6). `main` holds every branch, including `guided-email-review`, merged at the owner's request. The Coolify app is pinned to `main` at that commit. App 0.13.0+35 is below.
 
 ## Calendar colours and event spans (0.13.0+35)
 
@@ -10,7 +10,7 @@ Wording follows typed fields: kind event reads Event; `location_kind` address re
 
 Verification on 2026-11-15: `toolchain/check` exited 0 (Flutter, Go race/vet, analysis/format, DOX, architecture). Fixes made while finishing: a spacing test matched colour chips instead of Confirm/Discard, an analyzer dead-code warning, gofmt, and the colour route reached `Preview` through a type assertion (now part of the `Commands` interface). The chat, reminder, calendar, place-lookup and email browser scenarios exited 0 against release web. No real-model run covered colour choice; the browser scenarios do not exercise the picker (unit and widget tests do).
 
-APK `.local/artifacts/Minder-0.13.0-arm64.apk`: 19,348,434 bytes, SHA-256 `87f2865e10cb5e6e52d53a4b50dfcdeed987965dd3510fc34bdc1c8c9a7be6ca`, package `io.liveleds.minder`, version code 35, signer matches 0.12.0. LAN download `http://192.168.8.226:8788/Minder-0.13.0-arm64.apk` returned the complete matching file. No Telegram upload. Phone review is pending.
+APK `.local/artifacts/Minder-0.13.0-arm64.apk`: 19,096,662 bytes, SHA-256 `d81a0f383b37df0387d0bc5a539ac3fddf3e9fd8ef89afab38df891f8a17cb25`, package `io.liveleds.minder`, version code 2035, arm64 only, signer matches 0.12.0. Build with `flutter build apk --release --split-per-abi --target-platform android-arm64` and ship `app-arm64-v8a-release.apk`: a build without `--split-per-abi` yields version code 35, a fat file that Android rejects as a downgrade from 2034. LAN download `http://192.168.8.226:8788/Minder-0.13.0-arm64.apk` returned the complete matching file. No Telegram upload. Phone review is pending.
 
 ## Review replies and scheduled tasks (0.12.0+34)
 
