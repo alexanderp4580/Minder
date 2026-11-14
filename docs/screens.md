@@ -13,6 +13,12 @@ Source deletion first creates an irreversible preview. Mockup: [email capture](m
 
 A task's Scheduled date is when the owner plans to do it. Deadline is the source's cutoff, kept separate from that choice. A questionnaire chosen for three days before the first appointment appears on that scheduled day, with a notification for the work time. Changing notification offsets preserves the task date and deadline and replaces any older explicit reminder.
 
+## Calendar event bars — approval draft
+
+Requested on 2026-11-14; awaiting owner approval. [Calendar review mock](mockups/calendar-events-review.html) and [render](mockups/calendar-events-review.png) propose named coloured bars in the month instead of dots. Multi-day events span their dates and continue with the same name and colour across week boundaries. A selected day's full event names appear in the agenda. Day targets remain at least 44 px; compact bars describe events and day taps select the agenda.
+
+The draft has two party examples: 17:00–20:00 on one day, and 17–20 November across four dates. Ambiguous ranges need clarification rather than a guess. Both use Event, Starts/Ends and a plain Location value for Home. Hotel checkout wording applies only to an actual stay. Maps links require a real address rather than an arbitrary location label; that semantic decision belongs to the agent, not a word list. Event colours are a proposed exception to the neutral brand palette, confined to event bars and their agenda accents. This is a review artifact; the app, prompt and approved calendar remain unchanged.
+
 ## UX rules
 
 - Chat is the main workspace. Minder answers requests and posts reminders there. The calendar shows dates.

@@ -10,6 +10,7 @@
 - `email-capture.html` and `email-capture.png`: English source summary, expanded structured fields, attachments and targeted duration choices in existing chat; governed by the email capture spec.
 - `place-lookup.html` and `place-lookup.png`: draft of the Serper place-lookup offer, result preview and no-match states; governed by `../superpowers/specs/2026-11-13-place-lookup-design.md`
 - `calendar.html` and `calendar.png`: the approved month grid and agenda layout. The illustrative marker sits above the app frame. The agenda card shows Delete and a neutral chevron disclosure, source-zone time rows, an address block with Maps destination and white note links. Shared `.content-*` rules match the canonical guide.
+- `calendar-events-review.html` and `.png`: pending approval, named coloured spanning events, week-boundary continuation, a party with Event/Starts/Ends and a plain Home location. Governed by the approval draft in `../screens.md`; event colour is an owner-requested draft exception to the neutral palette. The approved app/calendar stays unchanged until approval.
 - `today`, `today-states`, `board`, `lists`, `item`, `profiles`, `assistant`, `settings`: design drafts that do not define current app behaviour. Use `../screens.md` and the Flutter calendar golden for the implemented calendar
 - `common.css`: shared tokens and components for every mockup, including calendar layout and fixed orbital surfaces mirrored in the brand guide
 
