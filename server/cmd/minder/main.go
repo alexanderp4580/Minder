@@ -69,8 +69,7 @@ func run(logger *slog.Logger) error {
 	model := &openrouter.Client{Key: settings.ModelKey, Model: settings.Model, URL: settings.ModelEndpoint}
 	assistantService := assistant.New(database, commands, model, settings.MonthlyLimitEUR, settings.USDToEUR)
 	if settings.SerperKey != "" {
-		model.PlaceLookup = true
-		assistantService.WithPlaces(&serper.Client{Key: settings.SerperKey, URL: settings.SerperEndpoint})
+		assistantService.WithLookups(&serper.Client{Key: settings.SerperKey, URL: settings.SerperEndpoint})
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

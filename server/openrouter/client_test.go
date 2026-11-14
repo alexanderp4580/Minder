@@ -124,17 +124,42 @@ func toolNames(t *testing.T, c *Client, messages []assistant.Message) []string {
 	return names
 }
 
-func TestOfferToolExistsOnlyWhenPlaceLookupIsOn(t *testing.T) {
-	chat := []assistant.Message{{Role: "user", Content: "Hello"}}
-	if names := toolNames(t, &Client{Key: "k"}, chat); strings.Contains(strings.Join(names, ","), "offer_lookup") {
-		t.Fatalf("tools %v", names)
+func TestToolSetFollowsPurpose(t *testing.T) {
+	has := func(purpose string) map[string]bool {
+		set := map[string]bool{}
+		for _, name := range toolNames(t, &Client{Key: "k"}, []assistant.Message{{Purpose: purpose, Role: "user", Content: "Hello"}}) {
+			set[name] = true
+		}
+		return set
 	}
-	names := toolNames(t, &Client{Key: "k", PlaceLookup: true}, chat)
-	if !strings.Contains(strings.Join(names, ","), "offer_lookup") || !strings.Contains(strings.Join(names, ","), "propose_create") {
-		t.Fatalf("tools %v", names)
+	for purpose, want := range map[string]map[string]bool{
+		assistant.PurposeChat:   {"propose_create": true, "offer_lookup": false, "lookup_maps": false, "lookup_places": false, "lookup_search": false},
+		assistant.PurposeOffer:  {"propose_create": true, "offer_lookup": true, "lookup_maps": false, "lookup_places": false, "lookup_search": false},
+		assistant.PurposeLookup: {"propose_create": true, "offer_lookup": false, "lookup_maps": true, "lookup_places": true, "lookup_search": true},
+		assistant.PurposeEmail:  {"extract_capture": true, "propose_create": false, "offer_lookup": false, "lookup_maps": false},
+	} {
+		got := has(purpose)
+		for name, expected := range want {
+			if got[name] != expected {
+				t.Errorf("purpose %q: %s present=%v, want %v", purpose, name, got[name], expected)
+			}
+		}
 	}
-	email := []assistant.Message{{Purpose: "email", Role: "user", Content: "Hello"}}
-	if names := toolNames(t, &Client{Key: "k", PlaceLookup: true}, email); strings.Contains(strings.Join(names, ","), "offer_lookup") {
-		t.Fatalf("email tools %v", names)
+}
+
+func TestLookupToolsTakeAQueryAndCarryTheCatalogueDescription(t *testing.T) {
+	for _, def := range lookupToolDefinitions() {
+		function := def.(map[string]any)["function"].(map[string]any)
+		parameters := function["parameters"].(map[string]any)
+		if required := parameters["required"].([]string); len(required) != 1 || required[0] != "query" {
+			t.Fatalf("%v requires %v", function["name"], required)
+		}
+	}
+	if len(lookupToolDefinitions()) != len(assistant.LookupTools) {
+		t.Fatal("a catalogue tool has no definition")
+	}
+	first := lookupToolDefinitions()[0].(map[string]any)["function"].(map[string]any)
+	if first["name"] != assistant.LookupTools[0].Name || first["description"] != assistant.LookupTools[0].Description {
+		t.Fatalf("%v", first)
 	}
 }

@@ -23,8 +23,6 @@ const maxOutputTokens = 4000
 type Client struct {
 	Key, Model, URL string
 	Client          *http.Client
-	// PlaceLookup adds the offer_lookup tool. Main sets it when a place finder is configured.
-	PlaceLookup bool
 }
 
 func (m *Client) Ready() error {
@@ -46,16 +44,11 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (as
 	if url == "" {
 		url = "https://openrouter.ai/api/v1/chat/completions"
 	}
-	selectedTools := tools()
-	if len(messages) > 0 && messages[0].Purpose == "email" {
-		selectedTools = captureTools()
-	} else if m.PlaceLookup {
-		selectedTools = append(selectedTools, tool("offer_lookup", "Offer to look up a place on Google for its address and website. Call it alone when the request names a venue or place without an address. The owner is asked first; nothing is searched yet.", map[string]any{"query": map[string]string{"type": "string", "description": "The place name and town, at most 100 characters."}}, []string{"query"}))
-	}
+	selectedTools := toolsFor(purposeOf(messages))
 	payload := map[string]any{"model": model, "messages": messages, "tools": selectedTools, "max_tokens": maxOutputTokens, "usage": map[string]bool{"include": true}}
 	b, _ := json.Marshal(payload)
 	started := time.Now()
-	slog.Info("model request", "model", model, "endpoint_host", hostOf(url), "messages", len(messages), "tools", len(tools()), "request_bytes", len(b), "max_tokens", maxOutputTokens, "trace_id", domain.TraceID(ctx))
+	slog.Info("model request", "model", model, "endpoint_host", hostOf(url), "messages", len(messages), "tools", len(selectedTools), "request_bytes", len(b), "max_tokens", maxOutputTokens, "trace_id", domain.TraceID(ctx))
 	req, e := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(b))
 	if e != nil {
 		slog.Error("model request failed", "stage", "build", "error", e)
@@ -180,6 +173,44 @@ func tools() []any {
 	out = append(out, tool("list_items", "List open items, optionally for one list.", map[string]any{"list": str}, nil))
 	return out
 }
+
+// purposeOf is the purpose the assistant set on the first message.
+func purposeOf(messages []assistant.Message) string {
+	if len(messages) == 0 {
+		return assistant.PurposeChat
+	}
+	return messages[0].Purpose
+}
+
+// toolsFor returns the tools a request of the given purpose may call.
+func toolsFor(purpose string) []any {
+	switch purpose {
+	case assistant.PurposeEmail:
+		return captureTools()
+	case assistant.PurposeOffer:
+		return append(tools(), offerTool())
+	case assistant.PurposeLookup:
+		return append(tools(), lookupToolDefinitions()...)
+	}
+	return tools()
+}
+
+var queryProperty = map[string]any{"query": map[string]string{"type": "string", "description": "What to search for, at most 100 characters. Include the town for a place."}}
+
+// offerTool asks the owner to approve a lookup. Nothing is searched until they tap.
+func offerTool() any {
+	return tool("offer_lookup", "Ask the owner to approve a web lookup. Call it alone when the request names a venue or place without an address. Nothing is searched until the owner approves.", queryProperty, []string{"query"})
+}
+
+// lookupToolDefinitions builds the lookup tools from the assistant's catalogue.
+func lookupToolDefinitions() []any {
+	definitions := make([]any, 0, len(assistant.LookupTools))
+	for _, lookup := range assistant.LookupTools {
+		definitions = append(definitions, tool(lookup.Name, lookup.Description, queryProperty, []string{"query"}))
+	}
+	return definitions
+}
+
 func tool(name, description string, props map[string]any, required []string) any {
 	if required == nil {
 		required = []string{}
