@@ -58,16 +58,17 @@ On 2026-11-14 the owner forwarded an email with several appointments. Nothing ap
 - The server publishes one candidate at a time, in email order. A candidate that is not yet current has state `queued`; it has no preview and posts no question. The current candidate is announced (`Appointment 2 of 3: <title>`) and then shows either its question with quick replies or its preview with Confirm and Discard (Discard is the skip). Confirming or discarding publishes the next. When none remain: `Done: 2 added, 1 skipped.`
 - The email card lists every appointment with its state (current, queued, confirmed, discarded). The flow lives in chat, where previews and questions already are.
 - A question belongs to its candidate; only the current candidate can have an open question, so answering one never closes another.
-- A quick reply that is a duration (`30 minutes`, `45 minutes`, `1 hour`, `90 minutes`, `1 hour 30 minutes`) is applied to the candidate directly with no model call. Other answers go through the model as today.
-- Online meetings: the extraction prompt puts nothing in `location` and the join link, if any, in `website`; a note line says `- Online meeting (Teams)`. A server pass clears `location` when it names a virtual venue only (Teams, Zoom, Google Meet, Webex, online, video call, phone call).
-- The app shows Open in Google Maps only for a location that is not a virtual venue.
+- Every answer, quick reply or typed, goes to the model, which decides what it means. The code has no answer parser.
+- Online meetings: the prompt tells the model an online meeting has no address, so it leaves `location` empty. The code has no list of venue words. Open in Google Maps shows whenever a location exists.
+- Facts that fit no field (a meeting link, a dress code) go in `details`: an optional list of label and value pairs on an item. A proposal's `details` replaces the list; `clear_details` empties it. At most 10 pairs, label up to 60 characters, value up to 2,048. Previews and item details show them as `Label: value` rows; web links open.
+- The model writes the opening message (`summary`) and the push line (`notification`) in its first extraction answer; the server posts and sends them unchanged. If either is missing the server posts no opening, and the push reads `An email needs your review.`
 
 ### Notifications
-- The first push after extraction reads `N appointments need your review` (or `1 appointment needs your review`). An answer by the owner queues no push. A failure pushes `Minder could not read an email`.
+- The first push after extraction carries the model's `notification` text. The owner's own answers queue no push. A failure pushes a fixed sentence, `Minder could not read an email.`, because no model ran.
 
 ## Verification (acceptance)
 
-- Tests first for every rule above: no automatic retry, failure entry and push, Retry without a cap, partial candidates, evidence reasons logged without content, the opening message counts, question closing per candidate, duration answer without a model call, virtual-venue clearing, Maps visibility, push texts, no push after an answer, the 100,000-token request and the larger size limit.
+- Tests first for every rule above: no automatic retry, failure entry and push, Retry without a cap, partial candidates, evidence reasons logged without content, the opening message counts, question closing per candidate, details round trip and validation, the model-written summary and notification, every answer reaching the model, no word list, no push after an answer, the 100,000-token request and the larger size limit.
 - Flutter widget tests for the Maps rule and the card's candidate states; goldens only where existing goldens cover the card.
 - `toolchain/check`; the email browser scenario extended with a three-appointment email; a real-model run on a synthetic three-appointment email with a Teams meeting (no real mailbox data).
 - New APK (version bumped). Deploy after the owner approves.
@@ -78,7 +79,7 @@ Task order, file splits (keep one responsibility per file), exact fixed-sentence
 
 ## My calls (the owner can change these)
 
-- Opening message comes after extraction, because the count is unknown before it.
+- The opening message comes after extraction, because the count is unknown before it. `Appointment i of N` and the `Done` summary stay mechanical progress notes.
 - The step-by-step flow is driven by the server in chat, not by a stepper inside the email card, because previews, questions and Confirm/Discard already live in chat.
 - A duration chip is applied locally without the model.
 - Failures also push once, because the owner expected a pop-up.
