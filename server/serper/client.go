@@ -19,8 +19,6 @@ import (
 const (
 	defaultURL = "https://google.serper.dev/maps"
 	maxPlaces  = 3
-	maxBody    = 64 << 10
-	timeout    = 10 * time.Second
 )
 
 type Client struct {
