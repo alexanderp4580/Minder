@@ -4,7 +4,7 @@
 Needs .local/minder (built server) and OPENROUTER_MINDER_TOKEN, for example
 `tokencrypt run --with openrouter_minder_token -- toolchain/real-model-agent-check`.
 Uses a temporary database and synthetic sources. The key never reaches the browser or the Node process."""
-import base64, json, os, secrets, socket, sqlite3, subprocess, tempfile, time, urllib.request
+import argparse, base64, json, os, secrets, socket, sqlite3, subprocess, tempfile, time, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -15,6 +15,9 @@ def free_port():
         return sock.getsockname()[1]
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--preparation', action='store_true', help='Check three appointments plus a required questionnaire and timing choices')
+    args = parser.parse_args()
     key = os.environ['OPENROUTER_MINDER_TOKEN']
     with tempfile.TemporaryDirectory(prefix='minder-real-agent-') as directory:
         port = free_port()
@@ -36,7 +39,8 @@ def main():
                         time.sleep(.1)
                 else:
                     raise RuntimeError('Local server did not start')
-                subprocess.run(['node', 'toolchain/real-model-agent-check.cjs'], cwd=ROOT, env=node_env, check=True)
+                scenario = 'toolchain/real-model-preparation-check.cjs' if args.preparation else 'toolchain/real-model-agent-check.cjs'
+                subprocess.run(['node', scenario], cwd=ROOT, env=node_env, check=True)
                 connection = sqlite3.connect(directory + '/db')
                 usage = [json.loads(body) for body, in connection.execute('select body from usage')]
                 turns = [json.loads(body) for body, in connection.execute('select body from agent_turn')]
