@@ -65,6 +65,8 @@ Coolify deployment `jtptw3myyrdsxktwodwgeias` finished at this commit and the ap
 
 At the owner's request, stopped the production container and backed up SQLite and email files to the private server directory `/var/backups/minder/fresh-start-20261114T155318Z`. Verified the backup database before clearing data. After restart, item, chat/event, pending/audit, reminder and capture/provenance tables contain zero rows, the email source directory is empty, and the five built-in profiles exist. Preserved one push registration and 79 cost-accounting rows. SQLite integrity and foreign-key checks passed; the container's `/v1/health` returned `{"status":"ok"}`. No source or deployment change accompanied this reset.
 
+The owner requested a second fresh start for the 0.10.2 retry. Backed up the current database and email sources to `/var/backups/minder/fresh-start-20261114T165005Z`, then cleared 4 items, 21 chat entries, 42 events and the related pending/audit, reminder and capture records. After restart, all cleared tables contain zero rows, the five default profiles exist, one push registration and 84 usage rows remain, and email sources are empty. Integrity/foreign-key checks passed and the live health endpoint returned `{"status":"ok"}`. The earlier backup and local APK server remain available.
+
 ## DOX
 
 Updated the owning domain, command, assistant, provider, capture, review, client and toolchain contracts. Parent ownership and child indexes remain unchanged because this revision adds no package or layer. Review ran inline, as the owner requested; no independent reviewer.
