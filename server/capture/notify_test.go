@@ -54,24 +54,24 @@ func deliver(svc *capture.Service) {
 	svc.Run(stopped)
 }
 
-func TestTheFirstPushCountsTheAppointments(t *testing.T) {
+func TestTheFirstPushUsesTheStoredModelNotification(t *testing.T) {
 	svc, sender, _ := notified(t, &threeAppointments{})
 	if e := svc.ProcessNext(context.Background(), time.Now()); e != nil {
 		t.Fatal(e)
 	}
 	deliver(svc)
-	if len(sender.bodies) != 1 || sender.bodies[0] != "3 appointments need your review" {
+	if len(sender.bodies) != 1 || sender.bodies[0] != "Three dental visits need a decision." {
 		t.Fatalf("%q", sender.bodies)
 	}
 }
 
-func TestOneAppointmentReadsInTheSingular(t *testing.T) {
+func TestMissingNotificationUsesTheFallback(t *testing.T) {
 	svc, sender, _ := notified(t, singleEvent{})
 	if e := svc.ProcessNext(context.Background(), time.Now()); e != nil {
 		t.Fatal(e)
 	}
 	deliver(svc)
-	if len(sender.bodies) != 1 || sender.bodies[0] != "1 appointment needs your review" {
+	if len(sender.bodies) != 1 || sender.bodies[0] != "An email needs your review." {
 		t.Fatalf("%q", sender.bodies)
 	}
 }
@@ -118,7 +118,7 @@ func TestARetryThatWorksPushesTheReviewAfterTheFailurePush(t *testing.T) {
 	}
 	svc.ProcessNext(context.Background(), time.Now())
 	deliver(svc)
-	if len(sender.bodies) != 2 || sender.bodies[1] != "1 appointment needs your review" {
+	if len(sender.bodies) != 2 || sender.bodies[1] != "An email needs your review." {
 		t.Fatalf("%q", sender.bodies)
 	}
 }

@@ -15,6 +15,7 @@ type CaptureEnvelope struct {
 	RequestID string `json:"-"`
 }
 type Capture struct {
+	Notification         string              `json:"notification,omitempty"`
 	FilesDeleted         bool                `json:"files_deleted,omitempty"`
 	CoverageAcknowledged bool                `json:"coverage_acknowledged,omitempty"`
 	ID                   string              `json:"id"`
@@ -92,8 +93,10 @@ type CaptureDocument struct {
 	Questions          []string            `json:"questions,omitempty"`
 }
 type CaptureExtraction struct {
-	Candidates []CaptureCandidate `json:"candidates"`
-	Questions  []CaptureQuestion  `json:"questions,omitempty"`
+	Summary      string             `json:"summary,omitempty"`
+	Notification string             `json:"notification,omitempty"`
+	Candidates   []CaptureCandidate `json:"candidates"`
+	Questions    []CaptureQuestion  `json:"questions,omitempty"`
 	// Dropped counts candidates removed because their evidence did not match the email.
 	// The model never supplies it.
 	Dropped int `json:"-"`

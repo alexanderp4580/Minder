@@ -143,6 +143,18 @@ func tools() []any {
 		props["clear_"+name] = flag
 	}
 
+	props["details"] = map[string]any{
+		"type": "array", "description": "Facts that fit no other field, such as a meeting link or dress code. Replaces the list.", "maxItems": 10,
+		"items": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"label": map[string]any{"type": "string", "maxLength": 60},
+				"value": map[string]any{"type": "string", "maxLength": 2048},
+			},
+			"required": []string{"label", "value"}, "additionalProperties": false,
+		},
+	}
+	props["clear_details"] = flag
 	props["start_at"] = map[string]string{"type": "string", "description": "When the item begins, RFC3339 with timezone. Use for appointments and meetings. Use end_at for the event end, due_at only for deadlines. For date-only bookings use start_date/end_date (exclusive checkout) or due_date. Do not invent times."}
 	props["clear_start"] = flag
 	for _, name := range []string{"kind", "end_at", "start_timezone", "end_timezone", "start_date", "end_date", "due_date"} {
@@ -227,5 +239,5 @@ func captureTools() []any {
 	options := map[string]any{"type": "array", "maxItems": 3, "description": "Up to three short quick replies for the question.", "items": map[string]string{"type": "string"}}
 	question := map[string]any{"type": "object", "properties": map[string]any{"text": map[string]string{"type": "string"}, "options": options}, "required": []string{"text"}, "additionalProperties": false}
 	candidate := map[string]any{"type": "object", "properties": map[string]any{"id": map[string]string{"type": "string"}, "proposal": proposal, "question": map[string]string{"type": "string"}, "options": options, "evidence": map[string]any{"type": "array", "items": evidence}}, "required": []string{"proposal", "evidence"}, "additionalProperties": false}
-	return []any{tool("extract_capture", "Extract source-backed candidates or ask focused questions. Never save changes.", map[string]any{"candidates": map[string]any{"type": "array", "items": candidate}, "questions": map[string]any{"type": "array", "items": question}}, []string{"candidates", "questions"})}
+	return []any{tool("extract_capture", "Extract source-backed candidates or ask focused questions. Never save changes.", map[string]any{"summary": map[string]string{"type": "string", "description": "An English opening message saying what you found and how to review it."}, "notification": map[string]string{"type": "string", "description": "A short English push notification saying what needs review."}, "candidates": map[string]any{"type": "array", "items": candidate}, "questions": map[string]any{"type": "array", "items": question}}, []string{"candidates", "questions"})}
 }

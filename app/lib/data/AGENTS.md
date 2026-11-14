@@ -18,7 +18,7 @@ Capture routes use owner authentication. Attachment bytes download through the s
 `UrlLinkLauncher` uses url_launcher in external-application mode. It rejects schemes outside HTTPS, tel and mailto, empty targets, hostless URLs and URLs with user information. Platform failures return false. `wire.dart` retains item notes, kind and reminder offsets.
 
 
-Item JSON preserves `phone`, `email`, `website` and `booking_reference`; absent keys keep older responses compatible.
+Item JSON preserves `phone`, `email`, `website` and `booking_reference`; `details` maps label/value pairs into typed values; absent keys keep older responses compatible.
 
 Capture JSON retains the full candidate proposal as read-only detail fields; original evidence and subjects remain available in the source data.
 

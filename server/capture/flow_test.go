@@ -33,7 +33,7 @@ func (x *threeAppointments) Extract(_ context.Context, _ domain.CaptureDocument,
 			b.Question = ""
 		}
 	}
-	return domain.CaptureExtraction{Candidates: []domain.CaptureCandidate{a, b, event("c", "Follow-up", "")}}, nil
+	return domain.CaptureExtraction{Summary: "Three visits await your review.", Notification: "Three dental visits need a decision.", Candidates: []domain.CaptureCandidate{a, b, event("c", "Follow-up", "")}}, nil
 }
 
 func flowFixture(t *testing.T, x capture.Extractor) (*capture.Service, *store.Store, *command.Service, string) {
@@ -99,7 +99,7 @@ func TestExtractionPublishesOnlyTheFirstCandidateAndSaysWhatItFound(t *testing.T
 		t.Fatalf("states %s", got)
 	}
 	texts := chatTexts(t, db)
-	if len(texts) < 2 || texts[0] != `I found 3 appointments in "Checkups". We will go through them one at a time.` || texts[1] != "Appointment 1 of 3: Dentist" {
+	if len(texts) < 2 || texts[0] != "Three visits await your review." || texts[1] != "Appointment 1 of 3: Dentist" {
 		t.Fatalf("chat %q", texts)
 	}
 }

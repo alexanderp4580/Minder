@@ -26,11 +26,17 @@ type Invalid struct {
 
 func (e *Invalid) Error() string { return e.Message }
 
+type Detail struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+}
+
 type Item struct {
-	Phone            string `json:"phone,omitempty"`
-	Email            string `json:"email,omitempty"`
-	Website          string `json:"website,omitempty"`
-	BookingReference string `json:"booking_reference,omitempty"`
+	Details          []Detail `json:"details,omitempty"`
+	Phone            string   `json:"phone,omitempty"`
+	Email            string   `json:"email,omitempty"`
+	Website          string   `json:"website,omitempty"`
+	BookingReference string   `json:"booking_reference,omitempty"`
 
 	SourceIDs     []string `json:"source_ids,omitempty"`
 	Kind          string   `json:"kind,omitempty"`
@@ -63,10 +69,12 @@ type Item struct {
 	CompletedAt     string      `json:"completed_at,omitempty"`
 }
 type Proposal struct {
-	Phone            string `json:"phone,omitempty"`
-	Email            string `json:"email,omitempty"`
-	Website          string `json:"website,omitempty"`
-	BookingReference string `json:"booking_reference,omitempty"`
+	Details          []Detail `json:"details,omitempty"`
+	ClearDetails     bool     `json:"clear_details,omitempty"`
+	Phone            string   `json:"phone,omitempty"`
+	Email            string   `json:"email,omitempty"`
+	Website          string   `json:"website,omitempty"`
+	BookingReference string   `json:"booking_reference,omitempty"`
 
 	ClearPhone            bool `json:"clear_phone,omitempty"`
 	ClearEmail            bool `json:"clear_email,omitempty"`
@@ -186,6 +194,9 @@ type Audit struct {
 
 func Now() string { return time.Now().UTC().Format(time.RFC3339Nano) }
 func Validate(i *Item) error {
+	if err := validateDetails(i); err != nil {
+		return err
+	}
 	NormalizeBookingDetails(i)
 	i.Title = strings.TrimSpace(i.Title)
 	if n := utf8.RuneCountInString(i.Title); n < 1 || n > 200 {

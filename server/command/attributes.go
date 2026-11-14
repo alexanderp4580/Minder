@@ -18,6 +18,13 @@ func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error 
 		i.DurationMinutes = 0
 	}
 
+	if p.ClearDetails {
+		i.Details = nil
+	}
+	if p.Details != nil {
+		i.Details = append([]domain.Detail{}, p.Details...)
+	}
+
 	if p.Kind != "" {
 		i.Kind = p.Kind
 	}
@@ -150,6 +157,7 @@ func itemFields(t port.Transaction, old, now domain.Item) []domain.Field {
 		{Name: "email", Old: old.Email, New: now.Email},
 		{Name: "website", Old: old.Website, New: now.Website},
 		{Name: "booking_reference", Old: old.BookingReference, New: now.BookingReference},
+		{Name: "details", Old: domain.DetailsText(old.Details), New: domain.DetailsText(now.Details)},
 		{Name: "list", Old: old.List, New: now.List},
 		{Name: "profile", Old: profileName(t, old.ProfileID), New: profileName(t, now.ProfileID)},
 		{Name: "recurrence", Old: recurrenceText(old.Recurrence), New: recurrenceText(now.Recurrence)},

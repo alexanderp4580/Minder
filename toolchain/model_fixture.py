@@ -45,6 +45,8 @@ class Handler(BaseHTTPRequestHandler):
         document=source['source']; parts=document['parts']
         part=next((p for p in parts if p.get('text','').strip()),{'id':'1','text':'Booking'})
         text=part['text']; candidates=[]; answers=source.get('answers') or []
+        summary='Your trip includes a hotel stay and a return flight.'
+        notification='Please review your trip bookings.'
         evidence=[{'part':part['id'],'excerpt':text[:120]}]
         if 'cancel' in text.lower():
             items=source.get('existing_items') or []
@@ -53,12 +55,21 @@ class Handler(BaseHTTPRequestHandler):
                 candidates=[{'id':'cancel','proposal':{'action':'cancel_item','item_id':item['id'],'expected_version':item['version'],'title':item['title']},'evidence':evidence}]
         elif 'dentist, checkup and follow-up' in text.lower():
             start=lambda day:(datetime.now(timezone.utc)+timedelta(days=day)).replace(hour=9,minute=0,second=0,microsecond=0).strftime('%Y-%m-%dT%H:%M:%SZ')
-            ask=lambda c,i:c.update({'question':'How long will it take?','options':['30 minutes','45 minutes','1 hour']}) if not any(a.get('candidate_id')==i for a in answers) else None
-            dentist={'id':'dentist','proposal':{'action':'create_item','kind':'event','title':'Dentist','start_at':start(6),'location':'Microsoft Teams'},'evidence':evidence}
+            def ask(candidate, identity):
+                answer=next((a for a in answers if a.get('candidate_id')==identity),None)
+                if answer:
+                    candidate['proposal']['duration_minutes']=60 if answer['text']=='1 hour' else 30
+                else:
+                    candidate.update({'question':'How long will it take?','options':['30 minutes','45 minutes','1 hour']})
+            summary='Three clinic visits, starting with the online dentist visit.'
+            notification='Three clinic visits need review.'
+            dentist={'id':'dentist','proposal':{'action':'create_item','kind':'event','title':'Dentist','start_at':start(6),'details':[{'label':'Meeting link','value':'https://teams.example/join/dentist'}]},'evidence':evidence}
             checkup={'id':'checkup','proposal':{'action':'create_item','kind':'event','title':'Checkup','start_at':start(7)},'evidence':evidence}
             ask(dentist,'dentist');ask(checkup,'checkup')
             candidates=[dentist,checkup,{'id':'follow-up','proposal':{'action':'create_item','kind':'event','title':'Follow-up','start_at':start(8),'duration_minutes':30},'evidence':evidence}]
         elif 'contact lens fitting' in text.lower():
+            summary='A contact lens fitting needs your review.'
+            notification='Please review your lens fitting.'
             start=(datetime.now(timezone.utc)+timedelta(days=5)).replace(hour=13,minute=30,second=0,microsecond=0)
             fitting={'id':'fitting','proposal':{'action':'create_item','kind':'event','title':'Contact lens fitting','start_at':start.strftime('%Y-%m-%dT%H:%M:%SZ'),'start_timezone':'Europe/Amsterdam','location':'Kinkerstraat 123, Amsterdam','phone':'020-1234567','email':'desk@example.com','website':'https://example.com','booking_reference':'AB12CD','notes':'- Bring your current glasses','reminder_offsets_minutes':[1440,60,7]},'question':'How long will it take?','options':['30 minutes','45 minutes','1 hour'],'evidence':evidence}
             if answers:
@@ -70,7 +81,7 @@ class Handler(BaseHTTPRequestHandler):
             if answers:
                 flight['question']='';flight['proposal'].update({'start_at':'2026-11-21T11:00:00Z','end_at':'2026-11-21T19:00:00Z','start_timezone':'Europe/Amsterdam','end_timezone':'America/New_York'})
             candidates.append(flight)
-        response=json.dumps({'choices':[{'finish_reason':'stop','message':{'content':None,'tool_calls':[{'id':'capture-fixture','type':'function','function':{'name':'extract_capture','arguments':json.dumps({'candidates':candidates,'questions':[]})}}]}}],'usage':{'cost':0.000035}}).encode()
+        response=json.dumps({'choices':[{'finish_reason':'stop','message':{'content':None,'tool_calls':[{'id':'capture-fixture','type':'function','function':{'name':'extract_capture','arguments':json.dumps({'summary':summary,'notification':notification,'candidates':candidates,'questions':[]})}}]}}],'usage':{'cost':0.000035}}).encode()
         self.send_response(200);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(response)));self.end_headers();self.wfile.write(response)
     def log_message(self,*args):pass
 if __name__=='__main__':ThreadingHTTPServer(('127.0.0.1',int(os.environ.get('MODEL_FIXTURE_PORT','8181'))),Handler).serve_forever()

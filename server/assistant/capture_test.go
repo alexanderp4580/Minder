@@ -21,7 +21,7 @@ type captureModel struct{ messages []assistant.Message }
 
 func (m *captureModel) Complete(_ context.Context, messages []assistant.Message) (assistant.Response, error) {
 	m.messages = messages
-	return assistant.Response{Calls: []assistant.Call{{Name: "extract_capture", Arguments: `{"candidates":[{"proposal":{"action":"create_item","title":"Appointment","kind":"event"},"question":"What date is the appointment?","evidence":[{"part":"1","excerpt":"appointment"}]}],"questions":[]}`}}, CostUSD: 0.001}, nil
+	return assistant.Response{Calls: []assistant.Call{{Name: "extract_capture", Arguments: `{"summary":"One visit to review.","notification":"Please review the visit.","candidates":[{"proposal":{"action":"create_item","title":"Appointment","kind":"event"},"question":"What date is the appointment?","evidence":[{"part":"1","excerpt":"appointment"}]}],"questions":[]}`}}, CostUSD: 0.001}, nil
 }
 func TestCaptureExtractionKeepsQuestionsAndDoesNotSave(t *testing.T) {
 	db, e := store.Open(filepath.Join(t.TempDir(), "db"))
@@ -34,6 +34,9 @@ func TestCaptureExtractionKeepsQuestionsAndDoesNotSave(t *testing.T) {
 	result, e := svc.Extract(context.Background(), domain.CaptureDocument{Parts: []domain.CapturePart{{ID: "1", Text: "appointment"}}}, nil)
 	if e != nil || len(result.Candidates) != 1 || result.Candidates[0].Question == "" {
 		t.Fatal(result, e)
+	}
+	if result.Summary != "One visit to review." || result.Notification != "Please review the visit." {
+		t.Fatalf("model text lost: %+v", result)
 	}
 	items, _ := db.Items()
 	if len(items) != 0 {
@@ -276,12 +279,16 @@ func TestRejectedExtractionsLogReasonsNotContent(t *testing.T) {
 // partialModel returns two candidates, one of which quotes text that is not in the email.
 // When fixOnSecond is set, its second answer quotes real text for both.
 type partialModel struct {
-	calls       int
-	fixOnSecond bool
+	calls        int
+	fixOnSecond  bool
+	failOnSecond bool
 }
 
 func (m *partialModel) Complete(context.Context, []assistant.Message) (assistant.Response, error) {
 	m.calls++
+	if m.failOnSecond && m.calls == 2 {
+		return assistant.Response{}, &domain.ModelError{Message: "Provider unavailable"}
+	}
 	second := "this quote is not in the email"
 	if m.fixOnSecond && m.calls == 2 {
 		second = "Checkup"
@@ -343,4 +350,11 @@ type locatedModel struct{ location string }
 func (m *locatedModel) Complete(context.Context, []assistant.Message) (assistant.Response, error) {
 	arguments := `{"candidates":[{"id":"a","proposal":{"action":"create_item","title":"Dentist","kind":"event","location":"` + m.location + `","start_at":"2026-11-20T10:00:00+01:00"},"evidence":[{"part":"1","excerpt":"Dentist"}]}],"questions":[]}`
 	return assistant.Response{Calls: []assistant.Call{{Name: "extract_capture", Arguments: arguments}}, CostUSD: 0.001}, nil
+}
+
+func TestACorrectionProviderFailureKeepsVerifiedCandidates(t *testing.T) {
+	result, err := extractFrom(t, &partialModel{failOnSecond: true})
+	if err != nil || len(result.Candidates) != 1 || result.Candidates[0].ID != "a" || result.Dropped != 1 {
+		t.Fatalf("verified appointment lost: %+v %v", result, err)
+	}
 }

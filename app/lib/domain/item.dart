@@ -1,3 +1,8 @@
+class Detail {
+  const Detail({required this.label, required this.value});
+  final String label, value;
+}
+
 class Item {
   const Item({
     required this.id,
@@ -23,6 +28,7 @@ class Item {
     this.email = '',
     this.website = '',
     this.bookingReference = '',
+    this.details = const [],
     this.list = '',
     this.repeat = '',
     this.kind = '',
@@ -31,6 +37,7 @@ class Item {
   });
   final String id, title, status, location, list, repeat, kind, notes;
   final String phone, email, website, bookingReference;
+  final List<Detail> details;
 
   /// Minutes before the start or deadline at which a reminder fires.
   final List<int> reminderOffsets;

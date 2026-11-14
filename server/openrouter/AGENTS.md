@@ -17,7 +17,7 @@ Tool schemas distinguish event ends, date-only ranges and deadlines; preserve tr
 `propose_cancel` and `propose_delete` need `item_id` and `expected_version`, like `propose_complete`. `find_finished_items` takes an optional `query` and `list`. The tool set follows `Message.Purpose` on the first message (`toolsFor`): chat has the base tools; `PurposeOffer` adds `offer_lookup` (required `kind`, an enum built from `assistant.LookupKinds` whose description states each kind's cost and returned fields, and a required `query`); `PurposeEmail` has only `extract_capture`.
 
 
-Item and capture tool schemas expose phone, email, website and booking_reference as separate strings and support clear flags. Notes hold remaining instructions.
+Item and capture tool schemas expose phone, email, website and booking_reference as separate strings and support clear flags. Item tools also expose `details` (label/value pairs) and `clear_details`. The email tool exposes `summary` and `notification` strings. Notes hold remaining instructions.
 
 # Work Guidance
 

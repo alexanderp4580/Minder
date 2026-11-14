@@ -64,7 +64,7 @@ func TestExtractionSchemaAllowsOptionsAndOffsets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"reminder_offsets_minutes", `"options"`, `"maxItems":3`} {
+	for _, want := range []string{"reminder_offsets_minutes", `"options"`, `"maxItems":3`, `"summary"`, `"notification"`} {
 		if !strings.Contains(string(raw), want) {
 			t.Fatal("extract_capture schema lacks", want)
 		}
@@ -160,6 +160,29 @@ func TestOfferToolRequiresAKindAndAQueryAndListsEveryKind(t *testing.T) {
 	for i, info := range assistant.LookupKinds {
 		if enum[i] != string(info.Kind) || !strings.Contains(kind["description"].(string), info.Description) {
 			t.Fatalf("kind %s is missing from the tool", info.Kind)
+		}
+	}
+}
+
+func TestItemToolsExposeDetailPairs(t *testing.T) {
+	for _, purpose := range []string{assistant.PurposeChat, assistant.PurposeEmail} {
+		var seen map[string]any
+		m := provider(t, `{"choices":[{"finish_reason":"stop","message":{"content":"Hi"}}],"usage":{"cost":0.001}}`, &seen)
+		if _, err := m.Complete(context.Background(), []assistant.Message{{Role: "system", Purpose: purpose, Content: "Review"}}); err != nil {
+			t.Fatal(err)
+		}
+		fn := seen["tools"].([]any)[0].(map[string]any)["function"].(map[string]any)
+		props := fn["parameters"].(map[string]any)["properties"].(map[string]any)
+		if purpose == assistant.PurposeEmail {
+			props = props["candidates"].(map[string]any)["items"].(map[string]any)["properties"].(map[string]any)["proposal"].(map[string]any)["properties"].(map[string]any)
+		}
+		d, ok := props["details"].(map[string]any)
+		if !ok || d["type"] != "array" {
+			t.Fatalf("%s has no detail list", purpose)
+		}
+		pair := d["items"].(map[string]any)["properties"].(map[string]any)
+		if pair["label"] == nil || pair["value"] == nil || props["clear_details"] == nil {
+			t.Fatal(props)
 		}
 	}
 }

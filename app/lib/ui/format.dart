@@ -60,6 +60,7 @@ String fieldLabel(String name) => switch (name) {
   'email' => 'Email',
   'website' => 'Website',
   'booking_reference' => 'Booking reference',
+  'details' => 'Details',
   'list' => 'List',
   'profile' => 'Profile',
   'recurrence' => 'Repeats',
@@ -201,6 +202,7 @@ List<PreviewRow> previewRows(Change change) {
         case 'email':
         case 'website':
         case 'booking_reference':
+        case 'details':
           return raw;
       }
       final text = fieldValue(raw);

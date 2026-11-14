@@ -38,7 +38,7 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   for(let attempt=0;attempt<100;attempt++){const current=await fetch(url+'/v1/captures/'+id).then(r=>r.json());if(current.candidates.every(c=>c.state==='confirmed'))break;await new Promise(resolve=>setTimeout(resolve,100));}
   const tripDone=await fetch(url+'/v1/captures/'+id).then(r=>r.json());assert.ok(tripDone.candidates.every(c=>c.state==='confirmed'),'both trip items are confirmed');
   const tripChat=entriesOf(await fetch(url+'/v1/chat?after=0&limit=200').then(r=>r.json())).filter(e=>e.kind==='minder').map(e=>e.text);
-  assert.ok(tripChat.includes('I found 2 appointments in "Trip confirmation". We will go through them one at a time.'),'the opening message counts the appointments: '+JSON.stringify(tripChat));
+  assert.ok(tripChat.includes('Your trip includes a hotel stay and a return flight.'),'the opening message counts the appointments: '+JSON.stringify(tripChat));
   assert.ok(tripChat.includes('Appointment 2 of 2: Return flight'),'progress is announced');assert.ok(tripChat.includes('Done: 2 added, 0 skipped.'),'the review ends with a summary');
   await page.getByText('Calendar',{exact:true}).click();await page.waitForTimeout(500);
   await page.screenshot({path:'.local/email-calendar.png'});
@@ -81,7 +81,7 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   for(let n=0;n<100;n++){const all=await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json());saved=all.find(i=>i.title==='Contact lens fitting');if(saved)break;await new Promise(resolve=>setTimeout(resolve,100));}
   assert.ok(saved,'the appointment must be saved');assert.equal(saved.location,'Kinkerstraat 123, Amsterdam');assert.equal(saved.duration_minutes,45);assert.equal(saved.notes,'- Bring your current glasses');assert.equal(saved.phone,'020-1234567');assert.equal(saved.email,'desk@example.com');assert.equal(saved.website,'https://example.com');assert.equal(saved.booking_reference,'AB12CD');assert.deepEqual(saved.reminder_offsets_minutes,[1440,120,60]);
   await page.screenshot({path:'.local/email-appointment.png'});
-  // Three appointments, one a Teams meeting: reviewed one at a time, durations answered without the model.
+  // Three appointments, one a Teams meeting: reviewed one at a time, durations answered by the model.
   const checkups=Buffer.from('From: Owner <owner@example.com>\r\nSubject: Checkups\r\n\r\nDentist, checkup and follow-up appointments at the clinic. The dentist visit is a Microsoft Teams meeting.');
   const checkupsReceipt=await fetch(url+'/v1/email/ingest',{method:'POST',body:checkups,headers:await sign(checkups,'checkups')});assert.equal(checkupsReceipt.status,201);const checkupsId=(await checkupsReceipt.json()).capture_id;
   const capture=async(predicate)=>{let c;for(let n=0;n<100;n++){c=await fetch(url+'/v1/captures/'+checkupsId).then(r=>r.json());if(predicate(c))return c;await new Promise(resolve=>setTimeout(resolve,100));}throw new Error('capture never reached the expected state: '+JSON.stringify(c.candidates.map(x=>x.state)));};
@@ -89,15 +89,15 @@ const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/P
   let checkupsCapture=await capture(c=>c.candidates.length===3);assert.equal(states(checkupsCapture),'needs-answer queued queued');
   assert.equal(checkupsCapture.candidates[0].proposal.location||'','','a Teams meeting has no address');
   const chatTexts=async()=>entriesOf(await fetch(url+'/v1/chat?after=0&limit=300').then(r=>r.json())).filter(e=>e.kind==='minder').map(e=>e.text);
-  let texts=await chatTexts();assert.ok(texts.includes('I found 3 appointments in "Checkups". We will go through them one at a time.'),JSON.stringify(texts));assert.ok(texts.includes('Appointment 1 of 3: Dentist'));
+  let texts=await chatTexts();assert.ok(texts.includes('Three clinic visits, starting with the online dentist visit.'),JSON.stringify(texts));assert.ok(texts.includes('Appointment 1 of 3: Dentist'));
   const answerTo=async(candidateId,text)=>{const c=await fetch(url+'/v1/captures/'+checkupsId).then(r=>r.json());const r=await fetch(url+'/v1/captures/'+checkupsId+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:c.revision,candidate_id:candidateId,text})});assert.equal(r.status,200,'answer '+candidateId);};
-  await answerTo('dentist','1 hour');checkupsCapture=await capture(c=>c.candidates[0].state==='pending');assert.equal(checkupsCapture.candidates[0].proposal.duration_minutes,60,'the chip set the duration directly');assert.equal(states(checkupsCapture),'pending queued queued');
+  await answerTo('dentist','1 hour');checkupsCapture=await capture(c=>c.candidates[0].state==='pending');assert.equal(checkupsCapture.candidates[0].proposal.duration_minutes,60,'the model used the duration answer');assert.equal(states(checkupsCapture),'pending queued queued');assert.ok(checkupsCapture.calls>=2,'the answer reached the model');assert.deepEqual(checkupsCapture.candidates[0].proposal.details,[{label:'Meeting link',value:'https://teams.example/join/dentist'}]);
   assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[0].change_id+'/confirm',{method:'POST'})).status,200);
   checkupsCapture=await capture(c=>c.candidates[1].state==='needs-answer');await answerTo('checkup','30 minutes');checkupsCapture=await capture(c=>c.candidates[1].state==='pending');
   assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[1].change_id+'/discard',{method:'POST'})).status,200);
   checkupsCapture=await capture(c=>c.candidates[2].state==='pending');assert.equal((await fetch(url+'/v1/changes/'+checkupsCapture.candidates[2].change_id+'/confirm',{method:'POST'})).status,200);
   texts=await chatTexts();assert.equal(texts[texts.length-1],'Done: 2 added, 1 skipped.','the review ends with a summary');
-  const checkupItems=(await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json())).filter(i=>['Dentist','Checkup','Follow-up'].includes(i.title));assert.deepEqual(checkupItems.map(i=>i.title).sort(),['Dentist','Follow-up']);
+  const checkupItems=(await fetch(url+'/v1/items?from=2026-11-01T00:00:00Z&to=2026-12-01T00:00:00Z').then(r=>r.json())).filter(i=>['Dentist','Checkup','Follow-up'].includes(i.title));assert.deepEqual(checkupItems.map(i=>i.title).sort(),['Dentist','Follow-up']);assert.deepEqual(checkupItems.find(i=>i.title==='Dentist').details,[{label:'Meeting link',value:'https://teams.example/join/dentist'}]);
   assert.deepEqual(errors,[]);
   console.log('PASS: compiled web email review, targeted answer, owner download, confirmation, travel calendar, reviewed cancellation and a three-appointment email reviewed one at a time.');
  }catch(error){if(page){require('node:fs').writeFileSync('.local/email-accessibility.txt',await page.locator('body').ariaSnapshot().catch(()=>''));require('node:fs').writeFileSync('.local/email-dom.html',await page.content().catch(()=>''));}if(page)await page.screenshot({path:'.local/email-failure.png'}).catch(()=>{});throw error;}finally{await browser.close();}

@@ -192,12 +192,16 @@ func (s *Service) ProcessNext(ctx context.Context, now time.Time) error {
 				current.Candidates = append(current.Candidates, candidate)
 			}
 		}
-		if first && len(current.Candidates) > 0 {
-			opening := review.Opening(document.Subject, current.Candidates)
-			if current.Unverified > 0 {
-				opening += fmt.Sprintf(" I could not verify %d more from this email.", current.Unverified)
+		if first {
+			current.Notification = extraction.Notification
+			if extraction.Summary != "" {
+				if _, e = tx.PutEntry(domain.Entry{Kind: "minder", Text: extraction.Summary}); e != nil {
+					return e
+				}
 			}
-			if _, e = tx.PutEntry(domain.Entry{Kind: "minder", Text: opening}); e != nil {
+		}
+		if current.Unverified > 0 {
+			if _, e = tx.PutEntry(domain.Entry{Kind: "minder", Text: fmt.Sprintf("I could not verify %d appointments from this email.", current.Unverified)}); e != nil {
 				return e
 			}
 		}

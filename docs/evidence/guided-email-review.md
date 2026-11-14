@@ -1,6 +1,6 @@
 # Guided email review
 
-Date: 2026-11-14. App 0.10.0+29. Spec: [guided email review design](../superpowers/specs/2026-11-14-guided-email-review-design.md). Plan: [guided email review plan](../superpowers/plans/2026-11-14-guided-email-review.md). Branch `guided-email-review`, not merged or deployed.
+Date: 2026-11-14. App 0.10.1+30. Spec: [guided email review design](../superpowers/specs/2026-11-14-guided-email-review-design.md). Plan: [guided email review plan](../superpowers/plans/2026-11-14-guided-email-review.md). Branch `guided-email-review`, not merged or deployed.
 
 ## Why
 
@@ -11,11 +11,12 @@ The owner forwarded an email with several appointments. Extraction failed twice 
 - One extraction attempt per revision. A failure shows one fixed sentence in the email entry and sends one push; the owner taps Retry. No automatic retries, no call cap.
 - `max_tokens` is 100,000 (the model allows 128,000); one email's request may be 400,000 bytes.
 - Valid candidates are kept when others fail evidence; the review says how many could not be verified. Each rejected attempt logs a reason code, never content.
-- The review is one appointment at a time, driven by the server in chat: an opening message with the count, an `Appointment i of N` announcement, the question or preview of the current candidate, Confirm or Discard (the skip), and a `Done` summary. Every answer goes through the model.
+- The review is one appointment at a time, driven by the server in chat: the model's opening message, an `Appointment i of N` announcement, the question or preview of the current candidate, Confirm or Discard (the skip), and a `Done` summary. Every answer goes through the model.
 - Online meetings: the prompt tells the model to leave the address empty; no code judges a location.
-- Pushes: `N appointments need your review` on the first publication, `Minder could not read an email.` on failure, nothing for the owner's own answers.
+- Additional facts use an ordered `details` list. Meeting links use the label Meeting link and open from previews, email details and calendar details. Details support replacement, clear and Undo.
+- Pushes: the model's stored `notification` on the first publication (fallback `An email needs your review.`), `Minder could not read an email.` on failure, nothing for the owner's own answers. The server posts `summary` unchanged once and keeps the unverified count in a separate note.
 
-## Checks
+## Earlier checks (before Revision 2)
 
 | Check | Result |
 |---|---|
@@ -23,9 +24,20 @@ The owner forwarded an email with several appointments. Extraction failed twice 
 | `toolchain/email-local-check` | Passed twice against compiled web, signed ingestion and real SQLite: the trip email (hotel, then the flight question), and a three-appointment email with a Teams meeting walked to a `Done: 2 added, 1 skipped.` summary; the Teams location was empty |
 | Real model, 2026-11-14 | A synthetic three-appointment dental email through a local server: three candidates, the Teams follow-up had an empty address, `- Online meeting (Microsoft Teams)` in notes, the opening message, `Appointment 1 of 3` and the first question appeared; cost about €0.0015 |
 
+## Revision 2 checks, 2026-11-14
+
+- Details command tests failed before the domain fields existed, then passed: preview, Confirm, replacement, clear, Undo, trimming, blank pairs and size rejection. The provider request test verifies details and clear_details on chat and extraction tools.
+- Flutter checks cover detail rows, missing-field compatibility and opening the meeting link. A preview tap test failed with a null launch target, then passed after the preview used LinkedText.
+- Model-text tests failed before the extraction fields existed, then passed: unchanged opening and persisted push text, missing-summary silence, push fallback, no repeated opening after answers and a separate unverified note.
+- `toolchain/email-local-check` exited 0 with model-written fixture openings, model-applied duration replies and meeting-link details persisted in real SQLite.
+- A real OpenRouter call through signed ingestion on a local server returned three synthetic dental appointments in states pending/queued/queued. It wrote an opening and notification, put `https://teams.example/join/braces` in Meeting link, and left location and website empty for the Teams follow-up. Provider cost: $0.0017248. No real mailbox data.
+- Inline branch review found that a provider failure during evidence correction lost already verified candidates. The regression test failed with no candidates, then passed after retaining the first verified result while the request context remains active.
+
+- `toolchain/check` exited 0 on the revised source: 163 Flutter tests, Go race tests/vet, Flutter analysis/formatting, architecture/DOX, Worker and toolchain/hook checks. Release web build exited 0. Its optional Wasm dry-run reported existing unsupported packages, and the icon-font optimizer reported the absent Cupertino font. The JavaScript web build succeeded.
+
 ## APK
 
-`.local/artifacts/Minder-0.10.0-arm64.apk` (ignored by Git), 19,283,210 bytes, SHA-256 `302dac8cc7b22ce02d0c58050131d617208b176bb5976a8a62c98487411b7015`. aapt2 reports `io.liveleds.minder`, version 0.10.0, code 29. The signer SHA-256 `7bbc3aba…d2572` matches earlier APKs. Telegram confirmed one upload (message 2028). `toolchain/check` exited 0 on the final tree. The app needs the matching server deploy: an older server publishes every appointment at once, which this app still shows.
+APK and final browser checks in progress. The earlier 0.10.0 APK (Telegram message 2028) does not contain Revision 2.
 
 ## Limits
 

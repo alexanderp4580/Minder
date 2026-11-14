@@ -81,6 +81,6 @@ Task order, file splits (keep one responsibility per file), exact fixed-sentence
 
 - The opening message comes after extraction, because the count is unknown before it. `Appointment i of N` and the `Done` summary stay mechanical progress notes.
 - The step-by-step flow is driven by the server in chat, not by a stepper inside the email card, because previews, questions and Confirm/Discard already live in chat.
-- A duration chip is applied locally without the model.
+- Every answer, including a duration chip, goes through the model.
 - Failures also push once, because the owner expected a pop-up.
 - The email size limit goes to 400,000 bytes; I have not measured cost beyond the model's per-token price.

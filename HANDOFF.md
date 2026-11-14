@@ -2,28 +2,23 @@
 
 State on 2026-11-14. Production runs `679441b` from `main` (Coolify deployment `snqnkuzggologzjscsjppeqv`, running:healthy, schema 5, no migration, startup log `serper_key_set=true`, no warnings or errors in the first 40 log lines). The Coolify app is pinned to branch `main` at that commit. The previous runtime was `60ec83c` (three-search loop); roll back with branch `main` and that commit.
 
-## Guided email review (unfinished, branch `guided-email-review`)
+## Guided email review (branch `guided-email-review`)
 
-Base `main` at `679441b` (production runs it). The branch is not pushed, merged or deployed. Spec: [guided email review design](docs/superpowers/specs/2026-11-14-guided-email-review-design.md). Plan and its Revision 2: [guided email review plan](docs/superpowers/plans/2026-11-14-guided-email-review.md). Evidence so far: [docs/evidence/guided-email-review.md](docs/evidence/guided-email-review.md).
+Revision 2 implementation is complete; final browser checks, APK verification and delivery are in progress. Base `main` is `679441b`, which production runs. This branch is not pushed, merged or deployed. Work stays inline in `Minder-m0-chat`; phone review and owner approval gate integration and deployment.
 
-**Why:** the owner's multi-appointment email failed silently (answer cut at 4,000 tokens, silent retries), then the review was hard to follow ("Teams" in the address, two questions vanishing together, a wrong push).
+Spec: [guided email review design](docs/superpowers/specs/2026-11-14-guided-email-review-design.md). Plan: [guided email review plan](docs/superpowers/plans/2026-11-14-guided-email-review.md). Verification: [guided email review evidence](docs/evidence/guided-email-review.md).
 
-**Done and verified** (tests first; `toolchain/check` passed at `4be1f88`, before Revision 2):
-- One extraction attempt, a fixed failure sentence plus one push, owner-only Retry, no call cap, `max_tokens` 100,000, email request up to 400,000 bytes, valid candidates kept (`Capture.Unverified`), rejection reasons logged without content.
-- One appointment at a time in chat: new package `review` (opening, `Appointment i of N`, `Done` summary, questions), candidate state `queued`, Confirm and Discard advance it, pushes only on the first publication and on failure.
-- Revision 2, done: R1 every answer goes to the model (chip parser deleted, `3450360`); R2 venue word list deleted (Go and Dart), `545a1a3`.
+- One worker extraction attempt per revision; visible failure and one push, owner-only Retry, no call cap. Output ceiling 100,000 tokens and email context up to 400,000 bytes. Evidence checks keep valid candidates and count rejected ones. One evidence-correction call may improve an extraction; a provider failure on that correction keeps the verified first result while the request context remains active.
+- Chat reviews one appointment at a time. Confirm and Discard advance the queue. `Appointment i of N` and `Done` remain mechanical. Every answer, including quick replies, goes through the model. The model decides whether an item has an address; Maps appears for any supplied location.
+- Items carry `details` as ordered label/value pairs, with replace, clear and Undo. Previews, email details and calendar details display them and open web links. Meeting links belong in Details, not Website. No schema migration: JSON rows store the fields.
+- The model writes `summary` and `notification`. The server posts the opening unchanged on initial extraction, stores the notification for the first push and keeps the unverified count in its own note. Missing summary posts no opening; missing notification uses `An email needs your review.`. Failure push: `Minder could not read an email.`. Answers, Confirm and Discard queue no push.
+- Fresh `toolchain/check` exited 0: 163 Flutter tests, Go race/vet, analysis/formatting and repository checks. A real-model synthetic three-appointment email returned a Teams meeting with its join link in Details, no address and no Website value, plus an opening and notification. Final browser runs are in progress.
+- App version is 0.10.1+30. The previous APK 0.10.0 (Telegram message 2028) lacks Revision 2; do not ship it.
 
-**Not done (resume here):**
-1. **R3 `details`** (label/value list): `server/command/details_test.go` is committed red on purpose (does not compile: needs `domain.Detail{Label, Value}`, `Item.Details`, `Proposal.Details`, `Proposal.ClearDetails`). Touch points: `domain/model.go` (types, `Validate`: max 10 pairs, label 60, value 2,048, trim, drop blank pairs), `command/attributes.go` (`setAttributes` replaces the list, `clear_details` empties it; `itemFields` field `details` as `Label: value` lines), `openrouter/client.go` tool props `details` and `clear_details`, prompts (capture: the join link goes in `details` as "Meeting link", not `website`; chat: facts that fit no field), `assistant/capture_prompt_test.go` (still asserts the old `website` wording), Dart `Item.details`, `wire.dart`, `calendar_item_details.dart` rows, `previewRows` in `format.dart`, tests, DOX.
-2. **R4 agent-written text:** `CaptureExtraction.Summary` and `.Notification` (`json:"summary"`, `json:"notification"`), `extract_capture` schema properties and prompt, `Capture.Notification`, the worker posts `Summary` as the opening on the first extraction (no opening when missing) and stores `Notification`; delete `review.Opening`; `review.PushBody` returns the failure sentence, else the stored text, else `An email needs your review.`; keep the unverified count as its own server note.
-3. **R5 verify:** `toolchain/email-check.cjs` and `model_fixture.py` still assume a duration chip is applied without the model (the dentist step expects `duration_minutes` 60 at once; the fixture must now set it from the answer and the script must wait for the model); real-model run again; `toolchain/check`; DOX and evidence refresh; bump to 0.10.1+30, build, verify the signer, one Telegram upload. Do not merge or deploy without the owner's approval.
+Owner preferences: very short replies; no sub-agents; the model decides behavior and wording; no unrequested rules, word lists, answer parsers or caps. Merge and deploy require approval. APK build and one Telegram upload are authorized. Production remains on `679441b`; do not deploy this branch without approval.
 
-**APK 0.10.0 (Telegram message 2028) is stale:** it still has the removed venue rule and `Where` row. Do not ship it.
+Unknown: the precise rejection reason for the owner's earlier multi-appointment email, and how the phone renders push title/body. No physical phone review of this revision yet.
 
-**Owner rules this session:** replies very short ("tldr"); the agent (model) decides behaviour and wording, so add no word lists, parsers, templates or caps; add nothing unrequested; no sub-agents; approval gates merge and deploy. The owner approved: the label/value list (the join link must not go to `website`), dropping the word list and the chip parser, agent-written push and opening text. `Appointment i of N` and `Done` stay mechanical.
-
-**Unknown:** why the 2026-11-14 email's extraction was rejected (logs held only `model_error`); how Android renders push title and body (the server sends title `Minder` and the body).
-`main` holds every earlier branch and is the only branch, locally and on origin. The worktree `Minder-m0-chat` is detached at `main`; start new work there with a new branch from `main`.
 App 0.9.3+28 carries the near-white M logo and the place lookup. The APK (`.local/artifacts/Minder-0.9.3-arm64.apk`, ignored by Git, 19,283,214 bytes, SHA-256 `1f4c7f4b09b31e5692b9bfaa8cafc6a4248eae6bc2ad75e58e4d38846403bfa7`, signer matches earlier APKs) reached Telegram once (message 2027). Phone approval of the logo and of the lookups is still pending.
 
 ## Current work: approved controls and booking fields

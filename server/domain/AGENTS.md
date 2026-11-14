@@ -21,9 +21,11 @@ The lookup offer (`Offer{Kind, Query}`, kinds maps, places, search) is a minder 
 `Change.RemovedEntryIDs` (`removed_entry_ids`) lists chat entries a delete removed. `Audit.ItemDeleted` marks the audit row that lets Undo restore a deleted item.
 
 
+Items carry `details`, an ordered label/value list. Proposals replace it with `details` or empty it with `clear_details`. Validation trims pairs, drops blank labels or values and accepts at most 10 pairs, labels up to 60 characters and values up to 2,048. `DetailsText` renders literal `Label: value` lines for previews.
+
 Items and proposals carry optional `phone`, `email`, `website` and `booking_reference` strings, with clear flags on proposals. Phone/email/reference accept at most 200 characters; website accepts 2048. References retain leading zeros. `NormalizeBookingDetails` promotes clearly labelled legacy note lines, preserves conflicts and instructions, and leaves calendar UID/sequence Ref lines alone.
 
-`FailureReason` (`ReasonCutOff`, `ReasonEvidence`, `ReasonNoReview`, `ReasonUnreadable`, `ReasonUnparsed`, `ReasonTimeout`, `ReasonLimit`, `ReasonOther`) gives each email failure one fixed sentence; `ReasonOf` classifies an error and `ModelError.Reason` carries it. `Capture.Unverified` counts dropped candidates; candidate state `queued` means extracted but not yet published. `AsksDuration` recognises duration questions.
+`FailureReason` (`ReasonCutOff`, `ReasonEvidence`, `ReasonNoReview`, `ReasonUnreadable`, `ReasonUnparsed`, `ReasonTimeout`, `ReasonLimit`, `ReasonOther`) gives each email failure one fixed sentence; `ReasonOf` classifies an error and `ModelError.Reason` carries it. `Capture.Unverified` counts dropped candidates; candidate state `queued` means extracted but not yet published. `AsksDuration` recognises duration questions. `CaptureExtraction.Summary` and `.Notification` carry the model's opening and push text; `Capture.Notification` stores the latter.
 
 # Work Guidance
 

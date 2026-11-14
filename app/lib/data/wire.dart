@@ -88,6 +88,10 @@ Item itemFromJson(Map<String, dynamic> j) {
     email: j['email'] as String? ?? '',
     website: j['website'] as String? ?? '',
     bookingReference: j['booking_reference'] as String? ?? '',
+    details: [
+      for (final d in j['details'] as List? ?? [])
+        Detail(label: d['label'] as String, value: d['value'] as String),
+    ],
     list: j['list'] as String? ?? '',
     repeat: _repeat(j['recurrence'] as Map<String, dynamic>?),
     kind: j['kind'] as String? ?? '',

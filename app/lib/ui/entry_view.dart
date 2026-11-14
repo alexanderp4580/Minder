@@ -5,6 +5,7 @@ import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
 import '../domain/link_launcher.dart';
 import 'format.dart';
+import 'linked_text.dart';
 import 'tokens.dart';
 import 'capture_view.dart';
 import 'question_view.dart';
@@ -77,7 +78,11 @@ class EntryView extends StatelessWidget {
             linkLauncher: linkLauncher,
           )
         else if (change != null && entry.kind == EntryKind.preview)
-          _Preview(change: change, controller: controller)
+          _Preview(
+            change: change,
+            controller: controller,
+            linkLauncher: linkLauncher,
+          )
         else if (_isOffer(entry))
           _Offer(entry: entry, controller: controller)
         else
@@ -138,7 +143,12 @@ class _Action extends StatelessWidget {
 }
 
 class _Preview extends StatelessWidget {
-  const _Preview({required this.change, required this.controller});
+  const _Preview({
+    required this.change,
+    required this.controller,
+    this.linkLauncher,
+  });
+  final LinkLauncher? linkLauncher;
   final Change change;
   final ChatController controller;
 
@@ -191,7 +201,10 @@ class _Preview extends StatelessWidget {
                           decoration: TextDecoration.lineThrough,
                         ),
                       ),
-                    Text(row.newValue),
+                    if (row.label == 'Details')
+                      LinkedText(text: row.newValue, launcher: linkLauncher)
+                    else
+                      Text(row.newValue),
                   ],
                 ),
         ),

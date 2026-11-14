@@ -188,6 +188,11 @@ class CalendarItemDetails extends StatelessWidget {
               child: SelectableText(details.reference),
             ),
           ),
+        for (final detail in item.details)
+          _row(
+            detail.label,
+            LinkedText(text: detail.value, launcher: launcher),
+          ),
         if (details.notes.isNotEmpty)
           _row(
             'Notes',

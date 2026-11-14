@@ -47,32 +47,6 @@ func states(c domain.Capture) string {
 	return strings.Join(out, " ")
 }
 
-func TestOpeningCountsWhatWasFound(t *testing.T) {
-	events := func(n int) []domain.CaptureCandidate {
-		out := make([]domain.CaptureCandidate, n)
-		for i := range out {
-			out[i] = candidate("x", "queued")
-		}
-		return out
-	}
-	task := candidate("t", "queued")
-	task.Proposal.Kind = ""
-	for name, tc := range map[string]struct {
-		subject    string
-		candidates []domain.CaptureCandidate
-		want       string
-	}{
-		"three":   {"Checkups", events(3), `I found 3 appointments in "Checkups". We will go through them one at a time.`},
-		"one":     {"Checkups", events(1), `I found 1 appointment in "Checkups".`},
-		"items":   {"Checkups", append(events(1), task), `I found 2 items in "Checkups". We will go through them one at a time.`},
-		"no name": {"", events(2), `I found 2 appointments in your email. We will go through them one at a time.`},
-	} {
-		if got := review.Opening(tc.subject, tc.candidates); got != tc.want {
-			t.Fatalf("%s: %q", name, got)
-		}
-	}
-}
-
 func TestAdvancePublishesOnlyTheFirstQueuedCandidate(t *testing.T) {
 	c, texts := advance(t, domain.Capture{Candidates: []domain.CaptureCandidate{candidate("a", "queued"), candidate("b", "queued"), candidate("c", "queued")}})
 	if states(c) != "a=pending b=queued c=queued" || c.Candidates[0].ChangeID != "change-a" || c.Candidates[1].ChangeID != "" {

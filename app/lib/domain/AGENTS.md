@@ -17,7 +17,7 @@ Capture/source values and repository methods are typed; dates without times stay
 `Item` retains kind, notes and reminder offsets. `links.dart` finds visible phone, email and web spans and encodes Google Maps searches. `LinkLauncher` opens HTTPS, tel and mailto targets through a data adapter. Booking references and dates stay plain text, including numeric references with leading zeros in labelled booking/reference context. Phone matching accepts labelled numbers directly after a colon and non-breaking spaces. International “(0)” trunk markers drop from dial targets; visible source text stays unchanged.
 
 
-`Item` carries phone, email, website and bookingReference as typed values. `BookingDetails` separates clearly labelled older contact/reference lines for display, keeps conflicts and calendar UID/sequence Ref lines in Notes, and never writes to the server.
+`Item` carries phone, email, website and bookingReference as typed values, plus `details` as an ordered `Detail` label/value list. `BookingDetails` separates clearly labelled older contact/reference lines for display, keeps conflicts and calendar UID/sequence Ref lines in Notes, and never writes to the server.
 
 `Capture.unverified` counts appointments the server dropped; candidate state `queued` means not yet published. `CaptureCandidate.details` is a read-only Item projection of a proposal for shared detail rendering. Its synthetic ID never authorizes item changes. `capture_questions.dart` supplies duration choices for older captures and English duration labels.
 

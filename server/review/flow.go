@@ -23,18 +23,6 @@ func noun(candidates []domain.CaptureCandidate) string {
 	return "appointment"
 }
 
-// Opening is the first message about an email: what was found and how it will be reviewed.
-func Opening(subject string, candidates []domain.CaptureCandidate) string {
-	where := "your email"
-	if subject != "" {
-		where = `"` + subject + `"`
-	}
-	if len(candidates) == 1 {
-		return fmt.Sprintf("I found 1 %s in %s.", noun(candidates), where)
-	}
-	return fmt.Sprintf("I found %d %ss in %s. We will go through them one at a time.", len(candidates), noun(candidates), where)
-}
-
 // Advance publishes the next queued candidate when none is open: its question, or its preview.
 // With more than one live candidate it first says which one comes next. It changes only the
 // capture it is given and the chat entries it writes; the caller stores the capture.
@@ -106,19 +94,13 @@ func Summary(c domain.Capture) (string, bool) {
 	return fmt.Sprintf("Done: %d added, %d skipped.", added, skipped), true
 }
 
-// PushBody is the text of the push for an email: the failure, or how many items wait.
+// PushBody uses the model's stored notification, with fixed fallback and failure text.
 func PushBody(c domain.Capture) string {
 	if c.Status == "failed" {
 		return "Minder could not read an email."
 	}
-	var live []domain.CaptureCandidate
-	for _, candidate := range c.Candidates {
-		if candidate.State != "superseded" {
-			live = append(live, candidate)
-		}
+	if c.Notification != "" {
+		return c.Notification
 	}
-	if len(live) == 1 {
-		return fmt.Sprintf("1 %s needs your review", noun(live))
-	}
-	return fmt.Sprintf("%d %ss need your review", len(live), noun(live))
+	return "An email needs your review."
 }

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:minder/application/chat_controller.dart';
 import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
+import 'package:minder/domain/link_launcher.dart';
 import 'package:minder/ui/entry_view.dart';
 import 'package:minder/ui/format.dart';
 import 'package:minder/ui/tokens.dart';
@@ -60,7 +61,11 @@ Change _change(
 FieldChange _f(String name, String value, [String old = '']) =>
     FieldChange(name: name, oldValue: old, newValue: value);
 
-Future<RecordingRepository> _show(WidgetTester tester, Change change) async {
+Future<RecordingRepository> _show(
+  WidgetTester tester,
+  Change change, {
+  LinkLauncher? launcher,
+}) async {
   final repository = RecordingRepository();
   final controller = ChatController(
     repository,
@@ -73,7 +78,11 @@ Future<RecordingRepository> _show(WidgetTester tester, Change change) async {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: SingleChildScrollView(
-          child: EntryView(entry: _entry(change), controller: controller),
+          child: EntryView(
+            entry: _entry(change),
+            controller: controller,
+            linkLauncher: launcher,
+          ),
         ),
       ),
     ),
@@ -81,7 +90,29 @@ Future<RecordingRepository> _show(WidgetTester tester, Change change) async {
   return repository;
 }
 
+class PreviewLauncher implements LinkLauncher {
+  Uri? opened;
+  @override
+  Future<bool> open(Uri uri) async {
+    opened = uri;
+    return true;
+  }
+}
+
 void main() {
+  testWidgets("meeting links open from a pending preview", (tester) async {
+    final launcher = PreviewLauncher();
+    await _show(
+      tester,
+      _change([_f("details", "Meeting link: https://teams.example/join")]),
+      launcher: launcher,
+    );
+    await tester.tap(
+      find.text("Meeting link: https://teams.example/join", findRichText: true),
+    );
+    await tester.pump();
+    expect(launcher.opened, Uri.parse("https://teams.example/join"));
+  });
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     final icons = FontLoader('MaterialIcons')
