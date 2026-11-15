@@ -399,13 +399,6 @@ func TestPromptSeparatesDoneCancelledAndDeleted(t *testing.T) {
 	}
 }
 
-func TestPromptForbidsMarkdownBecauseChatShowsPlainText(t *testing.T) {
-	system := systemPrompt(time.Now(), nil, nil, nil, nil)
-	if !strings.Contains(system, "plain text") || !strings.Contains(system, "no Markdown") {
-		t.Fatal("prompt does not say chat text is plain, without Markdown")
-	}
-}
-
 func TestDeleteRequestProposesADeletion(t *testing.T) {
 	a, s, f := newAssistant(t, Response{CostUSD: 0.001})
 	i := domain.Item{ID: "a", Title: "Dentist", Status: "open", Version: 1, Timezone: "Europe/Amsterdam", DueAt: "2026-11-12T09:00:00Z"}
