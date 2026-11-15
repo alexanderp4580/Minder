@@ -12,6 +12,7 @@ import 'package:minder/domain/item_repository.dart';
 import 'package:minder/domain/link_launcher.dart';
 import 'package:minder/domain/links.dart';
 import 'package:minder/ui/calendar_screen.dart';
+import 'package:minder/ui/chat_markdown.dart';
 import 'package:minder/ui/tokens.dart';
 
 String utc(int y, int m, int d, [int h = 0, int min = 0]) =>
@@ -662,7 +663,7 @@ void main() {
           'email': 'desk@example.com',
           'website': 'https://example.com',
           'booking_reference': '00123456789',
-          'notes': '- Bring ID',
+          'notes': '- Bring **ID**',
         }),
       );
       await tester.ensureVisible(find.text('Details'));
@@ -672,7 +673,8 @@ void main() {
         expect(find.text(label), findsOneWidget);
       }
       expect(find.text('00123456789'), findsOneWidget);
-      expect(find.text('Bring ID'), findsOneWidget);
+      expect(find.byType(ChatMarkdown), findsOneWidget);
+      expect(find.text('Bring ID', findRichText: true), findsOneWidget);
       await tester.ensureVisible(find.text('020-1234567'));
       await tester.tap(find.text('020-1234567'));
       await tester.pump();

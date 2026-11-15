@@ -129,7 +129,7 @@ String kindLabel(String kind) => switch (kind) {
   _ => kind,
 };
 
-/// Notes as plain lines: list markers are dropped, nothing is interpreted.
+/// Notes as lines without their list markers; the screens show them as a Markdown list.
 /// At most [maxChars] characters show; a cut ends with an ellipsis.
 List<String> noteLines(String notes, {int maxChars = 600}) {
   final lines = <String>[];

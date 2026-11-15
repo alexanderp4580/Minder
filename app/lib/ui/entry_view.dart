@@ -193,15 +193,11 @@ class _Preview extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('${row.label}:', style: _muted),
-                    for (final line in row.bullets)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('•'),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(line)),
-                        ],
-                      ),
+                    ChatMarkdown(
+                      text: [for (final line in row.bullets) '- $line']
+                          .join('\n'),
+                      launcher: linkLauncher,
+                    ),
                   ],
                 )
               : Wrap(

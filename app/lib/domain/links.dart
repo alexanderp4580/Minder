@@ -17,6 +17,12 @@ final _email = RegExp(
 final _phone = RegExp(r'\+?\(?\d[\d \t\u00a0\u202f().\-]{5,}\d');
 final _isoDate = RegExp(r'\d{4}-\d{2}-\d{2}');
 
+/// Anything [findLinks] might turn into a link; it checks each candidate in context.
+final linkCandidate = RegExp(
+  '${_url.pattern}|${_email.pattern}|${_phone.pattern}',
+  caseSensitive: false,
+);
+
 const _endings = '.,;:!?\'"';
 
 bool _alnum(String c) => RegExp(r'[A-Za-z0-9]').hasMatch(c);

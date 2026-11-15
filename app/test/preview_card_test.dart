@@ -5,6 +5,7 @@ import 'package:minder/application/chat_controller.dart';
 import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
 import 'package:minder/domain/link_launcher.dart';
+import 'package:minder/ui/chat_markdown.dart';
 import 'package:minder/ui/entry_view.dart';
 import 'package:minder/ui/format.dart';
 import 'package:minder/ui/tokens.dart';
@@ -306,21 +307,34 @@ void main() {
     expect(find.text('Location:'), findsNothing);
   });
 
-  testWidgets('notes render as an inert bullet list', (tester) async {
+  testWidgets('notes use the chat Markdown renderer', (tester) async {
+    final launcher = PreviewLauncher();
     await _show(
       tester,
       _change([
         _f(
           'notes',
-          '- Bring glasses\n- [link](http://x.example)\n- <b>bold</b>',
+          '- Bring **glasses**\n- [site](https://x.example)\n- <b>bold</b>\n- Ask for Sam on 020 123 4567',
         ),
       ]),
+      launcher: launcher,
     );
     expect(find.text('Notes:'), findsOneWidget);
-    expect(find.text('Bring glasses'), findsOneWidget);
-    expect(find.text('[link](http://x.example)'), findsOneWidget);
+    expect(find.byType(ChatMarkdown), findsOneWidget);
+    expect(find.text('Bring glasses', findRichText: true), findsOneWidget);
     expect(find.text('<b>bold</b>'), findsOneWidget);
-    expect(find.text('•'), findsNWidgets(3));
+    expect(find.text('•'), findsNWidgets(4));
+    await tester.tap(find.text('site', findRichText: true));
+    await tester.pump();
+    expect(launcher.opened.toString(), 'https://x.example');
+    await tester.tapAt(
+      tester.getTopRight(
+            find.textContaining('020 123 4567', findRichText: true),
+          ) -
+          const Offset(20, -8),
+    );
+    await tester.pump();
+    expect(launcher.opened.toString(), 'tel:0201234567');
   });
 
   testWidgets('reminder chips toggle and send the new offsets', (tester) async {

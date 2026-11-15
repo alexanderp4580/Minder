@@ -91,6 +91,18 @@ void main() {
     expect(launcher.opened, [Uri.parse('https://example.com/a')]);
   });
 
+  testWidgets('phone numbers and emails open as before', (tester) async {
+    final launcher = await _show(tester, 'Mail desk@example.com');
+    await tester.tapAt(
+      tester.getTopLeft(
+            find.textContaining('desk@example.com', findRichText: true),
+          ) +
+          const Offset(90, 8),
+    );
+    await tester.pump();
+    expect(launcher.opened.single.toString(), 'mailto:desk@example.com');
+  });
+
   testWidgets('an image is never fetched', (tester) async {
     await _show(tester, '![x](https://example.com/p.png)');
     expect(find.byType(Image), findsNothing);

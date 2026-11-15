@@ -1,6 +1,10 @@
 # Handoff
 
-State on 2026-11-15. Production runs the commit recorded under Markdown rendering below (earlier: `595ff92`) from `main` (Coolify deployment `vcvphgkmkrhscifpitwnhvfk`, finished, running:healthy, schema 6, no migration, startup log clean: no warnings or errors in the last 40 lines, `serper_key_set=true`, private tracing still configured until `2026-11-15T20:56:21Z`). The previous runtime is `739d110` (also schema 6). `main` holds every branch, including `guided-email-review`, merged at the owner's request. The Coolify app is pinned to `main` at that commit. App 0.13.2+37 is below. Production runs the matching server.
+State on 2026-11-15. Production runs the commit recorded under Markdown rendering below (earlier: `595ff92`) from `main` (Coolify deployment `vcvphgkmkrhscifpitwnhvfk`, finished, running:healthy, schema 6, no migration, startup log clean: no warnings or errors in the last 40 lines, `serper_key_set=true`, private tracing still configured until `2026-11-15T20:56:21Z`). The previous runtime is `739d110` (also schema 6). `main` holds every branch, including `guided-email-review`, merged at the owner's request. The Coolify app is pinned to `main` at that commit. App 0.13.3+38 is below. Production runs the matching server.
+
+## Notes match chat (0.13.3+38)
+
+The owner saw that notes in an event preview or calendar card looked different from chat Markdown. Both now render notes through `ChatMarkdown` as a list, so bullets, spacing and text style match chat, and Markdown in notes (bold, links) shows as formatting. `ChatMarkdown` also links phone numbers, emails and web addresses with the `findLinks` rules, so notes keep their tappable links; only HTTPS, tel and mailto open. The earlier "inert notes" behaviour is gone: Markdown in notes is interpreted, raw HTML is shown as text. Notes still cap at 600 characters. The calendar-details golden was regenerated and inspected. `toolchain/check` exited 0; the chat, calendar and email browser scenarios exited 0 on release web. APK `.local/artifacts/Minder-0.13.3-arm64.apk`: 19,424,146 bytes, SHA-256 `14738ba425cb21a31d4e28e0d8c45f498b78c085d716c4675522ed3565e9c56f`, code 2038, arm64 only, signer matches earlier APKs; LAN `http://192.168.8.226:8788/Minder-0.13.3-arm64.apk` returned the matching file. Not sent to Telegram.
 
 ## Markdown in chat (0.13.2+37)
 

@@ -7,6 +7,7 @@ import '../domain/links.dart';
 import 'content_action.dart';
 import 'format.dart';
 import 'linked_text.dart';
+import 'chat_markdown.dart';
 import 'tokens.dart';
 
 class CalendarItemDetails extends StatelessWidget {
@@ -213,24 +214,10 @@ class CalendarItemDetails extends StatelessWidget {
         if (details.notes.isNotEmpty)
           _row(
             'Notes',
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final line in noteLines(details.notes))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('•'),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: LinkedText(text: line, launcher: launcher),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
+            ChatMarkdown(
+              text: [for (final line in noteLines(details.notes)) '- $line']
+                  .join('\n'),
+              launcher: launcher,
             ),
           ),
         if (item.reminderOffsets.isNotEmpty)
