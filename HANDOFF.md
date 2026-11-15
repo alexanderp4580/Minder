@@ -1,6 +1,10 @@
 # Handoff
 
-State on 2026-11-15. Production runs `595ff92` from `main` (Coolify deployment `vcvphgkmkrhscifpitwnhvfk`, finished, running:healthy, schema 6, no migration, startup log clean: no warnings or errors in the last 40 lines, `serper_key_set=true`, private tracing still configured until `2026-11-15T20:56:21Z`). The previous runtime is `739d110` (also schema 6). `main` holds every branch, including `guided-email-review`, merged at the owner's request. The Coolify app is pinned to `main` at that commit. App 0.13.1+36 is below; it is a client-only patch over 0.13.0.
+State on 2026-11-15. Production runs the commit recorded under Markdown rendering below (earlier: `595ff92`) from `main` (Coolify deployment `vcvphgkmkrhscifpitwnhvfk`, finished, running:healthy, schema 6, no migration, startup log clean: no warnings or errors in the last 40 lines, `serper_key_set=true`, private tracing still configured until `2026-11-15T20:56:21Z`). The previous runtime is `739d110` (also schema 6). `main` holds every branch, including `guided-email-review`, merged at the owner's request. The Coolify app is pinned to `main` at that commit. App 0.13.2+37 is below. Production runs the matching server.
+
+## Markdown in chat (0.13.2+37)
+
+The agent writes Markdown and the chat showed the marks as plain text. The owner chose to keep Markdown and render it in the app. I briefly added a plain-text prompt rule and reverted it before it shipped in this release; the prompt is unchanged from 0.13.1. `ChatMarkdown` (`flutter_markdown_plus` 1.0.12) renders Minder messages, results, questions and lookup offers: bold, italic, lists, code, quotes, tables and links in Tokens colours, headings at body size. Only HTTPS links open, after a tap; images are never fetched. Your messages, errors, previews and fields stay plain. Tests: `chat_markdown_test.dart` (red before the widget existed). `toolchain/check` exited 0; the chat and email browser scenarios exited 0 on release web. APK `.local/artifacts/Minder-0.13.2-arm64.apk`: 19,424,150 bytes, SHA-256 `f2cb0159fc92170e97ab322cf8db420b65eadecd753c4ac2eedb6563be8153cc`, code 2037, arm64 only, signer matches earlier APKs. LAN `http://192.168.8.226:8788/Minder-0.13.2-arm64.apk` returned the matching file.
 
 ## Checkout wording fix (0.13.1+36)
 

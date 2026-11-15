@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../application/chat_controller.dart';
 import '../domain/capture.dart';
 import '../domain/capture_questions.dart';
+import 'chat_markdown.dart';
 import 'tokens.dart';
 
 /// Review questions share the chat composer; choices are contextual shortcuts.
@@ -62,7 +63,7 @@ class QuestionPrompt extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(questionText(text)),
+          ChatMarkdown(text: questionText(text)),
           if (showChoices && choices.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(

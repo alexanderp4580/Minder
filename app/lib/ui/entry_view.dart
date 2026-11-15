@@ -5,6 +5,7 @@ import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
 import '../domain/link_launcher.dart';
 import 'format.dart';
+import 'chat_markdown.dart';
 import 'linked_text.dart';
 import 'tokens.dart';
 import 'capture_view.dart';
@@ -96,6 +97,9 @@ class EntryView extends StatelessWidget {
           )
         else if (_isOffer(entry))
           _Offer(entry: entry, controller: controller)
+        else if (entry.kind == EntryKind.minder ||
+            entry.kind == EntryKind.result)
+          ChatMarkdown(text: entry.text, launcher: linkLauncher)
         else
           Text(
             entry.text,
@@ -330,7 +334,7 @@ class _Offer extends StatelessWidget {
           style: TextStyle(fontSize: 12, color: Tokens.muted, letterSpacing: 1),
         ),
         const SizedBox(height: 8),
-        Text(entry.text),
+        ChatMarkdown(text: entry.text),
         if (controller.isLatest(entry))
           Padding(
             padding: const EdgeInsets.only(top: 12),
