@@ -37,9 +37,10 @@ class BoardScreen extends StatefulWidget {
 
 class _BoardScreenState extends State<BoardScreen> {
   BoardController get c => widget.controller;
-  final _pages = PageController();
+  var _pages = PageController();
   final _add = TextEditingController();
   int _index = 0;
+  bool _wasWide = false;
   BoardMove? _announced;
 
   @override
@@ -80,6 +81,15 @@ class _BoardScreenState extends State<BoardScreen> {
     _ => c.board.done,
   };
 
+  Item _latest(Item item) {
+    for (final column in [c.board.open, c.board.inProgress, c.board.done]) {
+      for (final candidate in column) {
+        if (candidate.id == item.id) return candidate;
+      }
+    }
+    return item;
+  }
+
   Future<void> _submit(String text) async {
     if (await c.add(text) && mounted) _add.clear();
   }
@@ -88,7 +98,9 @@ class _BoardScreenState extends State<BoardScreen> {
     context,
     item: item,
     launcher: widget.linkLauncher,
-    onMove: (status) => c.move(item, status),
+    // The sheet holds the item as it was opened. Move the newest copy, so a reload
+    // in the meantime does not turn a plain tap into a version conflict.
+    onMove: (status) => c.move(_latest(item), status),
     onDelete: () => showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -279,6 +291,15 @@ class _BoardScreenState extends State<BoardScreen> {
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final wide = constraints.maxWidth >= _wideBoard;
+                      if (wide != _wasWide) {
+                        // The pages leave the tree in the wide layout. A new controller
+                        // opens the page the tabs show instead of page 0.
+                        if (!wide) {
+                          _pages.dispose();
+                          _pages = PageController(initialPage: _index);
+                        }
+                        _wasWide = wide;
+                      }
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(
                           Tokens.relatedGap,

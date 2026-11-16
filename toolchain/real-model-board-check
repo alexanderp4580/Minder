@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Run the real model on the Board rules: an undated task stays undated, "start it" sets in_progress, "reopen it" sets open.
+
+Needs .local/minder (built server) and OPENROUTER_MINDER_TOKEN, for example
+`tokencrypt run --with openrouter_minder_token -- toolchain/real-model-board-check [runs]`.
+Uses a temporary database. The key never leaves the server process."""
+import json, os, socket, subprocess, sys, tempfile, time, urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+def free_port():
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1', 0))
+        return sock.getsockname()[1]
+
+class Client:
+    def __init__(self, base):
+        self.base = base
+    def call(self, method, path, body=None):
+        data = None if body is None else json.dumps(body).encode()
+        request = urllib.request.Request(self.base + path, data=data, method=method, headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(request, timeout=120) as reply:
+            return json.load(reply)
+    def previews(self):
+        return [e for e in self.call('GET', '/v1/chat?after=0&limit=200') if e['kind'] == 'preview']
+    def ask(self, text, expect_preview=True):
+        before = len(self.previews())
+        self.call('POST', '/v1/chat/messages', {'text': text})
+        deadline = time.time() + 150
+        while time.time() < deadline:
+            previews = self.previews()
+            if len(previews) > before:
+                return previews[-1]['change']
+            time.sleep(1)
+        tail = [(e['kind'], e['text'][:300]) for e in self.call('GET', '/v1/chat?after=0&limit=200')][-4:]
+        raise AssertionError(f'No preview for: {text}. Latest entries: {tail}')
+    def confirm(self, change):
+        self.call('POST', f"/v1/changes/{change['id']}/confirm")
+    def board(self):
+        return self.call('GET', '/v1/board')
+
+def field(change, name):
+    return next((f for f in change['fields'] if f['name'] == name), None)
+
+def one_run(client):
+    change = client.ask('Add a task: call the plumber about the leaking tap.')
+    assert change['action'] == 'create_item', change
+    for dated in ('due_at', 'start_at', 'due_date', 'start_date'):
+        f = field(change, dated)
+        assert not (f and f['new']), f'The agent invented {dated}: {f}'
+    client.confirm(change)
+    board = client.board()
+    assert len(board['open']) == 1 and not board['in_progress'], board
+    change = client.ask('I started on the plumber task.')
+    status = field(change, 'status')
+    assert change['action'] == 'update_item' and status and status['new'] == 'in_progress', change
+    client.confirm(change)
+    board = client.board()
+    assert len(board['in_progress']) == 1 and not board['open'], board
+    change = client.ask('Actually, put the plumber task back to open. I have not started it.')
+    status = field(change, 'status')
+    assert status and status['new'] == 'open', change
+    client.confirm(change)
+    board = client.board()
+    assert len(board['open']) == 1 and not board['in_progress'], board
+
+def main():
+    runs = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+    key = os.environ['OPENROUTER_MINDER_TOKEN']
+    results, failures = [], []
+    for n in range(runs):
+        with tempfile.TemporaryDirectory(prefix='minder-real-board-') as directory:
+            port = free_port()
+            env = {k: v for k, v in os.environ.items() if k not in ('OPENROUTER_MINDER_TOKEN', 'OPENROUTER_URL')}
+            env.update(OPENROUTER_API_KEY=key, ENV='test', AUTH_MODE='dev', DATABASE_PATH=directory + '/db', LISTEN_ADDR=f'127.0.0.1:{port}', MONTHLY_LIMIT_EUR='5', AGENT_TRACE_DIR=directory + '/trace', AGENT_TRACE_UNTIL=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(time.time() + 3600)))
+            with open(directory + '/server.log', 'w') as log:
+                server = subprocess.Popen([str(ROOT / '.local/minder')], cwd=ROOT, env=env, stdout=log, stderr=log)
+                try:
+                    base = f'http://127.0.0.1:{port}'
+                    for _ in range(100):
+                        try:
+                            urllib.request.urlopen(base + '/v1/health', timeout=1).close()
+                            break
+                        except OSError:
+                            time.sleep(.1)
+                    else:
+                        raise RuntimeError('Local server did not start')
+                    try:
+                        one_run(Client(base))
+                    except AssertionError as failure:
+                        print('FAIL run', n + 1, str(failure)[:500], file=sys.stderr)
+                        if os.environ.get('BOARD_CHECK_TRACE'):
+                            import shutil
+                            shutil.rmtree('/tmp/board-trace', ignore_errors=True)
+                            shutil.copytree(directory + '/trace', '/tmp/board-trace')
+                            for f in sorted(Path(directory, 'trace').glob('*.json')):
+                                text = f.read_text()
+                                if 'expected_version' in text:
+                                    print(f.name, [text[i - 60:i + 40] for i in range(len(text)) if text.startswith('expected_version', i)][:6])
+                            print(Path(directory, 'server.log').read_text()[-1800:])
+                        failures.append(n + 1)
+                        continue
+                    import sqlite3
+                    usage = [json.loads(b) for b, in sqlite3.connect(directory + '/db').execute('select body from usage')]
+                    results.append({'run': n + 1, 'model_calls': len(usage), 'cost_usd': round(sum(u['cost_usd'] for u in usage), 4)})
+                finally:
+                    server.terminate()
+                    server.wait(timeout=10)
+    print(json.dumps({'passed_runs': len(results), 'failed_runs': failures, 'runs': results}))
+    sys.exit(1 if failures else 0)
+
+main()

@@ -328,7 +328,8 @@ func (s *Store) ItemsBetween(from, to time.Time) ([]domain.Item, error) {
 
 // Board returns the tasks without a date, grouped into the board columns.
 func (s *Store) Board(now time.Time) (domain.Board, error) {
-	items, e := s.Items()
+	// The board shows no sources, so it skips the per-item source lookup that Items does.
+	items, e := queryAll[domain.Item](s.db, "SELECT body FROM item ORDER BY id")
 	if e != nil {
 		return domain.Board{}, e
 	}

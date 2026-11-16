@@ -1,4 +1,4 @@
-// Run with Node and MINDER_PLAYWRIGHT pointing to an installed Playwright package.
+// Run with Node. MINDER_PLAYWRIGHT names an installed Playwright package, MINDER_CHROMIUM a Chromium binary and MINDER_URL the server.
 const {chromium}=require(process.env.MINDER_PLAYWRIGHT||'/home/deck/SketchBook/Projects/AstraMoode/AstraCamillaGui/node_modules/playwright');
 const assert=require('node:assert/strict');
 (async()=>{

@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/alexanderp4580/Minder/server/domain"
+	"github.com/alexanderp4580/Minder/server/port"
 )
 
 func TestMigrationAndDurableHistory(t *testing.T) {
@@ -127,5 +129,27 @@ func TestOpenRefusesADatabaseFromANewerRelease(t *testing.T) {
 	if s, e = Open(path); e == nil {
 		s.Close()
 		t.Fatal("a newer database was opened")
+	}
+}
+
+func TestBoardGroupsUndatedTasksAndLeavesDatedItemsOut(t *testing.T) {
+	s, e := Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	now := domain.Now()
+	for _, i := range []domain.Item{
+		{ID: "a", Title: "Call plumber", Status: "open", Kind: "task", Timezone: "UTC", Version: 1, CreatedAt: now, UpdatedAt: now},
+		{ID: "b", Title: "Renew passport", Status: "in_progress", Kind: "task", Timezone: "UTC", Version: 1, CreatedAt: now, UpdatedAt: now},
+		{ID: "c", Title: "Dentist", Status: "open", Kind: "task", Timezone: "UTC", DueAt: "2026-12-01T10:00:00Z", Version: 1, CreatedAt: now, UpdatedAt: now},
+	} {
+		if e = s.Transact(func(tx port.Transaction) error { return tx.PutItem(i) }); e != nil {
+			t.Fatal(e)
+		}
+	}
+	b, e := s.Board(time.Now())
+	if e != nil || len(b.Open) != 1 || b.Open[0].ID != "a" || len(b.InProgress) != 1 || len(b.Done) != 0 {
+		t.Fatal(b, e)
 	}
 }

@@ -72,12 +72,11 @@ class BoardController extends ChangeNotifier implements ItemDeleter {
       await _reload();
     } on RepositoryFailure catch (e) {
       lastMove = null;
-      if (e.conflict) {
-        error = 'This task changed. The board is updated.';
-        await _reload();
-      } else {
-        error = e.message;
-      }
+      error = e.conflict
+          ? 'This task changed. The board is updated.'
+          : e.message;
+      // The server answered, so the card may be stale. A dropped connection tells us nothing.
+      if (!e.transport) await _reload();
     } catch (e) {
       lastMove = null;
       error = _message(e);
@@ -113,13 +112,17 @@ class BoardController extends ChangeNotifier implements ItemDeleter {
     return ok;
   }
 
+  /// Reloads after an action. It supersedes any older load still in flight.
   Future<void> _reload() async {
+    final request = ++_request;
     try {
       final loaded = await _repository.board();
-      if (_disposed) return;
+      if (_disposed || request != _request) return;
       board = loaded;
     } catch (e) {
-      if (!_disposed && error == null) error = _message(e);
+      if (!_disposed && request == _request && error == null) {
+        error = _message(e);
+      }
     }
   }
 

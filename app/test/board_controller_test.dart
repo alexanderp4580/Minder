@@ -90,6 +90,37 @@ void main() {
     expect(c.lastMove, isNull);
   });
 
+  test('a slow earlier load cannot overwrite a newer board', () async {
+    await c.load();
+    final gate = Completer<void>();
+    repo.boardGate = gate;
+    final slow = c.load();
+    await Future<void>.delayed(Duration.zero);
+    await c.move(c.board.open.single, 'in_progress');
+    gate.complete();
+    await slow;
+    expect(c.board.open, isEmpty);
+    expect(c.board.inProgress.map((i) => i.id), contains('a'));
+  });
+
+  test(
+    'a server refusal reloads the board; a dropped connection does not',
+    () async {
+      await c.load();
+      var before = repo.loads;
+      repo.failNext = const RepositoryFailure('This task is on the calendar.');
+      await c.move(c.board.open.single, 'done');
+      expect(repo.loads, before + 1);
+      before = repo.loads;
+      repo.failNext = const RepositoryFailure(
+        'Check your connection. Then try again.',
+        transport: true,
+      );
+      await c.move(c.board.open.single, 'done');
+      expect(repo.loads, before);
+    },
+  );
+
   test('another failure keeps the board and shows its message', () async {
     await c.load();
     repo.failNext = const RepositoryFailure('This task is on the calendar.');

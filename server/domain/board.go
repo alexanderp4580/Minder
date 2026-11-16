@@ -53,6 +53,12 @@ func doneAt(i Item) time.Time {
 	return time.Time{}
 }
 
+// createdAt parses the creation time. RFC3339Nano drops trailing zeros, so the text does not sort by time.
+func createdAt(i Item) time.Time {
+	t, _ := time.Parse(time.RFC3339Nano, i.CreatedAt)
+	return t
+}
+
 // BoardColumns groups the items on the board. Open and in-progress tasks sort by
 // priority (1 first, unset last), then oldest first. Done tasks show the newest
 // BoardDoneLimit finished within BoardDoneDays.
@@ -85,7 +91,7 @@ func BoardColumns(items []Item, now time.Time) Board {
 			if rank(col[a]) != rank(col[c]) {
 				return rank(col[a]) < rank(col[c])
 			}
-			return col[a].CreatedAt < col[c].CreatedAt
+			return createdAt(col[a]).Before(createdAt(col[c]))
 		})
 	}
 	sort.SliceStable(b.Done, func(a, c int) bool { return doneAt(b.Done[a]).After(doneAt(b.Done[c])) })

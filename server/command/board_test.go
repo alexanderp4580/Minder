@@ -261,3 +261,45 @@ func TestReopeningADoneTaskNeverRenotifiesForAPastReminder(t *testing.T) {
 		t.Fatal("reopening scheduled a notification in the past")
 	}
 }
+
+func TestAgentReopenClearsAPastReminderLikeTheBoard(t *testing.T) {
+	c, s := setup(t)
+	item := addTask(t, c, "Call plumber")
+	past := time.Now().Add(-48 * time.Hour).UTC().Format(time.RFC3339)
+	done, _ := c.MoveTask(item.ID, item.Version, "done")
+	if err := s.Transact(func(tx port.Transaction) error {
+		stored, e := tx.Item(done.ID)
+		stored.RemindAt, stored.NagMinutes = past, 15
+		stored.Version++
+		done = stored
+		return errors.Join(e, tx.PutItem(stored))
+	}); err != nil {
+		t.Fatal(err)
+	}
+	p, err := c.Preview(domain.Proposal{Action: "update_item", ItemID: done.ID, ExpectedVersion: done.Version, Status: "open"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = c.Confirm(p.Change.ID); err != nil {
+		t.Fatal(err)
+	}
+	items, _ := s.Items()
+	if items[0].RemindAt != "" || items[0].NagMinutes != 0 {
+		t.Fatalf("past reminder kept: %+v", items[0])
+	}
+	if st, _ := s.ReminderStats(time.Now()); st.SchedulesActive != 0 {
+		t.Fatal("agent reopen scheduled a notification in the past")
+	}
+}
+
+func TestMoveTaskNamesTheRealReasonForARefusal(t *testing.T) {
+	c, s := setup(t)
+	cancelled := addTask(t, c, "Old job")
+	p, _ := c.Preview(domain.Proposal{Action: "cancel_item", ItemID: cancelled.ID, ExpectedVersion: cancelled.Version})
+	c.Confirm(p.Change.ID)
+	items, _ := s.Items()
+	var invalid *domain.Invalid
+	if _, err := c.MoveTask(items[0].ID, items[0].Version, "done"); !errors.As(err, &invalid) || !strings.Contains(invalid.Message, "cancelled") || strings.Contains(invalid.Message, "calendar") {
+		t.Fatal("cancelled task", err)
+	}
+}

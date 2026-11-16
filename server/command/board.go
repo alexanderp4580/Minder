@@ -47,6 +47,9 @@ func (c *Service) MoveTask(id string, version int, status string) (domain.Item, 
 			return domain.ErrConflict
 		}
 		if !domain.OnBoard(i) {
+			if i.Status == "cancelled" {
+				return &domain.Invalid{Field: "status", Message: "This task was cancelled."}
+			}
 			return &domain.Invalid{Field: "status", Message: "This task is on the calendar."}
 		}
 		from, after = i.Status, i

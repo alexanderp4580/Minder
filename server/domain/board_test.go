@@ -108,3 +108,15 @@ func TestBoardColumnsAreNeverNil(t *testing.T) {
 		t.Fatal("empty columns must encode as []")
 	}
 }
+
+func TestBoardOrdersByRealTimeNotTimestampText(t *testing.T) {
+	// RFC3339Nano trims zeros, so "05.5Z" would sort after "05.50001Z" as text.
+	items := []Item{
+		task("newer", "open", func(i *Item) { i.CreatedAt = "2026-11-10T10:00:05.50001Z" }),
+		task("older", "open", func(i *Item) { i.CreatedAt = "2026-11-10T10:00:05.5Z" }),
+		task("whole", "open", func(i *Item) { i.CreatedAt = "2026-11-10T10:00:05Z" }),
+	}
+	if got := ids(BoardColumns(items, boardNow).Open); got != "whole older newer " {
+		t.Fatalf("order = %q", got)
+	}
+}

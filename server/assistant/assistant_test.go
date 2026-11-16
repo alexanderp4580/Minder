@@ -444,7 +444,7 @@ func TestDeletedItemLeavesTheAgentsContext(t *testing.T) {
 
 func TestPromptExplainsTheBoardAndStatus(t *testing.T) {
 	system := systemPrompt(time.Now(), nil, nil, nil, nil)
-	for _, want := range []string{"Board", "do not invent a due date", "in_progress"} {
+	for _, want := range []string{"Board", "do not invent a due date", "in_progress", "propose_update", "never from earlier messages"} {
 		if !strings.Contains(system, want) {
 			t.Fatalf("prompt lacks %q", want)
 		}

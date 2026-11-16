@@ -270,6 +270,38 @@ void main() {
     expect(find.byKey(const ValueKey('task-sheet')), findsNothing);
   });
 
+  testWidgets(
+    'a sheet opened before a reload moves the task by its newest version',
+    (tester) async {
+      final h = await pump(tester);
+      await tester.tap(find.text('Task a'));
+      await tester.pumpAndSettle();
+      h.repo.items[0] = task('a', 'open', version: 2);
+      await h.controller.load();
+      await tester.tap(find.byKey(const ValueKey('sheet-move-done')));
+      await tester.pumpAndSettle();
+      expect(h.repo.calls, contains('move a done v2'));
+      expect(h.controller.error, isNull);
+    },
+  );
+
+  testWidgets(
+    'the selected tab survives a switch to the wide layout and back',
+    (tester) async {
+      await pump(tester);
+      await tester.tap(find.byKey(const ValueKey('tab-done')));
+      await tester.pumpAndSettle();
+      expect(find.text('Task d'), findsOneWidget);
+      tester.view.physicalSize = const Size(1100, 800);
+      await tester.pumpAndSettle();
+      expect(find.text('Task a'), findsOneWidget);
+      tester.view.physicalSize = const Size(390, 844);
+      await tester.pumpAndSettle();
+      expect(find.text('Task d'), findsOneWidget);
+      expect(find.text('Task a'), findsNothing);
+    },
+  );
+
   testWidgets('Delete in the sheet opens the delete preview dialog', (
     tester,
   ) async {

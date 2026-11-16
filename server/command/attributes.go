@@ -22,6 +22,7 @@ func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error 
 		}
 		if i.Status == "done" {
 			i.CompletedAt = ""
+			clearPastReminder(i)
 		}
 		i.Status = p.Status
 	}

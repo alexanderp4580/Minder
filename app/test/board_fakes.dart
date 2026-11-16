@@ -29,6 +29,9 @@ class FakeBoard implements BoardRepository {
   final calls = <String>[];
   Object? failNext;
   Completer<void>? gate;
+
+  /// Holds the next board() call until completed. The reply is the board as it was when called.
+  Completer<void>? boardGate;
   int loads = 0;
 
   Board get snapshot => Board(
@@ -50,7 +53,11 @@ class FakeBoard implements BoardRepository {
     loads++;
     calls.add('board');
     _maybeFail();
-    return snapshot;
+    final asOfNow = snapshot;
+    final held = boardGate;
+    boardGate = null;
+    await held?.future;
+    return asOfNow;
   }
 
   @override
