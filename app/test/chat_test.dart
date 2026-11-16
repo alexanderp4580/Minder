@@ -8,6 +8,7 @@ import 'package:minder/data/wire.dart';
 import 'package:minder/domain/chat_repository.dart';
 import 'package:minder/domain/entry.dart';
 import 'package:minder/domain/failure.dart';
+import 'package:minder/ui/bottom_nav.dart';
 import 'package:minder/ui/chat_screen.dart';
 import 'package:minder/ui/tokens.dart';
 
@@ -427,7 +428,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: Tokens.theme,
-        home: ChatScreen(controller: c, onCalendar: () => opened++),
+        home: ChatScreen(
+          controller: c,
+          onNavigate: (d) {
+            if (d == NavDestination.calendar) opened++;
+          },
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -460,7 +466,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: Tokens.theme,
-        home: ChatScreen(controller: c, onCalendar: () {}),
+        home: ChatScreen(controller: c, onNavigate: (_) {}),
       ),
     );
     await tester.pumpAndSettle();
@@ -490,7 +496,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: Tokens.theme,
-          home: ChatScreen(controller: c, onCalendar: () {}),
+          home: ChatScreen(controller: c, onNavigate: (_) {}),
         ),
       );
       await tester.pumpAndSettle();

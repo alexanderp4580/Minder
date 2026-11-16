@@ -78,6 +78,10 @@ The server settles the reservation from provider usage. Unknown costs retain the
 Startup rejects zero, negative and non-finite limits or rates.
 Production rejects a custom model endpoint.
 
+### Board
+
+Every live item has a home: the calendar if it has a start or deadline, the board if it has neither. `domain.OnBoard` decides; recurring items and events never sit on the board. The columns are the item statuses `open` (To pick up), `in_progress` and `done`. Moves and quick adds go through `command.MoveTask` and `command.AddTask`: one transaction, an audit row, no preview and no chat entry. They run the normal reminder projection, so a done task closes its reminder. The Done column shows tasks finished in the last 14 days, at most 30.
+
 ### Reminders
 
 The application reminder service processes due schedules. The worker runs it every 15 seconds and catches up after a restart.
@@ -99,6 +103,9 @@ FCM delivery failures retain retry state. An unregistered FCM token disables tha
 | `POST /v1/chat/messages` | Queue an owner message (up to 400,000 bytes) for the agent and return at once |
 | `GET /v1/events?after=` | Stream entry changes and pings |
 | `GET /v1/items?from=&to=` | Calendar items across at most 62 days |
+| `GET /v1/board` | Board columns: tasks without a date, grouped by status |
+| `POST /v1/items` | Add a board task (title only) |
+| `POST /v1/items/{id}/status` | Move a board task to open, in progress or done |
 | `POST /v1/changes/{id}/confirm` | Apply a preview |
 | `POST /v1/changes/{id}/discard` | Discard a preview |
 | `POST /v1/undo/{id}` | Undo an audited change |
@@ -132,7 +139,7 @@ The client reconnects from its cursor and polls every five seconds as a fallback
 |---|---|
 | `domain` | Typed models and repository/device interfaces |
 | `data` | HTTP, JSON decoding, OAuth and the Android notification channel |
-| `application` | Chat, calendar and notification state controllers |
+| `application` | Chat, calendar, board and notification state controllers |
 | `ui` | Screens, entry widgets, display formatting and design tokens |
 | `main.dart` | Riverpod wiring, navigation and app lifecycle |
 
@@ -141,7 +148,8 @@ Domain models contain no JSON factories or transport maps.
 `data/notification_device.dart` maps native channel messages to typed registration and reminder actions.
 Controllers use domain repositories directly. The notification controller reads typed device values.
 ProviderScope closes shared API/auth clients; controllers close only their own subscriptions and callbacks.
-The calendar controller ignores results from superseded requests.
+The calendar and board controllers ignore results from superseded requests.
+Chat is the root route. Board and Calendar replace each other above it, so Back returns to Chat.
 
 `Tokens.theme` defines Material styles and standard visual density.
 The app bundles Michroma and Chakra Petch fonts. It uses Material icons.

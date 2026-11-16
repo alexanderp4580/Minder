@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'application/background_action.dart';
+import 'application/board_controller.dart';
 import 'application/calendar_controller.dart';
 import 'application/chat_controller.dart';
 import 'application/notifications.dart';
@@ -13,6 +14,8 @@ import 'data/access_auth.dart';
 import 'data/chat_api.dart';
 import 'data/url_link_launcher.dart';
 import 'data/notification_device.dart';
+import 'ui/board_screen.dart';
+import 'ui/bottom_nav.dart';
 import 'ui/calendar_screen.dart';
 import 'ui/chat_screen.dart';
 import 'ui/tokens.dart';
@@ -76,6 +79,11 @@ final calendarProvider = Provider<CalendarController>((ref) {
   ref.onDispose(controller.dispose);
   return controller;
 });
+final boardProvider = Provider<BoardController>((ref) {
+  final controller = BoardController(ref.watch(apiProvider));
+  ref.onDispose(controller.dispose);
+  return controller;
+});
 final notificationProvider = Provider<NotificationController>((ref) {
   final api = ref.watch(apiProvider);
   final controller = NotificationController(
@@ -120,6 +128,47 @@ class _MinderAppState extends ConsumerState<MinderApp>
     super.dispose();
   }
 
+  /// Chat is the root screen. Board and Calendar replace each other above it,
+  /// so Back always returns to Chat.
+  void _navigate(BuildContext context, NavDestination from, NavDestination to) {
+    if (from == to) return;
+    final navigator = Navigator.of(context);
+    if (to == NavDestination.chat) {
+      navigator.popUntil((route) => route.isFirst);
+      return;
+    }
+    void onSelect(BuildContext screen, NavDestination next) =>
+        _navigate(screen, to, next);
+    final MaterialPageRoute<void> route;
+    if (to == NavDestination.board) {
+      final board = ref.read(boardProvider);
+      unawaited(board.load());
+      route = MaterialPageRoute<void>(
+        builder: (screen) => BoardScreen(
+          controller: board,
+          linkLauncher: UrlLinkLauncher(),
+          onSelect: (next) => onSelect(screen, next),
+        ),
+      );
+    } else {
+      final calendar = ref.read(calendarProvider);
+      unawaited(calendar.goToday());
+      route = MaterialPageRoute<void>(
+        builder: (screen) => CalendarScreen(
+          controller: calendar,
+          sourceRepository: ref.read(apiProvider),
+          linkLauncher: UrlLinkLauncher(),
+          onSelect: (next) => onSelect(screen, next),
+        ),
+      );
+    }
+    if (from == NavDestination.chat) {
+      navigator.push(route);
+    } else {
+      navigator.pushReplacement(route);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final notifications = nativeAndroid
@@ -135,19 +184,7 @@ class _MinderAppState extends ConsumerState<MinderApp>
           builder: (context) => ChatScreen(
             controller: ref.watch(chatProvider),
             linkLauncher: UrlLinkLauncher(),
-            onCalendar: () {
-              final calendar = ref.read(calendarProvider);
-              unawaited(calendar.goToday());
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => CalendarScreen(
-                    controller: calendar,
-                    sourceRepository: ref.read(apiProvider),
-                    linkLauncher: UrlLinkLauncher(),
-                  ),
-                ),
-              );
-            },
+            onNavigate: (to) => _navigate(context, NavDestination.chat, to),
             signIn: () async {
               if (kIsWeb) {
                 await ref.read(authProvider).webSignIn();

@@ -78,7 +78,7 @@ Email delivery uses a direct Worker-to-server handoff without a temporary Cloudf
 
 The owner approved the [email capture specification](superpowers/specs/2026-11-12-email-capture-design.md) and [implementation plan](superpowers/plans/2026-11-12-email-capture.md). Local code and the deployment package are complete. See [verification and remaining live checks](evidence/email-capture.md). Cloudflare provisioning and production activation remain pending.
 
-P1 follows: email forwarding, List, Today and Calendar views, Kanban and Table views, digests, voice capture, day/week/month summaries and phone calendar sync.
+P1 follows: email forwarding, List, Today and Calendar views, the Kanban Board (shipped for undated tasks), the Table view, digests, voice capture, day/week/month summaries and phone calendar sync.
 
 ## Risks
 

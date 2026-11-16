@@ -20,6 +20,8 @@ Tool schemas distinguish event ends, date-only ranges and deadlines; preserve tr
 
 Item and review tool schemas expose phone, email, website and booking_reference as separate strings and support clear flags. Item tools also expose `details` (label/value pairs) and `clear_details`. Notes hold remaining instructions.
 
+Item and review tool schemas expose `status` (`open` or `in_progress`). Done and cancelled keep `propose_complete` and `propose_cancel`.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

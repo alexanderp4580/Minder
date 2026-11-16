@@ -200,3 +200,19 @@ func TestAToolCallExchangeReachesTheProviderWithItsIdentity(t *testing.T) {
 		t.Fatalf("%v", messages)
 	}
 }
+
+func TestItemToolsLetTheAgentStartAndReopenTasks(t *testing.T) {
+	fn := tools()[0].(map[string]any)["function"].(map[string]any)
+	status, ok := fn["parameters"].(map[string]any)["properties"].(map[string]any)["status"].(map[string]any)
+	if !ok {
+		t.Fatal("status missing from", fn["name"])
+	}
+	enum := status["enum"].([]string)
+	if len(enum) != 2 || enum[0] != "open" || enum[1] != "in_progress" {
+		t.Fatal(enum)
+	}
+	reviews, _ := json.Marshal(sourceTools())
+	if !strings.Contains(string(reviews), `"status":{`) {
+		t.Fatal("review proposals lack status")
+	}
+}

@@ -15,7 +15,7 @@ class ChatScreen extends StatefulWidget {
     required this.controller,
     this.signIn,
     this.linkLauncher,
-    this.onCalendar,
+    this.onNavigate,
     this.enableNotifications,
     this.notificationStatus,
     this.notificationsBusy = false,
@@ -26,7 +26,7 @@ class ChatScreen extends StatefulWidget {
   final ChatController controller;
   final LinkLauncher? linkLauncher;
   final Future<void> Function()? signIn;
-  final VoidCallback? onCalendar;
+  final ValueChanged<NavDestination>? onNavigate;
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
@@ -109,7 +109,7 @@ class _ChatScreenState extends State<ChatScreen> {
       return Scaffold(
         bottomNavigationBar: BottomNav(
           current: NavDestination.chat,
-          onSelect: (_) => widget.onCalendar?.call(),
+          onSelect: (destination) => widget.onNavigate?.call(destination),
         ),
         body: OrbitalBackground(
           scene: OrbitScene.chat,

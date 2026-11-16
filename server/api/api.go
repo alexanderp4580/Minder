@@ -24,6 +24,7 @@ type Queries interface {
 	History(int64, int) ([]domain.Entry, error)
 	Events(int64, int) ([]domain.Entry, error)
 	ItemsBetween(time.Time, time.Time) ([]domain.Item, error)
+	Board(time.Time) (domain.Board, error)
 }
 type Commands interface {
 	Confirm(string) (domain.Entry, error)
@@ -33,6 +34,8 @@ type Commands interface {
 	Preview(domain.Proposal) (domain.Entry, error)
 	SetColor(string, string) (domain.Entry, error)
 	Undo(string) (domain.Entry, error)
+	AddTask(string) (domain.Item, error)
+	MoveTask(id string, version int, status string) (domain.Item, error)
 }
 type Messages interface {
 	Accept(string) (conversation.Accepted, error)
@@ -86,6 +89,9 @@ func New(s Queries, c Commands, messages Messages, reminders ReminderActions, v 
 	m.HandleFunc("GET /v1/captures/{id}/attachments/{attachmentId}", srv.captureAttachment)
 	m.HandleFunc("GET /v1/chat", srv.chat)
 	m.HandleFunc("GET /v1/items", srv.items)
+	m.HandleFunc("GET /v1/board", srv.board)
+	m.HandleFunc("POST /v1/items", srv.addTask)
+	m.HandleFunc("POST /v1/items/{id}/status", srv.moveTask)
 	m.HandleFunc("POST /v1/items/{id}/delete", srv.deleteItem)
 	m.HandleFunc("POST /v1/items/{id}/color", srv.itemColor)
 	m.HandleFunc("POST /v1/changes/{id}/color", srv.changeColor)

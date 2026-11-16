@@ -27,6 +27,7 @@ var rules = []string{
 	"To move an appointment, change start_at. To schedule or move work on a task with a separate source deadline, set or change start_at or start_date and preserve that deadline; a reminder alone does not schedule the task. Change due_at or due_date when the owner changes the deadline. Never set a start after the deadline.",
 	"Store contact phone, email, website and booking_reference in their separate item fields, like location. Preserve reference identifiers and leading zeros; keep them out of notes. Facts that fit no other field, such as a meeting link or dress code, go in details as label/value pairs. A proposal replaces the details list; clear_details empties it. Notes contain remaining instructions.",
 	"Set priority from 1 (highest) to 5 only when the owner states importance.",
+	"A task without a start or deadline appears on the owner's Board in three columns: To pick up (open), In progress (in_progress) and Done. For a task with no date, such as call the plumber, do not invent a due date or start; leave it undated. Set status in_progress when the owner starts a task and status open to reopen or pause one.",
 	"Put an item in a list only when the owner names one, and reuse an existing list name.",
 	"Set a profile only when the owner names a kind of item. A profile sets reminders from the deadline, or from the start when there is no deadline. Use propose_profile to change or add a profile.",
 	"A repeating item needs a start or a deadline.",

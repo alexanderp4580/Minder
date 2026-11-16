@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'tokens.dart';
 
-enum NavDestination { chat, calendar }
+enum NavDestination { chat, board, calendar }
 
 class BottomNav extends StatelessWidget {
   const BottomNav({super.key, required this.current, required this.onSelect});
@@ -32,6 +32,7 @@ class BottomNav extends StatelessWidget {
               child: Row(
                 children: [
                   _item(NavDestination.chat, 'Chat', CarbonGlyph.chat),
+                  _item(NavDestination.board, 'Board', CarbonGlyph.board),
                   _item(
                     NavDestination.calendar,
                     'Calendar',
@@ -58,10 +59,13 @@ class BottomNav extends StatelessWidget {
         excludeSemantics: true,
         child: InkWell(
           onTap: selected ? null : () => onSelect(destination),
-          child: SizedBox(
-            height: 56,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: double.infinity,
+              minHeight: 56,
+            ),
             child: Stack(
-              fit: StackFit.expand,
+              alignment: Alignment.center,
               children: [
                 if (selected)
                   const Positioned(
@@ -73,6 +77,7 @@ class BottomNav extends StatelessWidget {
                     child: ColoredBox(color: Tokens.signal),
                   ),
                 Column(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CarbonIcon(

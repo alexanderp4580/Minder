@@ -19,11 +19,12 @@ Widget host(
 );
 
 void main() {
-  testWidgets('shows Chat and Calendar and marks the current one', (
+  testWidgets('shows Chat, Board and Calendar and marks the current one', (
     tester,
   ) async {
     await tester.pumpWidget(host(NavDestination.calendar, (_) {}));
     expect(find.text('Chat'), findsOneWidget);
+    expect(find.text('Board'), findsOneWidget);
     expect(find.text('Calendar'), findsOneWidget);
     final selected = tester.getSemantics(
       find.byKey(const ValueKey('nav-calendar')),
@@ -75,7 +76,8 @@ void main() {
       await tester.tap(find.text('Chat'));
       expect(picked, isEmpty);
       await tester.tap(find.text('Calendar'));
-      expect(picked, [NavDestination.calendar]);
+      await tester.tap(find.text('Board'));
+      expect(picked, [NavDestination.calendar, NavDestination.board]);
     },
   );
 
@@ -88,7 +90,7 @@ void main() {
     final calendar = tester.getRect(find.byKey(const ValueKey('nav-calendar')));
     expect(chat.height, 56);
     expect(calendar.height, 56);
-    expect(chat.width, 206);
+    expect(chat.width, closeTo(412 / 3, 0.01));
     expect(tester.getCenter(find.text('Chat')).dx, chat.center.dx);
     expect(tester.getCenter(find.text('Calendar')).dx, calendar.center.dx);
     expect(
@@ -101,7 +103,11 @@ void main() {
           .dx,
       chat.center.dx,
     );
-    expect(calendar.width, 206);
+    expect(calendar.width, closeTo(412 / 3, 0.01));
+    expect(
+      tester.getRect(find.byKey(const ValueKey('nav-board'))).width,
+      closeTo(412 / 3, 0.01),
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -130,5 +136,21 @@ void main() {
     expect(icon.top - item.top, 8);
     expect(item.bottom - label.bottom, 8);
     expect(label.top - icon.bottom, 4);
+  });
+
+  testWidgets('enlarged text grows the item instead of overflowing', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.4;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpWidget(host(NavDestination.board, (_) {}));
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getRect(find.byKey(const ValueKey('nav-board'))).width,
+      closeTo(320 / 3, 0.01),
+    );
   });
 }

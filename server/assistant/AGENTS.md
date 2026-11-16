@@ -19,6 +19,8 @@ Keep at most 200 open items in context. Reserve cost before calling the model; s
 Lookups are optional (`WithLookups`). With a finder set, `Message.Purpose` on the first message is `PurposeOffer`, the prompt gains `lookupRule` and the model may call `offer_lookup` (`kind`: maps, places or search; `query`) alone. The server stores only the fixed-format offer entry (`domain.OfferText`); an unknown kind or blank query is an error. The offer is the owner's approval of that exact search. Only when the owner's text is `Look it up` and the newest entry before it is an offer (error entries and earlier Look it up messages are skipped, so Retry works) does the server run that kind and query through the `Finder` and add the hits to the request as untrusted data (at most three hits). A failed or empty search says so. Any other text, a stale offer or a missing finder runs no search. Logs carry `kind` and `query_len`, never the query.
 Sources are optional (`WithSources`): a `SourceReader` with `FindSources` and `ReadSource`, implemented by `capture.Service`. Without one the source tools answer that sources are unavailable.
 
+The prompt tells the agent that a task without a start or deadline appears on the owner's Board (To pick up, In progress, Done), not to invent a due date for it, and to use `status` `in_progress` or `open` when the owner starts, pauses or reopens a task.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

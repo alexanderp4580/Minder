@@ -1,6 +1,6 @@
 # Minder screens (draft)
 
-Status 2026-11-11. Derived from [requirements.md](requirements.md). The app has two screens: Chat and a Calendar that shows and deletes items ([calendar-spec.md](calendar-spec.md)). The owner decided that no other screen is needed now. Design rules are in [foundation.md](foundation.md). The first build slice is in [m0-spec.md](m0-spec.md).
+Status 2026-11-11. Derived from [requirements.md](requirements.md). The app has three screens: Chat, a Board of tasks without a date ([kanban-board design](superpowers/specs/2026-11-16-kanban-board-design.md)) and a Calendar that shows and deletes items ([calendar-spec.md](calendar-spec.md)). The owner decided that no other screen is needed now. Design rules are in [foundation.md](foundation.md). The first build slice is in [m0-spec.md](m0-spec.md).
 
 All names, dates, counts and times in the text and in the mockup are illustrative.
 
@@ -52,7 +52,7 @@ Fixed orbital artwork sits behind the content, with small highlights travelling 
 Purpose: create and change items, ask about them, and receive reminders, in one conversation.
 
 Content, from top to bottom:
-- Shared header: title "Chat" and a rule below it that fades left to right. The Calendar screen uses the same treatment. A bottom bar with Chat and Calendar sits below the input field.
+- Shared header: title "Chat" and a rule below it that fades left to right. The Calendar screen uses the same treatment. A bottom bar with Chat, Board and Calendar sits below the input field.
 - The conversation, oldest first, newest at the bottom.
 - Composer: text field and microphone button.
 
@@ -87,6 +87,10 @@ Month grid and agenda with a Delete control on each card, with the fixed Calenda
 Today sits beside the selected date in the agenda header.
 The whole page scrolls on short screens. Spacing and selection rules are in [foundation.md](foundation.md).
 Behaviour is in [calendar-spec.md](calendar-spec.md). The mockup is `mockups/calendar.html` with `mockups/calendar.png`.
+
+## Board
+
+Tasks with no date, in three columns: To pick up, In progress and Done. The screen header reads BOARD. On a phone a tab row shows each column name and count over one swipeable column; from 720 px wide the three columns sit side by side. The To pick up column starts with an Add a task field. A card has the item colour stripe, the title, priority, list and reminder time when set, and one button: Start, Done or Reopen. Tapping the card opens the task sheet with notes, contact fields, Move to the other columns and Delete. A move shows `Moved to <column>` with Undo and adds nothing to chat. A task that gains a date moves to the calendar. Done shows the last 14 days. No drag and drop. Design: [kanban-board design](superpowers/specs/2026-11-16-kanban-board-design.md).
 
 ## Open decisions
 

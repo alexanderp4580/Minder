@@ -61,7 +61,11 @@ class CalendarScreen extends StatefulWidget {
     required this.controller,
     this.sourceRepository,
     this.linkLauncher,
+    this.onSelect,
   });
+
+  /// Switches screens. Without it the bar returns to the previous screen.
+  final ValueChanged<NavDestination>? onSelect;
   final CaptureRepository? sourceRepository;
   final LinkLauncher? linkLauncher;
   final CalendarController controller;
@@ -92,7 +96,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) => Scaffold(
     bottomNavigationBar: BottomNav(
       current: NavDestination.calendar,
-      onSelect: (_) => Navigator.of(context).maybePop(),
+      onSelect: widget.onSelect ?? (_) => Navigator.of(context).maybePop(),
     ),
     body: OrbitalBackground(
       scene: OrbitScene.calendar,

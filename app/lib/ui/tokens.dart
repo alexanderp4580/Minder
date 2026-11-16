@@ -135,6 +135,12 @@ abstract final class Tokens {
       ),
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(color: muted),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: panel,
+      contentTextStyle: _body,
+      actionTextColor: text,
+      shape: RoundedRectangleBorder(side: BorderSide(color: edge)),
+    ),
   );
 }
 

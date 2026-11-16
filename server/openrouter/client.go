@@ -184,6 +184,7 @@ func tools() []any {
 	props["clear_duration"] = flag
 	props["priority"] = map[string]string{"type": "integer", "description": "1 (highest) to 5. Set only when the owner states importance."}
 	props["clear_priority"] = flag
+	props["status"] = map[string]any{"type": "string", "enum": []string{"open", "in_progress"}, "description": "in_progress when the owner starts working on a task; open to reopen a task or pause it. Use complete or cancel for the other statuses."}
 	props["profile"] = map[string]string{"type": "string", "description": "Profile id from the profile list."}
 	props["clear_profile"] = flag
 	props["recurrence"] = map[string]any{"type": "object", "description": "Repeat rule. The item needs a due time.", "properties": map[string]any{"every": map[string]any{"type": "string", "enum": []string{"daily", "weekly", "monthly", "yearly"}}, "interval": map[string]string{"type": "integer"}, "after_completion": flag}, "required": []string{"every", "interval"}, "additionalProperties": false}

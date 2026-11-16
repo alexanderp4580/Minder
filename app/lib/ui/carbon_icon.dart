@@ -2,7 +2,17 @@
 // Geometry from https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/.
 import 'package:flutter/material.dart';
 
-enum CarbonGlyph { chat, calendar, left, right, down, delete, check, send }
+enum CarbonGlyph {
+  chat,
+  calendar,
+  board,
+  left,
+  right,
+  down,
+  delete,
+  check,
+  send,
+}
 
 class CarbonIcon extends StatelessWidget {
   const CarbonIcon(
@@ -138,6 +148,14 @@ final _paths = <CarbonGlyph, List<Path>>{
       ..lineTo(18.0, 18.0)
       ..lineTo(8.0, 18.0)
       ..close(),
+  ],
+  // Three columns of different heights, drawn in the Carbon 32 px grid.
+  CarbonGlyph.board: [
+    for (final c in const [(3.0, 22.0), (12.0, 15.0), (21.0, 19.0)])
+      Path()
+        ..fillType = PathFillType.evenOdd
+        ..addRect(Rect.fromLTWH(c.$1, 5, 8, c.$2))
+        ..addRect(Rect.fromLTWH(c.$1 + 2, 7, 4, c.$2 - 4)),
   ],
   CarbonGlyph.calendar: [
     Path()

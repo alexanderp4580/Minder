@@ -16,6 +16,15 @@ func setAttributes(t port.Transaction, p domain.Proposal, i *domain.Item) error 
 	if p.Color != "" {
 		i.Color = p.Color
 	}
+	if p.Status != "" {
+		if p.Status != "open" && p.Status != "in_progress" {
+			return &domain.Invalid{Field: "status", Message: "Use open or in progress. Use complete or cancel for the other statuses."}
+		}
+		if i.Status == "done" {
+			i.CompletedAt = ""
+		}
+		i.Status = p.Status
+	}
 	if p.DateEnd != "" {
 		i.DateEnd = p.DateEnd
 	}

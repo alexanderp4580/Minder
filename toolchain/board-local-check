@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+mkdir -p .local docs/evidence
+./toolchain/run go go build -o /workspace/.local/minder ./cmd/minder
+check_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+check_db=$(mktemp "$PWD/.local/board-XXXXXX.db")
+model_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+MODEL_FIXTURE_PORT="$model_port" python3 toolchain/model_fixture.py & fixture_pid=$!
+ENV=development AUTH_MODE=dev DATABASE_PATH="$check_db" OPENROUTER_API_KEY=local-fixture OPENROUTER_URL="http://127.0.0.1:$model_port" WEB_DIR=app/build/web LISTEN_ADDR="127.0.0.1:$check_port" .local/minder > .local/board-server.log 2>&1 &
+check_pid=$!
+trap 'kill "$check_pid" "$fixture_pid" 2>/dev/null || true' EXIT
+curl --fail --silent --retry 5 --retry-delay 1 --retry-connrefused http://127.0.0.1:$check_port/v1/health
+MINDER_URL=http://127.0.0.1:$check_port node toolchain/board-check.cjs
+python3 - "$check_db" <<'PY'
+import sqlite3,json,sys
+c=sqlite3.connect(sys.argv[1]);items=[json.loads(r[0]) for r in c.execute("select body from item")]
+assert len(items)==1 and items[0]["title"]=="Call plumber" and items[0]["status"]=="open" and "completed_at" not in items[0] and "due_at" not in items[0],items
+assert c.execute("select count(*) from chat_entry").fetchone()[0]==0
+assert c.execute("select count(*) from audit").fetchone()[0]==6
+assert c.execute("select count(*) from audit where actor='owner'").fetchone()[0]==6
+print("PASS: board writes persisted in SQLite with owner audit rows and no chat entries.")
+PY

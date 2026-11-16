@@ -62,7 +62,7 @@ Each list or project can be opened in any view. The view choice is remembered pe
 | View | Requirements |
 |---|---|
 | **List** | Default. Sort/group by due date, priority, label, list. Inline check-off. Collapsible subtasks |
-| **Kanban** | One board for all items, not split by project. Columns per status or custom buckets. Filter by label. Move an item with a Move button; drag and drop is a shortcut. WIP limit optional |
+| **Kanban** | Shipped as the Board tab for tasks without a date: To pick up, In progress and Done, moved with a button (no drag and drop). Dated items stay on the calendar. Custom columns, label filters and WIP limits are not built. See [kanban-board design](superpowers/specs/2026-11-16-kanban-board-design.md) |
 | **Table** | Spreadsheet-style. Choose visible columns. Sort/filter per column. Bulk edit |
 | **Gantt / Timeline** | Items with start + due shown as bars. Drag to reschedule or resize |
 | **Calendar** | Day / week / month / agenda. Shows events and dated tasks together. Drag to reschedule |

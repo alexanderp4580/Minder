@@ -87,7 +87,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             theme: Tokens.theme,
-            home: ChatScreen(controller: chat, onCalendar: () {}),
+            home: ChatScreen(controller: chat, onNavigate: (_) {}),
           ),
         );
         await tester.pumpAndSettle();
@@ -281,7 +281,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: Tokens.theme,
-        home: ChatScreen(controller: c, onCalendar: () {}),
+        home: ChatScreen(controller: c, onNavigate: (_) {}),
       ),
     );
     await tester.pumpAndSettle();
@@ -396,7 +396,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: Tokens.theme,
-        home: ChatScreen(controller: chat, onCalendar: () {}),
+        home: ChatScreen(controller: chat, onNavigate: (_) {}),
       ),
     );
     await tester.pumpAndSettle();

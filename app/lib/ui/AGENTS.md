@@ -4,7 +4,7 @@ Flutter screens and presentation.
 
 # Ownership
 
-ChatScreen, CalendarScreen, ScreenHeader, BottomNav, EntryView, OrbitalBackground, time/cost labels and Tokens.theme.
+ChatScreen, BoardScreen (with BoardTaskCard and the task sheet), CalendarScreen, ScreenHeader, BottomNav, EntryView, OrbitalBackground, time/cost labels and Tokens.theme.
 
 # Local Contracts
 
@@ -12,7 +12,7 @@ Use controllers and typed domain values. Never build API routes or read raw tran
 Theme controls buttons, fields and standard visual density. Preserve 44 px controls and existing goldens.
 Screens use Material icons and bundled fonts.
 ScreenHeader owns title layout, responsive padding and the left-to-right fading rule below it for both screens. It has no buttons.
-BottomNav owns the two-item Chat/Calendar bar: 56 px items, a Signal icon and top bar on the selected item, hidden while the keyboard is open. Each screen passes its own destination and switch action. Do not add presence/status copy to headers. Loading and errors belong in content.
+BottomNav owns the three-item Chat/Board/Calendar bar: items at least 56 px high (they grow with enlarged text), a Signal icon and top bar on the selected item, hidden while the keyboard is open. Each screen passes its own destination and switch action. Do not add presence/status copy to headers. Loading and errors belong in content.
 ChatScreen shows the existing Working spinner above the composer, outside the scrolling message list while ChatController.thinking is true, including the agent reading an email and quick-reply or follow-up answers. The composer has no character limit: it takes a pasted email up to the controller's 400,000-byte limit. It clears when processing finishes or fails; unrelated chat waiting keeps it visible.
 ChatScreen follows the newest cursor and keeps the list at the bottom through keyboard, composer and navigation viewport changes. User scrolling away pauses viewport following; returning to the bottom or receiving a new cursor resumes it.
 CalendarTokens owns calendar dimensions. The calendar uses a centered, scrolling column with grouped month arrows and Today beside the agenda date.
@@ -37,6 +37,8 @@ Calendar cards expand by tapping the card or its 44 px Details / Hide details bu
 `CalendarItemDetails` labels task starts Scheduled and due fields Deadline. An explicit notification appears when no offset reminders override it. Previews use the same task labels when the kind is available. Other detail rows retain duration, type, address, contacts, reference and notes. Additional item details show their supplied labels and use `LinkedText` for values, including meeting links. Preview rows retain these as literal `Details` lines with tappable links. Contact rows open their external apps; booking references remain selectable plain text with an explicit accessible value. New and legacy confirmation previews show the same labels. Starts/Ends become Departs/Arrives only with two different, nonempty timezones. Local wall clocks retain their source zone. Addresses open Google Maps; `LinkedText` makes visible HTTPS, phone and email spans tappable and disposes its recognizers. Notes keep the shared 600-character cap. A failed launch shows a snackbar. Confirmed preview cards end with a full-width footer: divider, 16 px top gap, 12 px inner top padding, a check icon and semibold text; other resolved states use an information icon.
 
 A minder entry with two `options` is a place-lookup offer: a card labelled `LOOK UP · ASKS FIRST` with the text. While it is the newest entry it shows Skip (outlined) and Look it up (filled, 44 px). A tap calls `ChatController.send` with that label, so the choice is a normal message. The buttons wait while a send or action runs.
+
+BoardScreen shows the board: under 720 px a tab row with each column's name and count over one swipeable column, from 720 px three columns side by side with their own headings. Chat is the root route; Board and Calendar replace each other above it (`main.dart` `_navigate`). The To pick up column starts with the Add a task field (200 characters, Enter submits, the text stays after a failed add). A card (`BoardTaskCard`) has the item colour stripe, up to three title lines, `Priority n`, list and reminder time when set, and one 44 px button: Start, Done or Reopen (`forwardMove`). Tapping the card opens the task sheet: notes and contact fields through `CalendarItemDetails` (no timing rows), Move to the other two columns and Delete, which reuses `ItemDeleteDialog` through the `ItemDeleter` interface. A move shows a snackbar `Moved to <column>` with Undo. Errors show a banner with Retry; empty columns say what belongs there. There is no drag and drop: buttons work on phones, keyboards and screen readers. The board has no refresh button; pull down to reload, and it reloads each time its tab opens.
 
 # Work Guidance
 

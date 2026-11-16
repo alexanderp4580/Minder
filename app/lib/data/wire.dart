@@ -1,3 +1,4 @@
+import '../domain/board.dart';
 import '../domain/capture.dart';
 import '../domain/entry.dart';
 import '../domain/item.dart';
@@ -192,3 +193,15 @@ Capture captureFromJson(Map<String, dynamic> j) => Capture(
         ),
   ],
 );
+
+Board boardFromJson(Map<String, dynamic> j) {
+  List<Item> column(String key) => [
+    for (final i in j[key] as List? ?? [])
+      itemFromJson(i as Map<String, dynamic>),
+  ];
+  return Board(
+    open: column('open'),
+    inProgress: column('in_progress'),
+    done: column('done'),
+  );
+}

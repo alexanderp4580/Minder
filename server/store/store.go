@@ -325,6 +325,15 @@ func (s *Store) ItemsBetween(from, to time.Time) ([]domain.Item, error) {
 	sort.SliceStable(out, func(a, b int) bool { return domain.PlacedAt(out[a]) < domain.PlacedAt(out[b]) })
 	return out, nil
 }
+
+// Board returns the tasks without a date, grouped into the board columns.
+func (s *Store) Board(now time.Time) (domain.Board, error) {
+	items, e := s.Items()
+	if e != nil {
+		return domain.Board{}, e
+	}
+	return domain.BoardColumns(items, now), nil
+}
 func (s *Store) History(after int64, limit int) ([]domain.Entry, error) {
 	if limit < 1 || limit > 200 {
 		limit = 50

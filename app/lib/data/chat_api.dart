@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../domain/board.dart';
 import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
 import '../domain/failure.dart';
@@ -19,6 +20,7 @@ class ChatApi
         ChatRepository,
         PushRepository,
         ItemRepository,
+        BoardRepository,
         CaptureRepository {
   ChatApi(this.base, {http.Client? client, this.authorization})
     : _client = client ?? http.Client();
@@ -60,6 +62,7 @@ class ChatApi
         throw RepositoryFailure(
           j['message'] as String? ?? 'Try again.',
           unauthorized: res.statusCode == 401,
+          conflict: res.statusCode == 409,
           replacement: j['entry'] is Map<String, dynamic>
               ? entryFromJson(j['entry'] as Map<String, dynamic>)
               : null,
@@ -114,6 +117,22 @@ class ChatApi
         '&to=${to.toUtc().toIso8601String()}'
         '&timezone=${Uri.encodeQueryComponent(await downloads.deviceTimezone())}',
   )) as List).map((j) => itemFromJson(j as Map<String, dynamic>)).toList();
+  @override
+  Future<Board> board() async =>
+      boardFromJson(await _request('GET', '/v1/board') as Map<String, dynamic>);
+  @override
+  Future<Item> addTask(String title) async => itemFromJson(
+    await _request('POST', '/v1/items', body: {'title': title})
+        as Map<String, dynamic>,
+  );
+  @override
+  Future<Item> moveTask(Item item, String status) async => itemFromJson(
+    await _request(
+      'POST',
+      '/v1/items/${Uri.encodeComponent(item.id)}/status',
+      body: {'expected_version': item.version, 'status': status},
+    ) as Map<String, dynamic>,
+  );
   @override
   Future<Entry> previewDelete(Item item) async => entryFromJson(
     await _request(

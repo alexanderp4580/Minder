@@ -20,6 +20,8 @@ Email ingress is a separate machine-authenticated POST route with signed envelop
 
 `POST /v1/items/{id}/delete` (body `{expected_version}`, no other fields) returns a pending `delete_item` preview for the calendar. 404 for an unknown item, 409 for a stale version. The calendar confirms or discards it through the change routes.
 
+`GET /v1/board` returns `{open, in_progress, done}` lists of item JSON from `Queries.Board`. `POST /v1/items` (body `{title}`) creates a board task and returns 201. `POST /v1/items/{id}/status` (body `{expected_version, status}`) moves a task: 400 for a bad status or a task on the calendar, 404 for an unknown item, 409 for a stale version. Bodies reject unknown fields and trailing data. None of these routes writes chat entries.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

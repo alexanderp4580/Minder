@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../application/calendar_controller.dart';
+import '../application/item_deleter.dart';
 import '../domain/entry.dart';
 import '../domain/failure.dart';
 import '../domain/item.dart';
@@ -15,7 +15,7 @@ class ItemDeleteDialog extends StatefulWidget {
     required this.controller,
     required this.item,
   });
-  final CalendarController controller;
+  final ItemDeleter controller;
   final Item item;
   @override
   State<ItemDeleteDialog> createState() => _ItemDeleteDialogState();

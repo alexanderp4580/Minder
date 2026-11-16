@@ -4,8 +4,9 @@ import '../domain/failure.dart';
 import '../domain/entry.dart';
 import '../domain/item.dart';
 import '../domain/item_repository.dart';
+import 'item_deleter.dart';
 
-class CalendarController extends ChangeNotifier {
+class CalendarController extends ChangeNotifier implements ItemDeleter {
   CalendarController(this._repository, {DateTime Function()? now})
     : _now = now ?? DateTime.now {
     final today = _day(_now());
@@ -54,13 +55,16 @@ class CalendarController extends ChangeNotifier {
     await load();
   }
 
+  @override
   Future<Entry> previewDelete(Item item) => _repository.previewDelete(item);
 
+  @override
   Future<void> confirmDelete(String changeId) async {
     await _repository.confirm(changeId);
     await load();
   }
 
+  @override
   Future<void> discardDelete(String changeId) async {
     await _repository.discard(changeId);
   }

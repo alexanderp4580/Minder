@@ -131,6 +131,7 @@ type Proposal struct {
 	ClearReminderOffsets bool        `json:"clear_reminder_offsets,omitempty"`
 	ClearNag             bool        `json:"clear_nag,omitempty"`
 	Action               string      `json:"action"`
+	Status               string      `json:"status,omitempty"`
 	ItemID               string      `json:"item_id,omitempty"`
 	ExpectedVersion      int         `json:"expected_version,omitempty"`
 	Title                string      `json:"title,omitempty"`

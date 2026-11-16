@@ -29,6 +29,8 @@ Connection status tests cover the grace period, the header icon, recovery, no ba
 
 Offer card tests (`offer_card_test.dart`) cover wire options, the card and its two buttons, the exact text a tap sends, buttons only on the newest offer, waiting buttons and plain minder entries.
 
+Board tests: `board_api_test.dart` (routes, wire, conflict flag), `board_controller_test.dart` (load, move, Undo, busy, conflict, add, delete, disposal) and `board_screen_test.dart` (narrow tabs, wide columns, card buttons, move and Undo, add field, empty and error states, task sheet, delete dialog, the bar and 320 px at 1.4× text). `board_fakes.dart` holds the shared fake repository. Bottom bar tests cover three equal items and enlarged text.
+
 # Work Guidance
 
 Assert user-visible results and lifecycle effects rather than private method calls.

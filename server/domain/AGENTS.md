@@ -31,6 +31,8 @@ Items and proposals carry optional `phone`, `email`, `website` and `booking_refe
 
 `SourceRef` (kinds `email`, `chat`) names retained material; `SourceDocument` pairs it with its `CaptureDocument`. `ErrSourceUnavailable` (deleted) and `ErrSourceUnreadable` (kept but unreadable) are the tool-facing read failures. `Capture.Prepared` marks a source whose files are stored and whose arrival turn is queued; `Capture.Kind` is `chat` for a review of pasted text. `ChatLabel` names a chat source from its first line.
 
+`OnBoard` puts a task on the board when it is a task or reminder (not an event), has no `start_at`, `due_at`, `start_date` or `due_date`, has no recurrence and is open, in progress or done. A reminder time is not a date. Every live item is on the calendar (it has a date) or on the board (it has none). `BoardColumns(items, now)` groups and sorts it: open and in progress by priority (1 first, unset last), then oldest first; done by completion time, newest first, limited to `BoardDoneDays` (14) and `BoardDoneLimit` (30). Columns encode as lists, never null. `Proposal.Status` (`open` or `in_progress`) lets the agent start or reopen a task.
+
 # Work Guidance
 
 Write failing behaviour tests before fixes. Preserve current wire and database contracts.

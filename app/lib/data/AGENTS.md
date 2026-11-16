@@ -24,6 +24,8 @@ Capture JSON retains the full candidate proposal as read-only detail fields; ori
 
 `entryFromJson` reads the optional `options` list; an absent list is empty.
 
+`ChatApi` also implements `BoardRepository`: `GET /v1/board`, `POST /v1/items` (title) and `POST /v1/items/{id}/status` (expected version and status). A 409 sets `RepositoryFailure.conflict`. `boardFromJson` tolerates a missing column.
+
 # Work Guidance
 
 Keep responsibilities focused. Preserve existing widget appearance during refactors.
