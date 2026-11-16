@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import '../application/chat_controller.dart';
 import '../domain/link_launcher.dart';
 import 'bottom_nav.dart';
+import 'composer_field.dart';
 import 'entry_view.dart';
 import 'tokens.dart';
 import 'screen_header.dart';
@@ -317,17 +318,10 @@ class _ChatScreenState extends State<ChatScreen> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
-                            child: TextField(
+                            child: ComposerField(
                               controller: _text,
-                              style: const TextStyle(color: Tokens.text),
-                              cursorColor: Tokens.text,
-                              minLines: 1,
-                              maxLines: 4,
-                              textInputAction: TextInputAction.send,
-                              onSubmitted: (_) => _send(),
-                              decoration: const InputDecoration(
-                                hintText: 'Tell Minder…',
-                              ),
+                              hint: 'Tell Minder…',
+                              onSubmitted: _send,
                             ),
                           ),
                           const SizedBox(width: Tokens.gap),

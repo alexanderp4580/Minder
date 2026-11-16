@@ -27,6 +27,11 @@ class _OrbitalBackgroundState extends State<OrbitalBackground>
   bool _reduceMotion = false;
   bool _foreground = true;
 
+  /// The area the artwork is painted in. It follows the available space, except while the
+  /// keyboard is open: the screen body shrinks then, and the artwork keeps its size and is
+  /// clipped instead of scaled, so it does not grow and shrink as the keyboard moves.
+  Size? _stable;
+
   @override
   void initState() {
     super.initState();
@@ -87,27 +92,52 @@ class _OrbitalBackgroundState extends State<OrbitalBackground>
         child: IgnorePointer(
           child: ExcludeSemantics(
             child: ClipRect(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  RepaintBoundary(
-                    key: const ValueKey('orbital-artwork'),
-                    child: CustomPaint(
-                      key: const ValueKey('orbital-arcs'),
-                      isComplex: true,
-                      painter: _ArtworkPainter(_artwork),
-                    ),
-                  ),
-                  RepaintBoundary(
-                    child: CustomPaint(
-                      painter: _HighlightPainter(
-                        artwork: _artwork,
-                        enabled: !_reduceMotion,
-                        motion: _motion,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // A Scaffold body hides its keyboard inset, so read it from the view.
+                  final keyboard = MediaQueryData.fromView(View.of(context))
+                      .viewInsets
+                      .bottom;
+                  final stable = _stable;
+                  if (keyboard == 0 ||
+                      stable == null ||
+                      stable.width != constraints.maxWidth) {
+                    _stable = constraints.biggest;
+                  }
+                  final size = _stable!;
+                  return OverflowBox(
+                    alignment: Alignment.topLeft,
+                    minWidth: size.width,
+                    maxWidth: size.width,
+                    minHeight: size.height,
+                    maxHeight: size.height,
+                    child: SizedBox.fromSize(
+                      size: size,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          RepaintBoundary(
+                            key: const ValueKey('orbital-artwork'),
+                            child: CustomPaint(
+                              key: const ValueKey('orbital-arcs'),
+                              isComplex: true,
+                              painter: _ArtworkPainter(_artwork),
+                            ),
+                          ),
+                          RepaintBoundary(
+                            child: CustomPaint(
+                              painter: _HighlightPainter(
+                                artwork: _artwork,
+                                enabled: !_reduceMotion,
+                                motion: _motion,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),

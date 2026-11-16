@@ -5,9 +5,15 @@ import 'package:minder/application/board_controller.dart';
 import 'package:minder/domain/failure.dart';
 import 'package:minder/ui/board_screen.dart';
 import 'package:minder/ui/bottom_nav.dart';
+import 'package:minder/ui/composer_field.dart';
 import 'package:minder/ui/tokens.dart';
 
 import 'board_fakes.dart';
+
+final _addTextField = find.descendant(
+  of: find.byKey(const ValueKey('add-task')),
+  matching: find.byType(TextField),
+);
 
 class Harness {
   Harness(this.repo) : controller = BoardController(repo);
@@ -182,20 +188,14 @@ void main() {
       find.byKey(const ValueKey('add-task')),
       'Call plumber',
     );
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.testTextInput.receiveAction(TextInputAction.send);
     await tester.pumpAndSettle();
     expect(h.repo.calls, contains('add Call plumber'));
     expect(find.text('Call plumber'), findsOneWidget);
-    expect(
-      tester
-          .widget<TextField>(find.byKey(const ValueKey('add-task')))
-          .controller!
-          .text,
-      isEmpty,
-    );
+    expect(tester.widget<TextField>(_addTextField).controller!.text, isEmpty);
     expect(
       FocusManager.instance.primaryFocus?.context
-          ?.findAncestorWidgetOfExactType<TextField>()
+          ?.findAncestorWidgetOfExactType<ComposerField>()
           ?.key,
       const ValueKey('add-task'),
       reason: 'the field keeps focus for the next task',
@@ -214,17 +214,107 @@ void main() {
       find.byKey(const ValueKey('add-task')),
       'Call plumber',
     );
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.testTextInput.receiveAction(TextInputAction.send);
     await tester.pumpAndSettle();
     expect(find.text('Check your connection. Then try again.'), findsOneWidget);
     expect(
-      tester
-          .widget<TextField>(find.byKey(const ValueKey('add-task')))
-          .controller!
-          .text,
+      tester.widget<TextField>(_addTextField).controller!.text,
       'Call plumber',
     );
   });
+
+  testWidgets(
+    'the Undo bar goes when the owner leaves the Board and is not repeated on return',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.view.reset);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      final repo = FakeBoard()
+        ..items.addAll([task('a', 'open'), task('b', 'open')]);
+      final controller = BoardController(repo);
+      addTearDown(controller.dispose);
+      await controller.load();
+      final navigator = GlobalKey<NavigatorState>();
+      late Widget Function() board;
+      board = () => BoardScreen(
+        controller: controller,
+        // Switching tabs replaces the route, as main.dart does.
+        onSelect: (_) => navigator.currentState!.pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) => Scaffold(
+              body: TextButton(
+                onPressed: () => navigator.currentState!.pushReplacement(
+                  MaterialPageRoute<void>(builder: (_) => board()),
+                ),
+                child: const Text('Back to Board'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          theme: Tokens.theme,
+          home: board(),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('move-a')));
+      await tester.pumpAndSettle();
+      expect(find.text('Moved to In progress'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('nav-calendar')));
+      await tester.pumpAndSettle();
+      expect(find.text('Back to Board'), findsOneWidget);
+      expect(find.text('Moved to In progress'), findsNothing);
+      await tester.tap(find.text('Back to Board'));
+      await tester.pumpAndSettle();
+      await controller.load();
+      await tester.pumpAndSettle();
+      expect(find.text('Moved to In progress'), findsNothing);
+      expect(controller.lastMove, isNull);
+    },
+  );
+
+  testWidgets(
+    'the add field is the same composer as chat, with an Add button',
+    (tester) async {
+      final h = await pump(tester);
+      final field = tester.widget<TextField>(_addTextField);
+      expect(
+        tester.widget(find.byKey(const ValueKey('add-task'))),
+        isA<ComposerField>(),
+      );
+      expect(field.cursorColor, Tokens.text);
+      expect(field.style?.color, Tokens.text);
+      expect(field.textInputAction, TextInputAction.send);
+      final add = find.byKey(const ValueKey('add-task-button'));
+      expect(
+        find.descendant(of: add, matching: find.text('Add')),
+        findsOneWidget,
+      );
+      expect(tester.getSize(add).height, greaterThanOrEqualTo(44));
+      await tester.enterText(
+        find.byKey(const ValueKey('add-task')),
+        'Call plumber',
+      );
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      expect(h.repo.calls, contains('add Call plumber'));
+      expect(tester.widget<TextField>(_addTextField).controller!.text, isEmpty);
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      expect(
+        h.repo.calls.where((c) => c.startsWith('add')).length,
+        1,
+        reason: 'an empty field adds nothing',
+      );
+    },
+  );
 
   testWidgets('empty columns say what belongs there', (tester) async {
     await pump(tester, seed: (_) {});

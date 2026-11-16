@@ -7,6 +7,7 @@ import '../domain/link_launcher.dart';
 import 'board_task_card.dart';
 import 'board_task_sheet.dart';
 import 'bottom_nav.dart';
+import 'composer_field.dart';
 import 'item_delete_dialog.dart';
 import 'orbital_background.dart';
 import 'screen_header.dart';
@@ -42,16 +43,26 @@ class _BoardScreenState extends State<BoardScreen> {
   int _index = 0;
   bool _wasWide = false;
   BoardMove? _announced;
+  late ScaffoldMessengerState _messenger;
 
   @override
   void initState() {
     super.initState();
+    // A move made before this screen opened was announced where it happened.
+    _announced = c.lastMove;
     c.addListener(_changed);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.of(context);
   }
 
   @override
   void dispose() {
     c.removeListener(_changed);
+    c.dismissMove();
     _pages.dispose();
     _add.dispose();
     super.dispose();
@@ -73,6 +84,13 @@ class _BoardScreenState extends State<BoardScreen> {
           ),
         );
     }
+  }
+
+  /// Leaving the Board ends the chance to undo. The messenger belongs to the app, so without
+  /// this the Undo bar would stay over the next tab.
+  void _leave() {
+    c.dismissMove();
+    _messenger.clearSnackBars();
   }
 
   List<Item> _items(String status) => switch (status) {
@@ -110,22 +128,28 @@ class _BoardScreenState extends State<BoardScreen> {
 
   Widget _addField() => Padding(
     padding: const EdgeInsets.only(bottom: Tokens.gap),
-    child: TextField(
-      key: const ValueKey('add-task'),
-      controller: _add,
-      readOnly: c.adding,
-      textInputAction: TextInputAction.done,
-      maxLength: 200,
-      buildCounter: (
-        _, {
-        required currentLength,
-        required isFocused,
-        maxLength,
-      }) => null,
-      decoration: const InputDecoration(hintText: 'Add a task'),
-      // Keep the focus after Enter so the owner can add the next task.
-      onEditingComplete: () {},
-      onSubmitted: _submit,
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: ComposerField(
+            key: const ValueKey('add-task'),
+            controller: _add,
+            hint: 'Add a task',
+            maxLines: 1,
+            maxLength: 200,
+            readOnly: c.adding,
+            keepFocusOnSubmit: true,
+            onSubmitted: () => _submit(_add.text),
+          ),
+        ),
+        const SizedBox(width: Tokens.gap),
+        FilledButton(
+          key: const ValueKey('add-task-button'),
+          onPressed: c.adding ? null : () => _submit(_add.text),
+          child: const Text('Add'),
+        ),
+      ],
     ),
   );
 
@@ -269,10 +293,20 @@ class _BoardScreenState extends State<BoardScreen> {
   );
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => PopScope(
+    onPopInvokedWithResult: (didPop, _) {
+      if (didPop) _leave();
+    },
+    child: _scaffold(context),
+  );
+
+  Widget _scaffold(BuildContext context) => Scaffold(
     bottomNavigationBar: BottomNav(
       current: NavDestination.board,
-      onSelect: widget.onSelect,
+      onSelect: (destination) {
+        _leave();
+        widget.onSelect(destination);
+      },
     ),
     body: OrbitalBackground(
       scene: OrbitScene.calendar,

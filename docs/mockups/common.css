@@ -242,7 +242,9 @@ html,body{margin:0;background:#000}
 .calendar-layout .board-tabs span.on{border-bottom:2px solid var(--signal);color:var(--text)}
 .calendar-layout .board-tabs b{font-size:12px;font-weight:600}
 .calendar-layout .board-tabs i{font-style:normal;font-size:16px}
-.calendar-layout .board-add{margin-top:16px;min-height:44px;display:flex;align-items:center;padding:0 14px;background:var(--panel);border:1px solid var(--edge);color:var(--dim);font-size:15px}
+.calendar-layout .board-addrow{display:flex;align-items:center;gap:8px;margin-top:16px}
+.calendar-layout .board-add{flex:1;min-height:44px;display:flex;align-items:center;padding:0 14px;background:var(--panel);border:1px solid var(--edge);color:var(--dim);font-size:15px}
+.calendar-layout .board-addbtn{min-height:44px;display:inline-flex;align-items:center;padding:0 18px;background:var(--signal);color:#fff;font-size:16px;font-weight:700;letter-spacing:.04em;clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%)}
 .calendar-layout .board-card{display:flex;margin-top:8px;background:var(--panel);border:1px solid var(--line)}
 .calendar-layout .board-stripe{width:4px;flex:none}
 .calendar-layout .board-stripe.c-slate{background:#6f879f}.calendar-layout .board-stripe.c-teal{background:#34d1bf}.calendar-layout .board-stripe.c-amber{background:#e9a020}

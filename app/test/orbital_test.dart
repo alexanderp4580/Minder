@@ -204,4 +204,66 @@ void main() {
       expect(alphas.reduce((a, b) => a > b ? a : b), closeTo(.24, 1e-9));
     }
   });
+
+  testWidgets('opening the keyboard does not resize the artwork', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    // The screens put the background inside a Scaffold body, which shrinks with the keyboard.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: OrbitalBackground(
+            scene: OrbitScene.chat,
+            child: const SizedBox.expand(),
+          ),
+        ),
+      ),
+    );
+    const arcs = ValueKey('orbital-arcs');
+    final closed = tester.getSize(find.byKey(arcs));
+    expect(closed, const Size(412, 892));
+    for (final keyboard in [120.0, 300.0, 460.0, 300.0]) {
+      tester.view.viewInsets = FakeViewPadding(bottom: keyboard);
+      await tester.pump();
+      expect(
+        tester.getSize(find.byKey(arcs)),
+        closed,
+        reason: 'the artwork scaled with a ${keyboard.toInt()} px keyboard',
+      );
+    }
+    tester.view.resetViewInsets();
+    await tester.pump();
+    expect(tester.getSize(find.byKey(arcs)), closed);
+  });
+
+  testWidgets('the artwork still follows a real size change', (tester) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: OrbitalBackground(
+            scene: OrbitScene.chat,
+            child: const SizedBox.expand(),
+          ),
+        ),
+      ),
+    );
+    tester.view.physicalSize = const Size(892, 412);
+    await tester.pump();
+    expect(
+      tester.getSize(find.byKey(const ValueKey('orbital-arcs'))),
+      const Size(892, 412),
+    );
+  });
 }

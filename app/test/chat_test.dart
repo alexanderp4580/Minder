@@ -10,6 +10,7 @@ import 'package:minder/domain/entry.dart';
 import 'package:minder/domain/failure.dart';
 import 'package:minder/ui/bottom_nav.dart';
 import 'package:minder/ui/chat_screen.dart';
+import 'package:minder/ui/composer_field.dart';
 import 'package:minder/ui/tokens.dart';
 
 Entry entry(
@@ -265,6 +266,28 @@ void main() {
     expect(c.cursor, 4);
     c.dispose();
   });
+  testWidgets('the chat composer is the shared composer field', (tester) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = ChatController(
+      FakeRepository(),
+      pollInterval: const Duration(days: 1),
+    );
+    await c.start();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: Tokens.theme,
+        home: ChatScreen(controller: c, onNavigate: (_) {}),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(ComposerField), findsOneWidget);
+    expect(find.text('Tell Minder…'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
+
   testWidgets('chat renders preview and sends text at phone width', (
     tester,
   ) async {

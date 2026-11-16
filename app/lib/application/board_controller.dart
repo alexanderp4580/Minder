@@ -87,6 +87,9 @@ class BoardController extends ChangeNotifier implements ItemDeleter {
     _notify();
   }
 
+  /// Forgets the last move, so no screen offers its Undo any more.
+  void dismissMove() => lastMove = null;
+
   /// Moves the last moved task back to where it was.
   Future<void> undoMove() async {
     final move = lastMove;
