@@ -6,11 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'application/background_action.dart';
+import 'application/board_chat_sync.dart';
 import 'application/board_controller.dart';
 import 'application/calendar_controller.dart';
 import 'application/chat_controller.dart';
 import 'application/notifications.dart';
 import 'data/access_auth.dart';
+import 'data/board_api.dart';
 import 'data/chat_api.dart';
 import 'data/url_link_launcher.dart';
 import 'data/notification_device.dart';
@@ -80,8 +82,18 @@ final calendarProvider = Provider<CalendarController>((ref) {
   return controller;
 });
 final boardProvider = Provider<BoardController>((ref) {
-  final controller = BoardController(ref.watch(apiProvider));
-  ref.onDispose(controller.dispose);
+  final api = ref.watch(apiProvider);
+  final controller = BoardController(BoardApi(api.request, api));
+  final chat = ref.watch(chatProvider);
+  final sync = BoardChatSync(
+    source: chat,
+    cursor: () => chat.cursor,
+    board: controller,
+  );
+  ref.onDispose(() {
+    sync.dispose();
+    controller.dispose();
+  });
   return controller;
 });
 final notificationProvider = Provider<NotificationController>((ref) {

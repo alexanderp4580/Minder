@@ -450,3 +450,25 @@ func TestPromptExplainsTheBoardAndStatus(t *testing.T) {
 		}
 	}
 }
+
+func TestHistoryShownToTheModelCarriesNoIdentifiers(t *testing.T) {
+	entries := []domain.Entry{
+		{ID: "ENTRYID", Cursor: 1, Kind: "preview", Text: "Review this change.", CostEUR: 0.002, Change: &domain.Change{ID: "CHANGEID", Action: "create_item", ItemTitle: "Call plumber", State: "pending", Fields: []domain.Field{{Name: "title", New: "Call plumber"}}}},
+		{ID: "RESULTID", Cursor: 2, Kind: "result", Text: "Saved: Call plumber.", Change: &domain.Change{ID: "CHANGEID", Action: "create_item", ItemTitle: "Call plumber", State: "confirmed", UndoID: "UNDOID"}},
+		{ID: "ERRID", Cursor: 3, Kind: "error", Text: "The item changed."},
+	}
+	joined := ""
+	for _, m := range historyMessages(entries, domain.Entry{}) {
+		joined += m.Content + "\n"
+	}
+	for _, leaked := range []string{"ENTRYID", "RESULTID", "ERRID", "CHANGEID", "UNDOID", "cursor", "cost_eur"} {
+		if strings.Contains(joined, leaked) {
+			t.Fatalf("history leaks %q:\n%s", leaked, joined)
+		}
+	}
+	for _, kept := range []string{"Call plumber", "Saved: Call plumber.", "confirmed", "create_item"} {
+		if !strings.Contains(joined, kept) {
+			t.Fatalf("history lost %q:\n%s", kept, joined)
+		}
+	}
+}

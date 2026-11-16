@@ -20,7 +20,7 @@ Tool schemas distinguish event ends, date-only ranges and deadlines; preserve tr
 
 Item and review tool schemas expose phone, email, website and booking_reference as separate strings and support clear flags. Item tools also expose `details` (label/value pairs) and `clear_details`. Notes hold remaining instructions.
 
-Item and review tool schemas expose `status` (`open` or `in_progress`). Done and cancelled keep `propose_complete` and `propose_cancel`.
+`propose_update`, `propose_complete`, `propose_cancel` and `propose_delete` require only `item_id`; `expected_version` is optional and the server uses the current version. Item and review tool schemas expose `status` (`open` or `in_progress`). Done and cancelled keep `propose_complete` and `propose_cancel`.
 
 # Work Guidance
 

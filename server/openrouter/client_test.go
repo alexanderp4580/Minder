@@ -80,7 +80,7 @@ func TestChatToolsIncludeCancelAndDelete(t *testing.T) {
 	}
 	for _, n := range []string{"propose_cancel", "propose_delete"} {
 		req, ok := names[n]
-		if !ok || len(req) != 2 || req[0] != "item_id" || req[1] != "expected_version" {
+		if !ok || len(req) != 1 || req[0] != "item_id" {
 			t.Fatalf("%s: %v %v", n, ok, req)
 		}
 	}

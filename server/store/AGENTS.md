@@ -27,7 +27,7 @@ Item reads derive source IDs from live provenance links; deleted sources never a
 
 `source` rows hold `domain.SourceRef` records: one per forwarded email (created at ingestion; migration 006 backfills existing captures) and one per reviewed chat source. `FindSources(query)` matches label or sender of live sources and owner chat messages containing the query (LIKE wildcards literal), newest first. A blank query or more than 20 matches is an `Invalid` error, so no match is dropped silently. `OpenReviews` lists the newest ten live reviews waiting for the owner (status `needs-answer` or `ready-for-review`); `Entry` reads one chat entry by ID. `RedactCapture` also marks the source deleted, clears its label and sender and redacts a chat source's own entry.
 
-`Board(now)` reads all item rows without the per-item source lookup (the board shows no sources) and groups them with `domain.BoardColumns`; the filtering and sorting rules stay in the domain.
+`Board(now)` narrows the read in SQL with `json_extract` (live status, no date, no recurrence, not an event, done tasks within the window plus a day of slack) and skips the per-item source lookup, then groups with `domain.BoardColumns`, which applies the exact rules. A test compares the SQL read with filtering every item in Go. SQLite still scans the item table; an index on a generated column would need a schema 7 migration, which would stop an older server from opening the database, so it waits until the table is large; the filtering and sorting rules stay in the domain.
 
 # Work Guidance
 

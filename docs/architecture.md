@@ -80,7 +80,7 @@ Production rejects a custom model endpoint.
 
 ### Board
 
-Every live item has a home: the calendar if it has a start or deadline, the board if it has neither. `domain.OnBoard` decides; recurring items and events never sit on the board. The columns are the item statuses `open` (To pick up), `in_progress` and `done`. Moves and quick adds go through `command.MoveTask` and `command.AddTask`: one transaction, an audit row, no preview and no chat entry. They run the normal reminder projection, so a done task closes its reminder. The Done column shows tasks finished in the last 14 days, at most 30.
+Every live item has a home: the calendar if it has a start or deadline, the board if it has neither. `domain.OnBoard` decides; recurring items and events never sit on the board. The columns are the item statuses `open` (To pick up), `in_progress` and `done`. Moves and quick adds go through `command.MoveTask` and `command.AddTask`: one transaction, an audit row, no preview and no chat entry. They write through `saveItem`, the same helper Confirm uses, so the reminder projection and the audit row are identical on every path; a done task closes its reminder. The preview and Confirm flow guards the agent; the owner's own taps are audited instead. An agent proposal for an existing item uses the item's current stored version, so the model needs no version. Earlier chat entries reach the model without entry, change or undo IDs. The Done column shows tasks finished in the last 14 days, at most 30.
 
 ### Reminders
 

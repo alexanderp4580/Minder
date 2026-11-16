@@ -23,7 +23,7 @@ Capture/source values and repository methods are typed; dates without times stay
 
 `Entry.options` holds quick replies the server computed; only a place-lookup offer has them (`Skip`, `Look it up`).
 
-`Board` groups tasks into `open`, `inProgress` and `done` lists in the server's order; `BoardStatus` names the three statuses and their column labels (To pick up, In progress, Done). `BoardRepository` loads the board, adds a task, moves a task and previews, confirms or discards its delete. `RepositoryFailure.conflict` marks a 409.
+`Board` groups tasks into `open`, `inProgress` and `done` lists in the server's order; `BoardStatus` names the three statuses and their column labels (To pick up, In progress, Done). `ItemDeletion` (preview, Confirm, Keep) is shared by `ItemRepository` and `BoardRepository`; `BoardRepository` loads the board, adds a task and moves a task. `RepositoryFailure.conflict` marks a 409.
 
 # Work Guidance
 

@@ -297,6 +297,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         '${item.dateEnd == 'checkout' ? 'Checkout' : 'Ends'} ${item.endDate!.year}-${item.endDate!.month.toString().padLeft(2, '0')}-${item.endDate!.day.toString().padLeft(2, '0')}',
       if (!expanded && item.durationMinutes > 0)
         _duration(item.durationMinutes),
+      if (item.status == 'in_progress') 'In progress',
       if (item.priority > 0) 'P${item.priority}',
       if (!expanded && item.location.isNotEmpty) item.location,
       if (item.list.isNotEmpty) item.list,

@@ -303,3 +303,36 @@ func TestMoveTaskNamesTheRealReasonForARefusal(t *testing.T) {
 		t.Fatal("cancelled task", err)
 	}
 }
+
+func TestAPreviewSaysWhenAnEditMovesATaskBetweenBoardAndCalendar(t *testing.T) {
+	c, s := setup(t)
+	item := addTask(t, c, "Call plumber")
+	shown := func(p domain.Proposal) *domain.Field {
+		entry, err := c.Preview(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, f := range entry.Change.Fields {
+			if f.Name == "shown_on" {
+				return &f
+			}
+		}
+		return nil
+	}
+	if f := shown(domain.Proposal{Action: "update_item", ItemID: item.ID, ExpectedVersion: item.Version, Title: "Call the plumber"}); f != nil {
+		t.Fatalf("a title edit reported %+v", f)
+	}
+	f := shown(domain.Proposal{Action: "update_item", ItemID: item.ID, ExpectedVersion: item.Version, DueAt: "2026-12-01T10:00:00+01:00"})
+	if f == nil || f.Old != "Board" || f.New != "Calendar" {
+		t.Fatalf("dating a board task reported %+v", f)
+	}
+	p, _ := c.Preview(domain.Proposal{Action: "update_item", ItemID: item.ID, ExpectedVersion: item.Version, DueAt: "2026-12-01T10:00:00+01:00"})
+	if _, err := c.Confirm(p.Change.ID); err != nil {
+		t.Fatal(err)
+	}
+	items, _ := s.Items()
+	back := shown(domain.Proposal{Action: "update_item", ItemID: item.ID, ExpectedVersion: items[0].Version, ClearDue: true})
+	if back == nil || back.Old != "Calendar" || back.New != "Board" {
+		t.Fatalf("clearing the date reported %+v", back)
+	}
+}

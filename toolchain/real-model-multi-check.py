@@ -12,7 +12,19 @@ ROOT = Path(__file__).resolve().parent.parent
 RUNS = int(sys.argv[1]) if len(sys.argv) > 1 else 3
 MESSAGE = "Move the dentist to Monday at 10 and lunch with Sam to Sunday at 13."
 ITEMS = [("i1", "Dentist", "2026-11-13T08:00:00Z"), ("i2", "Lunch with Sam", "2026-11-14T11:00:00Z")]
-EXPECTED = {"i1": "2026-11-16T09:00:00Z", "i2": "2026-11-15T12:00:00Z"}  # Monday 10:00 and Sunday 13:00, Amsterdam
+
+
+def expected_instants():
+    """Monday 10:00 and Sunday 13:00 in Amsterdam: the next such day after today."""
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+    zone = ZoneInfo("Europe/Amsterdam")
+    now = datetime.now(zone)
+    def next_at(weekday, hour):
+        ahead = (weekday - now.weekday()) % 7 or 7
+        day = now + timedelta(days=ahead)
+        return day.replace(hour=hour, minute=0, second=0, microsecond=0)
+    return sorted([next_at(0, 10), next_at(6, 13)])
 
 
 def once() -> None:
@@ -53,8 +65,12 @@ def once() -> None:
                 break
         kinds = [e["kind"] for e in replies]
         assert kinds == ["preview", "preview"], f"expected two previews, got {kinds}: {[e['text'] for e in replies]}"
-        due = sorted(f["new"] for e in replies for f in e["change"]["fields"] if f["name"] == "due_at")
-        assert due == sorted(EXPECTED.values()), f"wrong times: {due}"
+        # The agent moves an appointment with start_at and may clear the old deadline, so a field
+        # can have no "new" value. Only new times count.
+        moved = sorted(f["new"] for e in replies for f in e["change"]["fields"] if f["name"] in ("start_at", "due_at") and f.get("new"))
+        from datetime import datetime
+        got = sorted(datetime.fromisoformat(t.replace("Z", "+00:00")) for t in moved)
+        assert got == expected_instants(), f"wrong times: {moved}, expected {expected_instants()}"
     finally:
         server.terminate()
         os.remove(db)

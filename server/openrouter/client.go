@@ -139,7 +139,7 @@ func hostOf(raw string) string {
 func tools() []any {
 	str := map[string]string{"type": "string"}
 	flag := map[string]string{"type": "boolean"}
-	props := map[string]any{"title": str, "due_at": map[string]string{"type": "string", "description": "The deadline, RFC3339 with timezone; omit if unknown"}, "timezone": str, "notes": str, "item_id": str, "expected_version": map[string]string{"type": "integer"}, "clear_due": flag, "clear_notes": flag}
+	props := map[string]any{"title": str, "due_at": map[string]string{"type": "string", "description": "The deadline, RFC3339 with timezone; omit if unknown"}, "timezone": str, "notes": str, "item_id": str, "expected_version": map[string]string{"type": "integer", "description": "Not needed. The server uses the item's current version."}, "clear_due": flag, "clear_notes": flag}
 	props["remind_at"] = map[string]string{"type": "string", "description": "Explicit reminder time in RFC3339. Set only when the owner asks for a reminder."}
 	props["nag_minutes"] = map[string]string{"type": "integer", "description": "Minutes between nags, 1 to 1440. Use 15 by default for reminders. Zero disables nagging."}
 	props["clear_reminder"], props["clear_nag"] = flag, flag
@@ -193,7 +193,7 @@ func tools() []any {
 	for _, n := range []string{"propose_create", "propose_update", "propose_complete", "propose_cancel", "propose_delete"} {
 		required := []string{"title"}
 		if n != "propose_create" {
-			required = []string{"item_id", "expected_version"}
+			required = []string{"item_id"}
 		}
 		out = append(out, tool(n, "Propose an item change for owner confirmation. Never invent item IDs.", props, required))
 	}

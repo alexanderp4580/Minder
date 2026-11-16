@@ -84,8 +84,7 @@ func historyMessages(history []domain.Entry, own domain.Entry) []Message {
 		case "minder":
 			messages = append(messages, Message{Role: "assistant", Content: h.Text})
 		case "preview", "result", "error":
-			encoded, err := json.Marshal(h)
-			if err == nil {
+			if encoded, err := json.Marshal(historyView(h)); err == nil {
 				messages = append(messages, Message{Role: "assistant", Content: string(encoded)})
 			}
 		}
@@ -132,4 +131,27 @@ func ownerContext(entryID string) Message {
 		MessageSource string `json:"owner_message_source_id"`
 	}{entryID})
 	return Message{Role: "user", Content: "Owner message context (data): " + string(encoded) + ". Use that source ID with read_source or propose_review when the owner pastes material for you to review."}
+}
+
+// historyEntry is what the model sees of an earlier preview, result or error. It carries no
+// entry, change or undo IDs, so the model cannot mistake one for an item ID. Items come from
+// the current item list only.
+type historyEntry struct {
+	Kind   string         `json:"kind"`
+	Text   string         `json:"text"`
+	Change *historyChange `json:"change,omitempty"`
+}
+type historyChange struct {
+	Action    string         `json:"action"`
+	ItemTitle string         `json:"item_title"`
+	State     string         `json:"state"`
+	Fields    []domain.Field `json:"fields,omitempty"`
+}
+
+func historyView(e domain.Entry) historyEntry {
+	out := historyEntry{Kind: e.Kind, Text: e.Text}
+	if e.Change != nil {
+		out.Change = &historyChange{Action: e.Change.Action, ItemTitle: e.Change.ItemTitle, State: e.Change.State, Fields: e.Change.Fields}
+	}
+	return out
 }

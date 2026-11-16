@@ -330,6 +330,36 @@ void main() {
     );
   }
 
+  testWidgets('a dated task that is in progress says so on its card', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 892);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repo = FakeItems()
+      ..items = [
+        item(
+          'a',
+          'Renew passport',
+          due: utc(2026, 11, 13, 17),
+          status: 'in_progress',
+        ),
+        item('b', 'Taxes', due: utc(2026, 11, 13, 18)),
+      ];
+    final c = controller(repo);
+    await c.load();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: Tokens.theme,
+        home: CalendarScreen(controller: c),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('day-2026-11-13')));
+    await tester.pumpAndSettle();
+    expect(find.text('In progress'), findsOneWidget);
+  });
+
   testWidgets('screen shows the month, markers and the day agenda', (
     tester,
   ) async {

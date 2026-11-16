@@ -1,6 +1,6 @@
 # Kanban board
 
-Date: 2026-11-16. App 0.14.1+40 (0.14.0+39 was the first release of the same feature). Spec: [kanban board design](../superpowers/specs/2026-11-16-kanban-board-design.md). Plan: [kanban board plan](../superpowers/plans/2026-11-16-kanban-board.md).
+Date: 2026-11-16. App 0.14.2+41 (0.14.0+39 and 0.14.1+40 were earlier releases of the same feature). Spec: [kanban board design](../superpowers/specs/2026-11-16-kanban-board-design.md). Plan: [kanban board plan](../superpowers/plans/2026-11-16-kanban-board.md).
 
 ## Behaviour
 
@@ -21,6 +21,14 @@ A Board tab (Chat, Board, Calendar) lists tasks without a date in To pick up, In
 ## Real model
 
 `toolchain/real-model-board-check` (chat only, temporary database, Haiku 5.5): with the first prompt rule 1 of 6 runs passed. Traces showed the model copying a change ID from chat history as an item ID, guessing the version, and listing tasks instead of proposing an update. After the prompt rule named `propose_update`, `status` and "IDs only from Current items", 8 of 8 runs passed (3 model calls, about 0.0058 USD each). The preparation real-model check passed (four items, timing options, task scheduled three days before). `real-model-multi-check.py` fails identically on the pre-board server (`2a2633f`): its fixture expects `due_at` fields, but the agent now moves appointments with `start_at`. Not changed here.
+
+## Hardening (0.14.2)
+
+Each item below got its test first: version fill for agent proposals, history without IDs, `shown_on` preview field, SQL read equal to the Go filter (property test), `refresh` and `BoardChatSync`, `In progress` calendar tag. Real model after the change: board check 8 of 8, multi-proposal check 4 of 4. `toolchain/check` exit 0 (237 Flutter tests) and all five browser scenarios passed.
+
+## Model credit
+
+The preparation real-model check passed once and then failed twice on this code; the pre-board server failed it 3 of 3 with a logged `402`. The OpenRouter account showed `total_credits` 25 against `total_usage` 25.01, so model calls fail until credit is added. Those failures are not attributed to the code. Rerun `toolchain/real-model-agent-check --preparation` after a top-up.
 
 ## Not verified
 

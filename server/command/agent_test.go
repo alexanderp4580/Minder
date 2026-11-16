@@ -521,3 +521,36 @@ func TestAQuestionAboutPastedTextDoesNotCallItAnEmail(t *testing.T) {
 		t.Fatalf("%q", texts)
 	}
 }
+
+func TestAnAgentProposalUsesTheCurrentItemVersionWhateverTheModelSent(t *testing.T) {
+	f := newAgent(t)
+	item, err := f.commands.AddTask("Call plumber")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item, err = f.commands.MoveTask(item.ID, item.Version, "in_progress"); err != nil {
+		t.Fatal(err)
+	}
+	for _, sent := range []int{0, 1, 3, 99} {
+		turn := f.owner(t, "put the plumber task back")
+		entries, err := f.commands.CommitAgentTurn(turn, domain.AgentOutcome{TurnID: turn.ID, Proposals: []domain.Proposal{{Action: "update_item", ItemID: item.ID, ExpectedVersion: sent, Status: "open"}}})
+		if err != nil {
+			t.Fatalf("version %d: %v", sent, err)
+		}
+		if len(entries) != 1 || entries[0].Change == nil || entries[0].Change.Action != "update_item" {
+			t.Fatalf("version %d: %+v", sent, entries)
+		}
+		if _, err = f.commands.Discard(entries[0].Change.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestAnAgentProposalForAnUnknownItemStillFailsWithNotFound(t *testing.T) {
+	f := newAgent(t)
+	turn := f.owner(t, "start the plumber task")
+	_, err := f.commands.CommitAgentTurn(turn, domain.AgentOutcome{TurnID: turn.ID, Proposals: []domain.Proposal{{Action: "update_item", ItemID: "not-an-item", ExpectedVersion: 1, Status: "in_progress"}}})
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Fatal(err)
+	}
+}

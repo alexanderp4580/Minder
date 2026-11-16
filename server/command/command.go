@@ -148,6 +148,9 @@ func previewIn(t port.Transaction, p domain.Proposal, out *domain.Entry) error {
 		old = *before
 	}
 	fields := itemFields(t, old, after)
+	if before != nil {
+		fields = append(fields, movedField(old, after)...)
+	}
 	var e error
 	change := &domain.Change{ID: id, Action: p.Action, ItemTitle: after.Title, Fields: fields, State: "pending"}
 	setReminderChoices(change, after)
@@ -199,11 +202,8 @@ func (c *Service) Confirm(id string) (out domain.Entry, err error) {
 				return domain.ErrConflict
 			}
 		}
-		if e = t.PutItem(p.After); e != nil {
-			return e
-		}
-		audit := domain.Audit{ID: domain.NewID(), Before: p.Before, After: p.After, Actor: "agent"}
-		if e = t.PutAudit(audit); e != nil {
+		audit, e := saveItem(t, p.Before, p.After, "agent")
+		if e != nil {
 			return e
 		}
 		preview, e := t.Entry(p.EntryID)

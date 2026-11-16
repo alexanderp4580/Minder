@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../domain/board.dart';
 import '../domain/chat_repository.dart';
 import '../domain/entry.dart';
 import '../domain/failure.dart';
@@ -15,12 +14,18 @@ import '../domain/capture.dart';
 import '../domain/capture_repository.dart';
 import 'attachment_download.dart' as downloads;
 
+/// Sends one request to the Minder server and returns the decoded JSON.
+typedef ApiRequest = Future<dynamic> Function(
+  String method,
+  String path, {
+  Object? body,
+});
+
 class ChatApi
     implements
         ChatRepository,
         PushRepository,
         ItemRepository,
-        BoardRepository,
         CaptureRepository {
   ChatApi(this.base, {http.Client? client, this.authorization})
     : _client = client ?? http.Client();
@@ -33,6 +38,9 @@ class ChatApi
     'Content-Type': 'application/json',
     ...?(await authorization?.call()),
   };
+
+  /// The authenticated JSON request other API clients share, such as [BoardApi].
+  ApiRequest get request => _request;
   Future<dynamic> _request(String method, String path, {Object? body}) async {
     try {
       final req = http.Request(method, _uri(path));
@@ -117,22 +125,6 @@ class ChatApi
         '&to=${to.toUtc().toIso8601String()}'
         '&timezone=${Uri.encodeQueryComponent(await downloads.deviceTimezone())}',
   )) as List).map((j) => itemFromJson(j as Map<String, dynamic>)).toList();
-  @override
-  Future<Board> board() async =>
-      boardFromJson(await _request('GET', '/v1/board') as Map<String, dynamic>);
-  @override
-  Future<Item> addTask(String title) async => itemFromJson(
-    await _request('POST', '/v1/items', body: {'title': title})
-        as Map<String, dynamic>,
-  );
-  @override
-  Future<Item> moveTask(Item item, String status) async => itemFromJson(
-    await _request(
-      'POST',
-      '/v1/items/${Uri.encodeComponent(item.id)}/status',
-      body: {'expected_version': item.version, 'status': status},
-    ) as Map<String, dynamic>,
-  );
   @override
   Future<Entry> previewDelete(Item item) async => entryFromJson(
     await _request(

@@ -76,6 +76,7 @@ String fieldLabel(String name) => switch (name) {
   'title' => 'Title',
   'notes' => 'Notes',
   'status' => 'Status',
+  'shown_on' => 'Shown on',
   'timezone' => 'Timezone',
   'item' => 'Item',
   'email source' => 'Email source',

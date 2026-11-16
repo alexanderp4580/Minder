@@ -1,5 +1,5 @@
-import 'entry.dart';
 import 'item.dart';
+import 'item_repository.dart';
 
 /// The Kanban board: tasks without a date, grouped by status.
 class Board {
@@ -24,7 +24,7 @@ abstract final class BoardStatus {
   };
 }
 
-abstract interface class BoardRepository {
+abstract interface class BoardRepository implements ItemDeletion {
   Future<Board> board();
 
   /// Adds an open task with no date.
@@ -32,9 +32,4 @@ abstract interface class BoardRepository {
 
   /// Moves [item] to [status]. The server checks the item's version.
   Future<Item> moveTask(Item item, String status);
-
-  /// Delete reuses the item preview and Confirm flow.
-  Future<Entry> previewDelete(Item item);
-  Future<Entry> confirm(String changeId);
-  Future<Entry> discard(String changeId);
 }

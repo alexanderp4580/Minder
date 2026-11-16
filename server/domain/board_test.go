@@ -120,3 +120,25 @@ func TestBoardOrdersByRealTimeNotTimestampText(t *testing.T) {
 		t.Fatalf("order = %q", got)
 	}
 }
+
+func TestPlacementNamesWhereAnItemAppears(t *testing.T) {
+	for name, tc := range map[string]struct {
+		item Item
+		want string
+	}{
+		"undated task":  {task("a", "open", nil), "Board"},
+		"done task":     {task("a", "done", nil), "Board"},
+		"due time":      {task("a", "open", func(i *Item) { i.DueAt = "2026-11-20T10:00:00Z" }), "Calendar"},
+		"start date":    {task("a", "in_progress", func(i *Item) { i.StartDate = "2026-11-20" }), "Calendar"},
+		"recurring":     {task("a", "open", func(i *Item) { i.Recurrence = &Recurrence{} }), "Calendar"},
+		"event":         {task("a", "open", func(i *Item) { i.Kind = "event" }), "Calendar"},
+		"cancelled":     {task("a", "cancelled", nil), ""},
+		"cancelled due": {task("a", "cancelled", func(i *Item) { i.DueAt = "2026-11-20T10:00:00Z" }), ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := Placement(tc.item); got != tc.want {
+				t.Fatalf("Placement = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

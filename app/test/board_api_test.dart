@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:minder/data/board_api.dart';
 import 'package:minder/data/chat_api.dart';
 import 'package:minder/data/wire.dart';
 import 'package:minder/domain/failure.dart';
@@ -53,7 +54,7 @@ void main() {
       }),
     );
     addTearDown(api.close);
-    final board = await api.board();
+    final board = await BoardApi(api.request, api).board();
     expect(board.open.single.id, 'a');
     expect(board.done.single.id, 'c');
   });
@@ -69,7 +70,7 @@ void main() {
       }),
     );
     addTearDown(api.close);
-    final item = await api.addTask('Call plumber');
+    final item = await BoardApi(api.request, api).addTask('Call plumber');
     expect(item.id, 'new');
     expect(item.status, 'open');
   });
@@ -90,10 +91,10 @@ void main() {
       }),
     );
     addTearDown(api.close);
-    final moved = await api.moveTask(
-      itemFromJson(task('a b', 'open', version: 3)),
-      'in_progress',
-    );
+    final moved = await BoardApi(
+      api.request,
+      api,
+    ).moveTask(itemFromJson(task('a b', 'open', version: 3)), 'in_progress');
     expect(moved.status, 'in_progress');
     expect(moved.version, 4);
   });
@@ -116,7 +117,10 @@ void main() {
         );
         addTearDown(api.close);
         await expectLater(
-          api.moveTask(itemFromJson(task('a', 'open')), 'done'),
+          BoardApi(
+            api.request,
+            api,
+          ).moveTask(itemFromJson(task('a', 'open')), 'done'),
           throwsA(
             isA<RepositoryFailure>()
                 .having((e) => e.message, 'message', reply.$2)

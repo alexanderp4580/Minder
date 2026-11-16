@@ -328,8 +328,20 @@ func (s *Store) ItemsBetween(from, to time.Time) ([]domain.Item, error) {
 
 // Board returns the tasks without a date, grouped into the board columns.
 func (s *Store) Board(now time.Time) (domain.Board, error) {
-	// The board shows no sources, so it skips the per-item source lookup that Items does.
-	items, e := queryAll[domain.Item](s.db, "SELECT body FROM item ORDER BY id")
+	// SQLite hands back only rows that could be on the board: live statuses, no date, no
+	// recurrence, not an event, and done tasks no older than the window plus a day of slack.
+	// domain.BoardColumns then applies the exact rules, so SQL only narrows the read. The board
+	// shows no sources, so it also skips the per-item source lookup that Items does.
+	slack := now.AddDate(0, 0, -(domain.BoardDoneDays + 1)).UTC().Format(time.DateOnly)
+	items, e := queryAll[domain.Item](s.db, `SELECT body FROM item
+		WHERE json_extract(body,'$.status') IN ('open','in_progress','done')
+		AND COALESCE(json_extract(body,'$.kind'),'task') <> 'event'
+		AND json_extract(body,'$.recurrence') IS NULL
+		AND COALESCE(json_extract(body,'$.start_at'),'')='' AND COALESCE(json_extract(body,'$.due_at'),'')=''
+		AND COALESCE(json_extract(body,'$.start_date'),'')='' AND COALESCE(json_extract(body,'$.due_date'),'')=''
+		AND (json_extract(body,'$.status')<>'done'
+			OR substr(COALESCE(json_extract(body,'$.completed_at'),json_extract(body,'$.updated_at'),''),1,10) >= ?)
+		ORDER BY id`, slack)
 	if e != nil {
 		return domain.Board{}, e
 	}

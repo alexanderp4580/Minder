@@ -89,11 +89,16 @@ If a task gains a date (chat: "call plumber on Friday"), it leaves the board and
 
 Pixel spacing within the tokens, glyph drawing for the Board icon, exact snackbar wording beyond the text above, helper names.
 
+## Hardening after review
+
+After the first release a review found weak points and they were fixed: the agent no longer supplies a version and its chat history carries no IDs; every item write goes through one `saveItem` helper; a preview says when an edit moves a task between Board and Calendar and the calendar tags in-progress cards; the board read is narrowed in SQL (no index, to keep older servers able to open the database); the board refreshes when chat gets a new entry; the Board API client and the delete interface are separate from `ChatApi`.
+
 ## Known limits
 
 - A dated task has no board card, so it cannot be "in progress" visibly. Its status still exists and chat can change it.
 - Done tasks older than 14 days are not shown anywhere except chat history.
-- No live update: tasks created in chat appear on the next load.
+- Refresh follows chat entries only; a change made on another device appears on the next load.
+- SQLite still scans the item table for the board; an index needs a schema 7 migration that would stop an older server opening the database.
 - Card order is fixed by priority and age; the owner cannot reorder.
 
 ## Review and critique (applied above)

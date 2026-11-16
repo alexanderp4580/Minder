@@ -110,6 +110,9 @@ func (w *turnWriter) apply(turn domain.AgentTurn, outcome domain.AgentOutcome) e
 	}
 	for _, p := range outcome.Proposals {
 		var preview domain.Entry
+		if err := useCurrentVersion(w.tx, &p); err != nil {
+			return err
+		}
 		if err := previewIn(w.tx, p, &preview); err != nil {
 			return err
 		}

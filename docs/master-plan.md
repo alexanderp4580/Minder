@@ -49,7 +49,7 @@ Requirement: an AI agent manages everything and the data keeps its structure (re
 - One command interface carries every change. It does not depend on the client, so outside agents can use it later. The app screens and the agent use the same commands, for example create item, update item, set status, change profile.
 - The server validates each command against the schema. It rejects invalid commands with an error that tells the agent what to fix.
 - Structure lives in data: allowed statuses, profile fields and enums. Free text goes only in text fields.
-- Each command first produces a preview of the change.
+- Each agent command first produces a preview of the change. The owner's own taps on the board act directly, and every change is written and audited through the same `saveItem` helper.
 - An audit log records every change with its actor (you or the agent). Any change can be undone.
 - Queries return structured results, so the agent reads state without guessing.
 

@@ -17,10 +17,8 @@ func (c *Service) AddTask(title string) (domain.Item, error) {
 		if e := domain.Validate(&item); e != nil {
 			return e
 		}
-		if e := t.PutItem(item); e != nil {
-			return e
-		}
-		return t.PutAudit(domain.Audit{ID: domain.NewID(), After: item, Actor: "owner"})
+		_, e := saveItem(t, nil, item, "owner")
+		return e
 	})
 	if err != nil {
 		slog.Warn("board item add rejected", "error", err, "error_code", domain.ErrorCode(err))
@@ -70,10 +68,8 @@ func (c *Service) MoveTask(id string, version int, status string) (domain.Item, 
 		if e = domain.Validate(&after); e != nil {
 			return e
 		}
-		if e = t.PutItem(after); e != nil {
-			return e
-		}
-		return t.PutAudit(domain.Audit{ID: domain.NewID(), Before: &i, After: after, Actor: "owner"})
+		_, e = saveItem(t, &i, after, "owner")
+		return e
 	})
 	if err != nil {
 		slog.Warn("board item move rejected", "item_id", id, "to", status, "error", err, "error_code", domain.ErrorCode(err))
@@ -89,4 +85,25 @@ func clearPastReminder(i *domain.Item) {
 	if err == nil && !at.After(time.Now()) {
 		i.RemindAt, i.NagMinutes = "", 0
 	}
+}
+
+// movedField tells the owner when an edit moves a task between the Board and the Calendar,
+// so a task never changes screens without a word in its preview.
+func movedField(before, after domain.Item) []domain.Field {
+	was, now := domain.Placement(before), domain.Placement(after)
+	if was == "" || now == "" || was == now {
+		return nil
+	}
+	return []domain.Field{{Name: "shown_on", Old: was, New: now}}
+}
+
+// saveItem is the one place an item change is written and audited: Confirm uses it for agent
+// changes and the board uses it for the owner's own taps. The item write runs the reminder
+// projection, so every path keeps schedules in step.
+func saveItem(t port.Transaction, before *domain.Item, after domain.Item, actor string) (domain.Audit, error) {
+	if err := t.PutItem(after); err != nil {
+		return domain.Audit{}, err
+	}
+	audit := domain.Audit{ID: domain.NewID(), Before: before, After: after, Actor: actor}
+	return audit, t.PutAudit(audit)
 }

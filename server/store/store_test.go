@@ -153,3 +153,67 @@ func TestBoardGroupsUndatedTasksAndLeavesDatedItemsOut(t *testing.T) {
 		t.Fatal(b, e)
 	}
 }
+
+func TestBoardReadMatchesFilteringEveryItemInGo(t *testing.T) {
+	s, e := Open(filepath.Join(t.TempDir(), "db"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	now := time.Now().UTC()
+	stamp := func(days int) string { return now.AddDate(0, 0, days).Format(time.RFC3339Nano) }
+	base := func(id, status string, edit func(*domain.Item)) domain.Item {
+		i := domain.Item{ID: id, Title: id, Status: status, Kind: "task", Timezone: "UTC", Version: 1, CreatedAt: stamp(-30), UpdatedAt: stamp(-30)}
+		if edit != nil {
+			edit(&i)
+		}
+		return i
+	}
+	items := []domain.Item{
+		base("open", "open", nil),
+		base("doing", "in_progress", func(i *domain.Item) { i.Priority = 2 }),
+		base("done-new", "done", func(i *domain.Item) { i.CompletedAt = stamp(-2) }),
+		base("done-old", "done", func(i *domain.Item) { i.CompletedAt = stamp(-20) }),
+		base("done-unstamped-old", "done", nil),
+		base("cancelled", "cancelled", nil),
+		base("dated", "open", func(i *domain.Item) { i.DueAt = "2026-12-01T10:00:00Z" }),
+		base("start-date", "open", func(i *domain.Item) { i.StartDate = "2026-12-01" }),
+		base("event", "open", func(i *domain.Item) { i.Kind = "event" }),
+		base("recurring", "open", func(i *domain.Item) { i.Recurrence = &domain.Recurrence{Every: "daily", Interval: 1} }),
+		base("reminder-only", "open", func(i *domain.Item) { i.RemindAt = stamp(3) }),
+	}
+	for _, i := range items {
+		if e = s.Transact(func(tx port.Transaction) error { return tx.PutItem(i) }); e != nil {
+			t.Fatal(e)
+		}
+	}
+	all, e := s.Items()
+	if e != nil {
+		t.Fatal(e)
+	}
+	want, got := domain.BoardColumns(all, now), mustBoard(t, s, now)
+	ids := func(col []domain.Item) string {
+		out := ""
+		for _, i := range col {
+			out += i.ID + " "
+		}
+		return out
+	}
+	for name, pair := range map[string][2][]domain.Item{"open": {want.Open, got.Open}, "in progress": {want.InProgress, got.InProgress}, "done": {want.Done, got.Done}} {
+		if ids(pair[0]) != ids(pair[1]) {
+			t.Fatalf("%s: SQL read %q, Go filter %q", name, ids(pair[1]), ids(pair[0]))
+		}
+	}
+	if ids(got.Open) != "open reminder-only " || ids(got.InProgress) != "doing " || ids(got.Done) != "done-new " {
+		t.Fatalf("unexpected board: %q %q %q", ids(got.Open), ids(got.InProgress), ids(got.Done))
+	}
+}
+
+func mustBoard(t *testing.T, s *Store, now time.Time) domain.Board {
+	t.Helper()
+	b, e := s.Board(now)
+	if e != nil {
+		t.Fatal(e)
+	}
+	return b
+}

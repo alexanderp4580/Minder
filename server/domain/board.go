@@ -43,6 +43,17 @@ func OnBoard(i Item) bool {
 	return ValidBoardStatus(i.Status)
 }
 
+// Placement names where a live item appears: the Board, the Calendar, or "" for a cancelled item.
+func Placement(i Item) string {
+	if i.Status == "cancelled" {
+		return ""
+	}
+	if OnBoard(i) {
+		return "Board"
+	}
+	return "Calendar"
+}
+
 // doneAt is when a done task finished: its completion time, else its last update.
 func doneAt(i Item) time.Time {
 	for _, s := range []string{i.CompletedAt, i.UpdatedAt} {

@@ -24,6 +24,7 @@ class BoardController extends ChangeNotifier implements ItemDeleter {
   BoardMove? lastMove;
   final _busy = <String>{};
   bool _disposed = false;
+  bool _loaded = false;
   int _request = 0;
 
   /// Tasks whose move is running.
@@ -47,6 +48,7 @@ class BoardController extends ChangeNotifier implements ItemDeleter {
       final loaded = await _repository.board();
       if (_disposed || request != _request) return;
       board = loaded;
+      _loaded = true;
       error = null;
     } catch (e) {
       if (_disposed || request != _request) return;
@@ -112,15 +114,23 @@ class BoardController extends ChangeNotifier implements ItemDeleter {
     return ok;
   }
 
+  /// Reloads without the loading bar or an error message, for a change made elsewhere such as
+  /// chat. It does nothing before the first load.
+  Future<void> refresh() async {
+    if (!_loaded) return;
+    await _reload(quiet: true);
+    _notify();
+  }
+
   /// Reloads after an action. It supersedes any older load still in flight.
-  Future<void> _reload() async {
+  Future<void> _reload({bool quiet = false}) async {
     final request = ++_request;
     try {
       final loaded = await _repository.board();
       if (_disposed || request != _request) return;
       board = loaded;
     } catch (e) {
-      if (!_disposed && request == _request && error == null) {
+      if (!quiet && !_disposed && request == _request && error == null) {
         error = _message(e);
       }
     }
