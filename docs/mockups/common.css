@@ -210,7 +210,7 @@ html,body{margin:0;background:#000}
 .calendar-layout{display:flex;flex-direction:column}
 .calendar-layout > .nav{margin:auto -24px -32px}
 .nav .cb{width:24px;height:24px}
-.nav.two div{padding:8px 0;gap:4px;line-height:12px}
+.nav.two div,.nav.three div{padding:8px 0;gap:4px;line-height:12px}
 
 /* Neutral content actions: shared with the approved Minder guide. */
 .content-action{display:inline-flex;align-items:center;gap:8px;min-height:44px;min-width:44px;padding:0;border:0;border-radius:0;background:transparent;color:var(--text);font:600 14px/1.4 'Chakra Petch',sans-serif;text-align:left;cursor:pointer}
@@ -235,3 +235,24 @@ html,body{margin:0;background:#000}
 .i-up{--u:url(https://cdn.jsdelivr.net/npm/@carbon/icons@11.92.0/svg/32/chevron--up.svg)}
 
 .content-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.content-tag{padding:3px 8px;border:1px solid var(--line);color:var(--muted);font-size:12px}
+
+/* Board: tabs, add field, task cards, Undo bar. Mirrors the Flutter BoardScreen under 720 px. */
+.calendar-layout .board-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:16px}
+.calendar-layout .board-tabs span{min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-bottom:1px solid var(--line);color:var(--muted)}
+.calendar-layout .board-tabs span.on{border-bottom:2px solid var(--signal);color:var(--text)}
+.calendar-layout .board-tabs b{font-size:12px;font-weight:600}
+.calendar-layout .board-tabs i{font-style:normal;font-size:16px}
+.calendar-layout .board-add{margin-top:16px;min-height:44px;display:flex;align-items:center;padding:0 14px;background:var(--panel);border:1px solid var(--edge);color:var(--dim);font-size:15px}
+.calendar-layout .board-card{display:flex;margin-top:8px;background:var(--panel);border:1px solid var(--line)}
+.calendar-layout .board-stripe{width:4px;flex:none}
+.calendar-layout .board-stripe.c-slate{background:#6f879f}.calendar-layout .board-stripe.c-teal{background:#34d1bf}.calendar-layout .board-stripe.c-amber{background:#e9a020}
+.calendar-layout .board-body{flex:1;min-width:0;padding:14px 12px 10px 16px}
+.calendar-layout .board-title{font-size:15px;line-height:1.4;font-weight:600}
+.calendar-layout .board-title.done{color:var(--muted);text-decoration:line-through}
+.calendar-layout .board-facts{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:12px;color:var(--muted)}
+.calendar-layout .board-facts .bell:before{content:"\1F514\FE0E ";font-size:11px}
+.calendar-layout .board-act{display:flex;justify-content:flex-end;margin-top:8px}
+.calendar-layout .board-snack{position:absolute;left:0;right:0;bottom:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;min-height:48px;background:var(--panel);border:1px solid var(--edge);font-size:15px}
+.calendar-layout .board-snack b{font-weight:700;padding:12px 8px}
+.calendar-layout:has(.board-snack){position:relative}
+.calendar-layout .board-act .cal-control{padding:0 16px;width:auto}

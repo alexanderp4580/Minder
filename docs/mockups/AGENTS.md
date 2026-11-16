@@ -2,7 +2,7 @@
 
 ## Purpose
 
-- HTML phone mockups (412×892 portrait) of the chat and calendar layouts, with rendered PNGs
+- HTML phone mockups (412×892 portrait) of the chat, board and calendar layouts, with rendered PNGs
 
 ## Ownership
 
@@ -11,7 +11,8 @@
 - `place-lookup.html` and `place-lookup.png`: draft of the Serper place-lookup offer, result preview and no-match states; governed by `../superpowers/specs/2026-11-13-place-lookup-design.md`
 - `calendar.html` and `calendar.png`: the approved month grid and agenda layout. The illustrative marker sits above the app frame. The agenda card shows Delete and a neutral chevron disclosure, source-zone time rows, an address block with Maps destination and white note links. Shared `.content-*` rules match the canonical guide.
 - `calendar-events-review.html` and `.png`: pending approval, named coloured spanning events, week-boundary continuation, a party with Event/Starts/Ends and a plain Home location. The corrected draft uses shared styles and embedded Carbon 11.92.0 icons, the six existing label colours, editable details/agenda colour pickers and scripted chat creation/edit previews with Confirm and Discard. Governed by the approval draft in `../screens.md`; event colour is an owner-requested draft exception to the neutral palette. The approved app/calendar stays unchanged until approval.
-- `today`, `today-states`, `board`, `lists`, `item`, `profiles`, `assistant`, `settings`: design drafts that do not define current app behaviour. Use `../screens.md` and the Flutter calendar golden for the implemented calendar
+- `board.html` and `board.png`: the implemented Board for tasks without a date, two phones side by side (To pick up with the Add a task field and cards; In progress after Start with the Undo bar). Governed by `../superpowers/specs/2026-11-16-kanban-board-design.md`. Its `.board-*` styles live in `common.css` and mirror the Flutter `BoardScreen` under 720 px. The Flutter board golden records current rendering.
+- `today`, `today-states`, `lists`, `item`, `profiles`, `assistant`, `settings`: design drafts that do not define current app behaviour. Use `../screens.md` and the Flutter calendar golden for the implemented calendar
 - `common.css`: shared tokens and components for every mockup, including calendar layout and fixed orbital surfaces mirrored in the brand guide
 
 ## Local Contracts
@@ -21,7 +22,7 @@
 - Data is illustrative. Each mockup shows one `.demo` tag in its status bar, or above the Chat/Calendar frame. That tag is the only place the word "illustrative" appears in a mockup. Counts agree on every screen. Unknown details show as "?"
 - A file with two states shows two phones side by side (`lists`, `profiles`)
 - `toolchain/export-orbits.py` owns inline orbital SVGs from brand/orbital-*.svg. Regenerate them after source artwork edits.
-- Chat and Calendar share the screen-header styles and fading rule; neither shows a presence/status line or a header button. Both end with the shared `.nav` bar (Chat, Calendar).
+- Chat and Calendar share the screen-header styles and fading rule; neither shows a presence/status line or a header button. Chat, Board and Calendar end with the shared `.nav three` bar (Chat, Board, Calendar). `today`, `today-states` and `lists` keep their older four-item draft bar, and `calendar-events-review.html` keeps its own scripted bar until its approval.
 - Chat and Calendar have distinct fixed orbital compositions with travelling highlights. Capture stills with reduced motion; Flutter owns app lifecycle pauses.
 - Every PNG is re-rendered after its HTML or `common.css` changes
 

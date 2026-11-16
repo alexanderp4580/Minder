@@ -90,7 +90,7 @@ Behaviour is in [calendar-spec.md](calendar-spec.md). The mockup is `mockups/cal
 
 ## Board
 
-Tasks with no date, in three columns: To pick up, In progress and Done. The screen header reads BOARD. On a phone a tab row shows each column name and count over one swipeable column; from 720 px wide the three columns sit side by side. The To pick up column starts with an Add a task field. A card has the item colour stripe, the title, priority, list and reminder time when set, and one button: Start, Done or Reopen. Tapping the card opens the task sheet with notes, contact fields, Move to the other columns and Delete. A move shows `Moved to <column>` with Undo and adds nothing to chat. A task that gains a date moves to the calendar. Done shows the last 14 days. No drag and drop. Design: [kanban-board design](superpowers/specs/2026-11-16-kanban-board-design.md).
+Mockup: [board.html](mockups/board.html), [board.png](mockups/board.png). Tasks with no date, in three columns: To pick up, In progress and Done. The screen header reads BOARD. On a phone a tab row shows each column name and count over one swipeable column; from 720 px wide the three columns sit side by side. The To pick up column starts with an Add a task field. A card has the item colour stripe, the title, priority, list and reminder time when set, and one button: Start, Done or Reopen. Tapping the card opens the task sheet with notes, contact fields, Move to the other columns and Delete. A move shows `Moved to <column>` with Undo and adds nothing to chat. A task that gains a date moves to the calendar. Done shows the last 14 days. No drag and drop. Design: [kanban-board design](superpowers/specs/2026-11-16-kanban-board-design.md).
 
 ## Open decisions
 
