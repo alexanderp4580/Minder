@@ -37,7 +37,8 @@ func (a *Service) buildContext(turn domain.AgentTurn) (messages []Message, items
 	if a.finder != nil {
 		extraRules, purpose = append(extraRules, lookupRule), PurposeOffer
 	}
-	messages = []Message{{Role: "system", Purpose: purpose, Content: systemPrompt(time.Now().In(zone), lists, profiles, contextItems(items), reviews, extraRules...)}}
+	static, dynamic := systemPromptParts(time.Now().In(zone), lists, profiles, contextItems(items), reviews, extraRules...)
+	messages = []Message{{Role: "system", Purpose: purpose, Content: static + dynamic, CachePrefix: len(static)}}
 	history, err := a.repository.History(0, maxHistoryEntries)
 	if err != nil {
 		return
@@ -62,6 +63,8 @@ func (a *Service) buildContext(turn domain.AgentTurn) (messages []Message, items
 	default:
 		messages = append(messages, ownerContext(own.ID), Message{Role: "user", Content: own.Text})
 	}
+	// Everything up to the turn's own message is the same on each model call of this turn.
+	messages[len(messages)-1].Cache = true
 	return
 }
 

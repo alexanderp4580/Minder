@@ -216,3 +216,51 @@ func TestItemToolsLetTheAgentStartAndReopenTasks(t *testing.T) {
 		t.Fatal("review proposals lack status")
 	}
 }
+
+func TestRequestsMarkCacheBreakpointsOnlyWhereTheCallerAsks(t *testing.T) {
+	var seen map[string]any
+	m := provider(t, `{"choices":[{"finish_reason":"stop","message":{"content":"Hi"}}],"usage":{"cost":0.001,"prompt_tokens":900,"prompt_tokens_details":{"cached_tokens":800}}}`, &seen)
+	system := "RULES. Current local time: now."
+	messages := []assistant.Message{
+		{Role: "system", Content: system, CachePrefix: len("RULES.")},
+		{Role: "user", Content: "Earlier"},
+		{Role: "assistant", Content: "Reply"},
+		{Role: "user", Content: "Hello", Cache: true},
+	}
+	if _, e := m.Complete(context.Background(), messages); e != nil {
+		t.Fatal(e)
+	}
+	wire := seen["messages"].([]any)
+	parts := func(i int) []any { p, _ := wire[i].(map[string]any)["content"].([]any); return p }
+	sys := parts(0)
+	if len(sys) != 2 {
+		t.Fatalf("system content: %v", wire[0])
+	}
+	first, second := sys[0].(map[string]any), sys[1].(map[string]any)
+	if first["text"] != "RULES." || first["cache_control"].(map[string]any)["type"] != "ephemeral" {
+		t.Fatalf("stable block: %v", first)
+	}
+	if second["text"] != " Current local time: now." || second["cache_control"] != nil {
+		t.Fatalf("dynamic block: %v", second)
+	}
+	if _, plain := wire[1].(map[string]any)["content"].(string); !plain {
+		t.Fatalf("an unmarked message must stay a string: %v", wire[1])
+	}
+	last := parts(3)
+	if len(last) != 1 || last[0].(map[string]any)["text"] != "Hello" || last[0].(map[string]any)["cache_control"].(map[string]any)["type"] != "ephemeral" {
+		t.Fatalf("breakpoint message: %v", wire[3])
+	}
+}
+
+func TestMessagesWithoutBreakpointsAreUnchanged(t *testing.T) {
+	var seen map[string]any
+	m := provider(t, `{"choices":[{"finish_reason":"stop","message":{"content":"Hi"}}],"usage":{"cost":0.001}}`, &seen)
+	if _, e := m.Complete(context.Background(), []assistant.Message{{Role: "system", Content: "Rules."}, {Role: "user", Content: "Hello"}}); e != nil {
+		t.Fatal(e)
+	}
+	for _, msg := range seen["messages"].([]any) {
+		if _, plain := msg.(map[string]any)["content"].(string); !plain {
+			t.Fatalf("content must stay a string without a breakpoint: %v", msg)
+		}
+	}
+}

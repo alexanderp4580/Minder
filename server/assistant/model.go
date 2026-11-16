@@ -34,6 +34,13 @@ type Message struct {
 	ToolCalls  []Call `json:"-"`
 	ToolCallID string `json:"-"`
 
+	// CachePrefix is the length of the stable start of a system message. The model adapter
+	// marks it as a prompt-cache breakpoint, so the rules and tools are read from cache.
+	CachePrefix int `json:"-"`
+	// Cache marks a prompt-cache breakpoint after this message, so a tool loop that sends the
+	// same conversation again reads it from cache.
+	Cache bool `json:"-"`
+
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
@@ -66,10 +73,27 @@ type wireCall struct {
 	} `json:"function"`
 }
 
+// textBlock is a text content block. A block with cache_control ends a cached prefix.
+type textBlock struct {
+	Type         string        `json:"type"`
+	Text         string        `json:"text"`
+	CacheControl *cacheControl `json:"cache_control,omitempty"`
+}
+type cacheControl struct {
+	Type string `json:"type"`
+}
+
+var ephemeral = &cacheControl{Type: "ephemeral"}
+
 func (m Message) MarshalJSON() ([]byte, error) {
 	content := any(m.Content)
-	if len(m.Parts) > 0 {
+	switch {
+	case len(m.Parts) > 0:
 		content = m.Parts
+	case m.Role == "system" && m.CachePrefix > 0 && m.CachePrefix < len(m.Content):
+		content = []textBlock{{Type: "text", Text: m.Content[:m.CachePrefix], CacheControl: ephemeral}, {Type: "text", Text: m.Content[m.CachePrefix:]}}
+	case m.Cache && m.Content != "":
+		content = []textBlock{{Type: "text", Text: m.Content, CacheControl: ephemeral}}
 	}
 	wire := struct {
 		Role       string     `json:"role"`

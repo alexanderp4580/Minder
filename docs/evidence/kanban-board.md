@@ -30,6 +30,10 @@ Each item below got its test first: version fill for agent proposals, history wi
 
 The preparation real-model check passed once and then failed twice on this code; the pre-board server failed it 3 of 3 with a logged `402`. The OpenRouter account showed `total_credits` 25 against `total_usage` 25.01, so model calls fail until credit is added. Those failures are not attributed to the code. Rerun `toolchain/real-model-agent-check --preparation` after a top-up.
 
+## Prompt caching
+
+Tests: the stable prompt prefix holds nothing that changes per call; requests mark the system prefix and the turn's own message and leave other messages plain strings; `toolchain/check` exit 0 (237 Flutter tests) and the chat, calendar, email and reminder scenarios pass with marked requests. Real model (3 runs of `real-model-board-check`): prompt 17,025 to 17,677 tokens, 16,533 cached from the second call on, cost per run $0.0032 for the cold run and $0.0013 after (was $0.0056).
+
 ## Not verified
 
 - No phone check of the Board, Undo snackbar or navigation.

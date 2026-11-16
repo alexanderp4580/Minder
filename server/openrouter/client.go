@@ -125,7 +125,7 @@ func (m *Client) Complete(ctx context.Context, messages []assistant.Message) (re
 		out.Calls = append(out.Calls, assistant.Call{ID: c.ID, Name: c.Function.Name, Arguments: c.Function.Arguments})
 		names = append(names, c.Function.Name)
 	}
-	slog.Info("model response", "status", res.StatusCode, "finish_reason", wire.Choices[0].FinishReason, "tool_calls", strings.Join(names, ","), "content_len", len(out.Text), "cost_usd", cost, "prompt_tokens", wire.Usage["prompt_tokens"], "completion_tokens", wire.Usage["completion_tokens"], "total_tokens", wire.Usage["total_tokens"], "duration_ms", time.Since(started).Milliseconds(), "trace_id", domain.TraceID(ctx))
+	slog.Info("model response", "status", res.StatusCode, "finish_reason", wire.Choices[0].FinishReason, "tool_calls", strings.Join(names, ","), "content_len", len(out.Text), "cost_usd", cost, "prompt_tokens", wire.Usage["prompt_tokens"], "completion_tokens", wire.Usage["completion_tokens"], "total_tokens", wire.Usage["total_tokens"], "cached_tokens", cachedTokens(wire.Usage), "duration_ms", time.Since(started).Milliseconds(), "trace_id", domain.TraceID(ctx))
 	return out, nil
 }
 func hostOf(raw string) string {
@@ -274,4 +274,10 @@ func sourceTools() []any {
 			"candidates":        map[string]any{"type": "array", "items": candidate},
 		}, []string{"source_id", "expected_revision", "candidates"}),
 	}
+}
+
+// cachedTokens is how many prompt tokens the provider read from its prompt cache.
+func cachedTokens(usage map[string]any) any {
+	details, _ := usage["prompt_tokens_details"].(map[string]any)
+	return details["cached_tokens"]
 }

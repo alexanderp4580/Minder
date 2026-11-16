@@ -103,7 +103,10 @@ def main():
                         continue
                     import sqlite3
                     usage = [json.loads(b) for b, in sqlite3.connect(directory + '/db').execute('select body from usage')]
-                    results.append({'run': n + 1, 'model_calls': len(usage), 'cost_usd': round(sum(u['cost_usd'] for u in usage), 4)})
+                    import re
+                    cached = [int(v) for v in re.findall(r'cached_tokens=(\d+)', Path(directory, 'server.log').read_text())]
+                    prompt = [int(v) for v in re.findall(r'prompt_tokens=(\d+)', Path(directory, 'server.log').read_text())]
+                    results.append({'run': n + 1, 'model_calls': len(usage), 'cost_usd': round(sum(u['cost_usd'] for u in usage), 4), 'prompt_tokens': prompt, 'cached_tokens': cached})
                 finally:
                     server.terminate()
                     server.wait(timeout=10)

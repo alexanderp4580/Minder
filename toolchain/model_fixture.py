@@ -40,6 +40,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200);self.end_headers();return
         body=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         messages=body['messages']
+        # Prompt-cache breakpoints arrive as text blocks. Join them so the scripted replies read plain text.
+        for message in messages:
+            if isinstance(message['content'],list) and message['content'] and all(b.get('type')=='text' for b in message['content']):
+                message['content']=''.join(b['text'] for b in message['content'])
         last=messages[-1]
         if last['role']=='tool':return self.after_tools(messages)
         text=text_of(last)

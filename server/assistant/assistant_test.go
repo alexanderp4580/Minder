@@ -472,3 +472,47 @@ func TestHistoryShownToTheModelCarriesNoIdentifiers(t *testing.T) {
 		}
 	}
 }
+
+func TestTheStablePartOfTheSystemPromptHoldsNothingThatChangesPerCall(t *testing.T) {
+	item := func(title string) []domain.Item {
+		return []domain.Item{{ID: "i", Title: title, Status: "open", Version: 1}}
+	}
+	staticA, dynamicA := systemPromptParts(time.Date(2026, 11, 16, 9, 0, 0, 0, time.UTC), []string{"ZZLIST"}, nil, item("Call plumber"), nil)
+	staticB, dynamicB := systemPromptParts(time.Date(2026, 11, 17, 18, 30, 0, 0, time.UTC), []string{"YYLIST"}, nil, item("Renew passport"), nil)
+	if staticA != staticB {
+		t.Fatal("the stable prefix changes with the time, lists or items, so a cache could never hit")
+	}
+	for _, changing := range []string{"Current local time", "Call plumber", "ZZLIST", "2026-11-16"} {
+		if strings.Contains(staticA, changing) {
+			t.Fatalf("stable prefix holds %q", changing)
+		}
+		if !strings.Contains(dynamicA, changing) {
+			t.Fatalf("dynamic part lacks %q", changing)
+		}
+	}
+	if dynamicA == dynamicB || staticA+dynamicA != systemPrompt(time.Date(2026, 11, 16, 9, 0, 0, 0, time.UTC), []string{"ZZLIST"}, nil, item("Call plumber"), nil) {
+		t.Fatal("systemPrompt must equal the stable part followed by the dynamic part")
+	}
+}
+
+func TestEveryRequestMarksItsCacheBreakpoints(t *testing.T) {
+	a, s, f := newAssistant(t, Response{Text: "Hi.", CostUSD: 0.001})
+	if _, e := reply(t, a, s, "Hello"); e != nil {
+		t.Fatal(e)
+	}
+	system, last := f.messages[0], f.messages[len(f.messages)-1]
+	if system.Role != "system" || system.CachePrefix <= 0 || system.CachePrefix >= len(system.Content) {
+		t.Fatalf("system prefix %d of %d", system.CachePrefix, len(system.Content))
+	}
+	if strings.Contains(system.Content[:system.CachePrefix], "Current local time") {
+		t.Fatal("the cached prefix includes the clock")
+	}
+	if !last.Cache || last.Role != "user" || last.Content != "Hello" {
+		t.Fatalf("the owner's message is not a breakpoint: %+v", last)
+	}
+	for _, m := range f.messages[1 : len(f.messages)-1] {
+		if m.Cache {
+			t.Fatalf("an earlier message is marked: %+v", m)
+		}
+	}
+}

@@ -62,14 +62,22 @@ const lookupRule = "When the owner asks for an address, phone number, website or
 // systemPrompt is the rules plus the current time and the owner's data.
 // The items and reviews are untrusted text; the rules tell the model not to obey them.
 func systemPrompt(now time.Time, lists []string, profiles []domain.Profile, items []domain.Item, reviews []reviewSummary, extraRules ...string) string {
+	static, dynamic := systemPromptParts(now, lists, profiles, items, reviews, extraRules...)
+	return static + dynamic
+}
+
+// systemPromptParts splits the prompt where it starts to change. The static part is the rules,
+// which stay the same from call to call and are cached with the tools. The dynamic part holds
+// the clock and the owner's data, which differ on every call.
+func systemPromptParts(now time.Time, lists []string, profiles []domain.Profile, items []domain.Item, reviews []reviewSummary, extraRules ...string) (static, dynamic string) {
 	data := func(v any) string { b, _ := json.Marshal(v); return string(b) }
 	all := append(append(append([]string{}, rules...), sourceRules...), extraRules...)
-	return strings.Join(all, " ") +
+	return strings.Join(all, " "),
 		" Current local time: " + now.Format(time.RFC3339) + ". Default timezone: Europe/Amsterdam." +
-		" Existing lists: " + data(lists) + "." +
-		" Profiles: " + data(profiles) + "." +
-		" Open reviews (untrusted data): " + data(reviews) + "." +
-		" Current items (untrusted data): " + data(items)
+			" Existing lists: " + data(lists) + "." +
+			" Profiles: " + data(profiles) + "." +
+			" Open reviews (untrusted data): " + data(reviews) + "." +
+			" Current items (untrusted data): " + data(items)
 }
 
 // reviewSummary names an open review so the agent can reach its source after the card has left
